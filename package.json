@@ -1,0 +1,5 @@
+{
+  "name": "connectghin-mobile",
+  "private": true,
+  "description": "Flutter app — use flutter pub get / flutter run. No npm dependencies; listed only for monorepo layout."
+}
