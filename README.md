@@ -10,6 +10,7 @@
    - Android emulator: `http://10.0.2.2:3000/api/v1`
    - iOS simulator / desktop: `http://localhost:3000/api/v1`
    - Physical device: `http://<YOUR_LAN_IP>:3000/api/v1`
+   - Production: `https://api.connectghin.com/api/v1`
 4. Run app:
    - `flutter run`
 
@@ -24,6 +25,7 @@
 This means you can use `.env` for local defaults and still override per run:
 
 - `flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1`
+- `flutter build apk --release --dart-define=API_BASE_URL=https://api.connectghin.com/api/v1`
 
 ## Backend Requirement
 
