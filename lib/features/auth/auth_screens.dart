@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,25 @@ import '../../core/widgets/cg_responsive_container.dart';
 import '../../core/widgets/cg_text_field.dart';
 import '../../core/widgets/google_mark.dart';
 import 'widgets/auth_multi_login_widgets.dart';
+
+String _googleServerClientId() {
+  const defined = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+  if (defined.trim().isNotEmpty) return defined.trim();
+  if (!dotenv.isInitialized) return '';
+  return dotenv.env['GOOGLE_SERVER_CLIENT_ID']?.trim() ?? '';
+}
+
+Future<void>? _googleSignInInitialize;
+String? _initializedGoogleServerClientId;
+
+Future<void> _ensureGoogleSignInInitialized(String serverClientId) {
+  if (_initializedGoogleServerClientId == serverClientId && _googleSignInInitialize != null) {
+    return _googleSignInInitialize!;
+  }
+  _initializedGoogleServerClientId = serverClientId;
+  _googleSignInInitialize = GoogleSignIn.instance.initialize(serverClientId: serverClientId);
+  return _googleSignInInitialize!;
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.magicToken});
@@ -31,15 +51,17 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _googleBusy = false;
   bool _appleBusy = false;
 
+  bool get _canUseAppleSignIn =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS);
+
   @override
   void initState() {
     super.initState();
     final token = widget.magicToken?.trim();
     if (token != null && token.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Magic link login has been removed. Please sign in directly.')),
-        );
+        showUserMessageSnackBar(context, 'Magic link login has been removed. Please sign in directly.');
       });
     }
   }
@@ -80,18 +102,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _loginWithGoogle() async {
     setState(() => _googleBusy = true);
     try {
-      const serverClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+      final serverClientId = _googleServerClientId();
       if (serverClientId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google login is not configured for this build.'),
-          ),
-        );
+        showUserMessageSnackBar(context, 'Google login is not configured for this build.');
         return;
       }
       final session = context.read<AuthSession>();
       final googleSignIn = GoogleSignIn.instance;
-      await googleSignIn.initialize(serverClientId: serverClientId);
+      await _ensureGoogleSignInInitialized(serverClientId);
       final account = await googleSignIn.authenticate();
       final auth = account.authentication;
       final idToken = auth.idToken;
@@ -114,6 +132,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginWithApple() async {
+    if (!_canUseAppleSignIn) {
+      showUserMessageSnackBar(context, 'Apple login is available on iPhone and iPad.');
+      return;
+    }
     setState(() => _appleBusy = true);
     try {
       final session = context.read<AuthSession>();
@@ -195,13 +217,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                       const SizedBox(height: 28),
-                      CgSocialSignInButton(
-                        label: 'Continue with Apple',
-                        busy: _appleBusy,
-                        leading: const Icon(Icons.apple, size: 24, color: CgColors.gray900),
-                        onPressed: _loginWithApple,
-                      ),
-                      const SizedBox(height: 12),
+                      if (_canUseAppleSignIn) ...[
+                        CgSocialSignInButton(
+                          label: 'Continue with Apple',
+                          busy: _appleBusy,
+                          leading: const Icon(Icons.apple, size: 24, color: CgColors.gray900),
+                          onPressed: _loginWithApple,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       CgSocialSignInButton(
                         label: 'Continue with Google',
                         busy: _googleBusy,
@@ -332,6 +356,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
 
+  bool get _canUseAppleSignIn =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS);
+
   @override
   void dispose() {
     _fullName.dispose();
@@ -353,9 +381,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_passwordsMatch) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match.')),
-      );
+      showUserMessageSnackBar(context, 'Passwords do not match.');
       return;
     }
     setState(() => _busy = true);
@@ -383,18 +409,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _continueWithGoogle() async {
     setState(() => _googleBusy = true);
     try {
-      const serverClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+      final serverClientId = _googleServerClientId();
       if (serverClientId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google sign up is not configured for this build.'),
-          ),
-        );
+        showUserMessageSnackBar(context, 'Google sign up is not configured for this build.');
         return;
       }
       final session = context.read<AuthSession>();
       final googleSignIn = GoogleSignIn.instance;
-      await googleSignIn.initialize(serverClientId: serverClientId);
+      await _ensureGoogleSignInInitialized(serverClientId);
       final account = await googleSignIn.authenticate();
       final auth = account.authentication;
       final idToken = auth.idToken;
@@ -417,6 +439,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _continueWithApple() async {
+    if (!_canUseAppleSignIn) {
+      showUserMessageSnackBar(context, 'Apple sign up is available on iPhone and iPad.');
+      return;
+    }
     setState(() => _appleBusy = true);
     try {
       final session = context.read<AuthSession>();
@@ -490,13 +516,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: CgColors.gray600, height: 1.35),
                       ),
                       const SizedBox(height: 24),
-                      CgSocialSignInButton(
-                        label: 'Sign up with Apple',
-                        busy: _appleBusy,
-                        leading: const Icon(Icons.apple, size: 24, color: CgColors.gray900),
-                        onPressed: _continueWithApple,
-                      ),
-                      const SizedBox(height: 12),
+                      if (_canUseAppleSignIn) ...[
+                        CgSocialSignInButton(
+                          label: 'Sign up with Apple',
+                          busy: _appleBusy,
+                          leading: const Icon(Icons.apple, size: 24, color: CgColors.gray900),
+                          onPressed: _continueWithApple,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       CgSocialSignInButton(
                         label: 'Sign up with Google',
                         busy: _googleBusy,

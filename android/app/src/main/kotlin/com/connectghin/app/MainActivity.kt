@@ -1,4 +1,4 @@
-package com.example.connectghin_flutter
+package com.connectghin.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

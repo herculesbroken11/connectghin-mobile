@@ -10,7 +10,10 @@ String messageFromApiError(
   String fallback = 'Something went wrong. Please try again.',
 }) {
   if (error is! ApiHttpException) {
-    final s = '$error';
+    final s = '$error'
+        .replaceFirst(RegExp(r'^Exception:\s*'), '')
+        .replaceFirst(RegExp(r'^PlatformException\([^,]+,\s*'), '')
+        .trim();
     if (s.startsWith('API ') && s.contains('{')) return fallback;
     return s.length > 200 ? fallback : s;
   }
@@ -65,10 +68,17 @@ String _sentenceCaseValidation(String s) {
 
 /// Toast-style floating bar (Material SnackBar works well on Android and iOS).
 void showApiErrorSnackBar(BuildContext context, Object error, {String? prefix}) {
+  showUserMessageSnackBar(
+    context,
+    messageFromApiError(error),
+    prefix: prefix,
+  );
+}
+
+void showUserMessageSnackBar(BuildContext context, String message, {String? prefix}) {
   final messenger = ScaffoldMessenger.maybeOf(context);
   if (messenger == null) return;
-  final base = messageFromApiError(error);
-  final msg = (prefix != null && prefix.isNotEmpty) ? '$prefix$base' : base;
+  final msg = (prefix != null && prefix.isNotEmpty) ? '$prefix$message' : message;
   messenger.hideCurrentSnackBar();
   messenger.showSnackBar(
     SnackBar(
