@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../data/demo_content.dart';
+import '../../core/widgets/cg_app_logo.dart';
 import '../../core/widgets/cg_outline_button.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
@@ -55,45 +56,22 @@ class WelcomeScreen extends StatelessWidget {
                           top: 44,
                           left: 24,
                           right: 24,
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 52,
-                                height: 52,
-                                decoration: BoxDecoration(
-                                  color: CgColors.white,
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.96),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
                                 ),
-                                child: const Icon(Icons.sports_golf, color: CgColors.green700, size: 30),
-                              ),
-                              const SizedBox(height: 14),
-                              const Text(
-                                'ConnectGHIN',
-                                style: TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'The premier golf networking platform',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  height: 1.35,
-                                  color: Colors.white.withValues(alpha: 0.92),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              child: CgAppLogo(height: 120),
+                            ),
                           ),
                         ),
                         const Positioned(

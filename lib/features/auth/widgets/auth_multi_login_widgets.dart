@@ -1,27 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/design_tokens.dart';
+import '../../../core/widgets/cg_app_logo.dart';
 
-/// Green rounded mark used on auth screens (matches marketing / Figma).
+/// Brand logo on auth screens.
 class CgAuthBrandMark extends StatelessWidget {
-  const CgAuthBrandMark({super.key, this.size = 56});
+  const CgAuthBrandMark({super.key, this.size = 88});
 
+  /// Max height of the logo image.
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    final r = size * 0.22;
-    return Center(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: CgColors.green700,
-          borderRadius: BorderRadius.circular(r),
-        ),
-        child: Icon(Icons.sports_golf, color: CgColors.white, size: size * 0.45),
-      ),
-    );
+    return CgAppLogo(height: size);
   }
 }
 

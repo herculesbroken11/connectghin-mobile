@@ -33,7 +33,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _send() async {
     final email = _email.text.trim();
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter your email address')));
+      showUserMessageSnackBar(context, 'Enter your email address.');
       return;
     }
     setState(() => _busy = true);
@@ -244,19 +244,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Future<void> _submit() async {
     final token = widget.resetToken?.trim();
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid or missing reset link. Request a new email from Forgot Password.')),
+      showUserMessageSnackBar(
+        context,
+        'Invalid or missing reset link. Request a new email from Forgot Password.',
       );
       return;
     }
     final p = _password.text;
     final c = _confirm.text;
     if (p.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password must be at least 8 characters')));
+      showUserMessageSnackBar(context, 'Password must be at least 8 characters.');
       return;
     }
     if (p != c) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      showUserMessageSnackBar(context, 'Passwords do not match.');
       return;
     }
     setState(() => _busy = true);

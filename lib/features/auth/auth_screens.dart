@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       context.go(AppPaths.app);
     } catch (e) {
-      if (mounted) showApiErrorSnackBar(context, e);
+      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -125,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       context.go(AppPaths.app);
     } catch (e) {
-      if (mounted) showApiErrorSnackBar(context, e);
+      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _googleBusy = false);
     }
@@ -158,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       context.go(AppPaths.app);
     } catch (e) {
-      if (mounted) showApiErrorSnackBar(context, e);
+      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _appleBusy = false);
     }
@@ -400,7 +400,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       if (mounted) context.push(AppPaths.onboardingBasic);
     } catch (e) {
-      if (mounted) showApiErrorSnackBar(context, e);
+      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -432,7 +432,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       context.go(AppPaths.onboardingBasic);
     } catch (e) {
-      if (mounted) showApiErrorSnackBar(context, e);
+      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _googleBusy = false);
     }
@@ -465,7 +465,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       context.go(AppPaths.onboardingBasic);
     } catch (e) {
-      if (mounted) showApiErrorSnackBar(context, e);
+      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _appleBusy = false);
     }

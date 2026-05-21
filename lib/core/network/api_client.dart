@@ -44,7 +44,11 @@ class ApiClient {
 
   bool _shouldTryRefresh(String path) {
     if (getRefreshToken == null || onTokensRefreshed == null) return false;
-    if (path.startsWith('/auth/login') || path.startsWith('/auth/register') || path.startsWith('/auth/refresh')) {
+    if (path.startsWith('/auth/login') ||
+        path.startsWith('/auth/register') ||
+        path.startsWith('/auth/refresh') ||
+        path.startsWith('/auth/google') ||
+        path.startsWith('/auth/apple')) {
       return false;
     }
     return true;

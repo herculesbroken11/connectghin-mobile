@@ -4,12 +4,24 @@ import '../../app/design_tokens.dart';
 import 'api_client.dart';
 import 'nest_http_error.dart';
 
+/// True when the user dismissed Google/Apple sign-in (no error toast needed).
+bool isSignInCancelledError(Object error) {
+  final s = error.toString().toLowerCase();
+  return s.contains('cancel') ||
+      s.contains('aborted') ||
+      s.contains('12501') ||
+      s.contains('sign_in_canceled');
+}
+
 /// Human-readable text from API failures (never raw JSON / `API 400: {...}`).
 String messageFromApiError(
   Object error, {
   String fallback = 'Something went wrong. Please try again.',
 }) {
   if (error is! ApiHttpException) {
+    if (isSignInCancelledError(error)) {
+      return 'Sign-in was cancelled.';
+    }
     final s = '$error'
         .replaceFirst(RegExp(r'^Exception:\s*'), '')
         .replaceFirst(RegExp(r'^PlatformException\([^,]+,\s*'), '')
@@ -24,6 +36,18 @@ String messageFromApiError(
     if (bl.contains('unavailable') || bl.contains('suspended') || bl.contains('inactive')) {
       return 'This account is suspended or unavailable. You cannot sign in. Contact support if you believe this is a mistake.';
     }
+    if (bl.contains('google')) {
+      return 'Google sign-in failed. Please try again.';
+    }
+    if (bl.contains('apple')) {
+      return 'Apple sign-in failed. Please try again.';
+    }
+  }
+  if (e.statusCode == 503 && bl.contains('google')) {
+    return 'Google sign-in is not available right now. Please use email login.';
+  }
+  if (e.statusCode == 503 && bl.contains('apple')) {
+    return 'Apple sign-in is not available right now. Please use email login.';
   }
 
   final payload = parseNestHttpErrorBody(e.body);
