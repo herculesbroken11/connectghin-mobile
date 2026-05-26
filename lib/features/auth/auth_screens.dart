@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../../app/config/app_secrets.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
@@ -16,12 +16,7 @@ import '../../core/widgets/cg_text_field.dart';
 import '../../core/widgets/google_mark.dart';
 import 'widgets/auth_multi_login_widgets.dart';
 
-String _googleServerClientId() {
-  const defined = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
-  if (defined.trim().isNotEmpty) return defined.trim();
-  if (!dotenv.isInitialized) return '';
-  return dotenv.env['GOOGLE_SERVER_CLIENT_ID']?.trim() ?? '';
-}
+String _googleServerClientId() => AppSecrets.googleServerClientId;
 
 Future<void>? _googleSignInInitialize;
 String? _initializedGoogleServerClientId;

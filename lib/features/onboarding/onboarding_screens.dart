@@ -1,14 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../app/config/app_secrets.dart';
 import '../../app/design_tokens.dart';
+import '../../core/places/google_places_api.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
@@ -94,11 +94,9 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
     super.dispose();
   }
 
-  String? get _placesApiKey {
-    const fromDefine = String.fromEnvironment('GOOGLE_PLACES_API_KEY');
-    final key = fromDefine.trim();
-    return key.isEmpty ? null : key;
-  }
+  GooglePlacesApi? get _places => AppSecrets.googlePlacesApiKey == null
+      ? null
+      : GooglePlacesApi(AppSecrets.googlePlacesApiKey!);
 
   Future<void> _onAddressChanged(String value) async {
     if (_suppressAddressSearch) return;
@@ -116,60 +114,43 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
       return;
     }
     _addressDebounce = Timer(const Duration(milliseconds: 320), () async {
-      final key = _placesApiKey;
-      if (key == null) return;
+      final places = _places;
+      if (places == null) return;
       if (!mounted) return;
       setState(() => _searchingAddress = true);
       try {
-        final uri = Uri.https('maps.googleapis.com', '/maps/api/place/autocomplete/json', {
-          'input': q,
-          'key': key,
-          'types': 'address',
-          'language': 'en',
-        });
-        final res = await http.get(uri);
-        if (res.statusCode != 200) throw Exception('Autocomplete failed (${res.statusCode})');
-        final json = jsonDecode(res.body) as Map<String, dynamic>;
-        final preds = (json['predictions'] as List<dynamic>? ?? const <dynamic>[]);
-        final items = preds
-            .map((e) => e as Map<String, dynamic>)
-            .map(
-              (e) => _AddressSuggestion(
-                placeId: e['place_id'] as String? ?? '',
-                description: e['description'] as String? ?? '',
-              ),
-            )
-            .where((e) => e.placeId.isNotEmpty && e.description.isNotEmpty)
-            .toList();
+        final items = await places.autocomplete(q);
         if (!mounted) return;
         setState(() {
-          _addressSuggestions = items.take(6).toList();
+          _addressSuggestions = items
+              .map((e) => _AddressSuggestion(placeId: e.placeId, description: e.description))
+              .toList();
           _searchingAddress = false;
         });
+      } on GooglePlacesException catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _addressSuggestions = const [];
+          _searchingAddress = false;
+        });
+        showUserMessageSnackBar(context, e.message);
       } catch (_) {
         if (!mounted) return;
         setState(() {
           _addressSuggestions = const [];
           _searchingAddress = false;
         });
+        showUserMessageSnackBar(context, 'Address search failed. Try again or enter your address manually.');
       }
     });
   }
 
   Future<void> _selectSuggestion(_AddressSuggestion s) async {
-    final key = _placesApiKey;
-    if (key == null) return;
+    final places = _places;
+    if (places == null) return;
     setState(() => _searchingAddress = true);
     try {
-      final uri = Uri.https('maps.googleapis.com', '/maps/api/place/details/json', {
-        'place_id': s.placeId,
-        'key': key,
-        'fields': 'address_component,formatted_address,geometry',
-      });
-      final res = await http.get(uri);
-      if (res.statusCode != 200) throw Exception('Place details failed (${res.statusCode})');
-      final json = jsonDecode(res.body) as Map<String, dynamic>;
-      final result = json['result'] as Map<String, dynamic>? ?? const <String, dynamic>{};
+      final result = await places.placeDetails(s.placeId);
       final resolved = _resolvePlace(result);
       _suppressAddressSearch = true;
       _address.text = resolved.addressLine1.isNotEmpty ? resolved.addressLine1 : s.description;
@@ -185,6 +166,10 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
         _searchingAddress = false;
         _addressSuggestions = const [];
       });
+    } on GooglePlacesException catch (e) {
+      if (!mounted) return;
+      setState(() => _searchingAddress = false);
+      showUserMessageSnackBar(context, e.message);
     } catch (e) {
       if (!mounted) return;
       setState(() => _searchingAddress = false);
@@ -342,9 +327,9 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            _placesApiKey == null
-                ? 'Optional: add GOOGLE_PLACES_API_KEY in .env for address suggestions as you type. You can enter your full address manually below.'
-                : 'Suggestions appear as you type. You can still edit every field manually.',
+            _places == null
+                ? 'Run tool/sync_env_to_asset.cmd after setting GOOGLE_PLACES_API_KEY in .env, or pass --dart-define. You can still type your address manually.'
+                : 'Address suggestions use Google Places. You can still edit every field manually.',
             style: const TextStyle(fontSize: 12, color: CgColors.gray600, height: 1.35),
           ),
           if (_searchingAddress) ...[

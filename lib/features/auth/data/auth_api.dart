@@ -53,6 +53,10 @@ class AuthApi {
     return _apiClient.getJson('/auth/me', bearerToken: accessToken);
   }
 
+  Future<void> logout(String accessToken) async {
+    await _apiClient.postJson('/auth/logout', bearerToken: accessToken);
+  }
+
   Future<Map<String, dynamic>> forgotPassword({required String email}) {
     return _apiClient.postJson('/auth/forgot-password', body: <String, dynamic>{
       'email': email.trim().toLowerCase(),

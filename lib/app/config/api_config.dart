@@ -8,7 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 /// - iOS simulator / desktop -> `http://localhost:3001/api/v1`
 /// - Physical device -> your LAN IP, e.g. `http://192.168.1.10:3001/api/v1`
 abstract final class ApiConfig {
-  static const String _defaultBaseUrl = 'http://10.0.2.2:3001/api/v1';
+  static const String _defaultBaseUrl = 'https://api.connectghin.com/api/v1';
 
   static String get baseUrl {
     const defined = String.fromEnvironment('API_BASE_URL');

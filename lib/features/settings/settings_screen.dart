@@ -7,6 +7,7 @@ import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
+import '../location/location_device.dart';
 import '../misc/data/account_api.dart';
 import 'data/settings_api.dart';
 
@@ -76,6 +77,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool(SettingsScreen._kPrefNotifyMatches, _notifyMatches);
     await prefs.setBool(SettingsScreen._kPrefNotifyMessages, _notifyMessages);
     await prefs.setBool(SettingsScreen._kPrefLocation, _locationOptIn);
+  }
+
+  /// Turning on requests GPS and saves lat/lng to your profile. City-only discovery uses "Set your location" instead.
+  Future<void> _onLocationOptInChanged(bool enabled) async {
+    final session = context.read<AuthSession>();
+    setState(() => _locationOptIn = enabled);
+    await _persistPrefs();
+    if (!enabled) {
+      if (mounted) {
+        showUserMessageSnackBar(
+          context,
+          'Preference saved. Your saved city or GPS on your profile is still used for Discover & GHINder.',
+        );
+      }
+      return;
+    }
+    final err = await LocationDevice.requestAndSaveToProfile(session);
+    if (!mounted) return;
+    if (err != null) {
+      setState(() => _locationOptIn = false);
+      await _persistPrefs();
+      if (!mounted) return;
+      showUserMessageSnackBar(context, err);
+      return;
+    }
+    session.bumpProfileRefresh();
+    if (!mounted) return;
+    showUserMessageSnackBar(context, 'GPS location saved to your profile.');
   }
 
   Future<void> _patchUserSettings(Map<String, bool> patch) async {
@@ -197,6 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _switchRow(
                       title: 'New Matches',
+                      subtitle: 'Saved on this device until push notifications are enabled',
                       value: _notifyMatches,
                       onChanged: (v) {
                         setState(() => _notifyMatches = v);
@@ -205,6 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _switchRow(
                       title: 'New Messages',
+                      subtitle: 'Saved on this device until push notifications are enabled',
                       value: _notifyMessages,
                       onChanged: (v) {
                         setState(() => _notifyMessages = v);
@@ -232,12 +263,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onChanged: _patchShowInDiscovery,
                     ),
                     _switchRow(
-                      title: 'Location Services',
+                      title: 'Use GPS location',
                       value: _locationOptIn,
-                      onChanged: (v) {
-                        setState(() => _locationOptIn = v);
-                        _persistPrefs();
-                      },
+                      onChanged: _onLocationOptInChanged,
                     ),
                     _navRow(
                       context,
@@ -438,6 +466,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _switchRow({
     required String title,
+    String? subtitle,
     required bool value,
     required ValueChanged<bool> onChanged,
     bool showDividerAfter = true,
@@ -452,13 +481,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: CgColors.gray900,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: CgColors.gray900,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(fontSize: 12, color: CgColors.gray500, height: 1.3),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),

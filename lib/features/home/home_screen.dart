@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isGhinVerified = false;
   InboxRealtimeTick? _inboxTick;
   String? _profileDisplayName;
+  bool _expiredPromptShown = false;
 
   @override
   void initState() {
@@ -68,10 +69,12 @@ class _HomeScreenState extends State<HomeScreen> {
         MatchesApi(session.apiClient).list(t),
         MessagesApi(session.apiClient).listConversations(t),
         ProfilesApi(session.apiClient).getMe(t),
+        session.authApi.me(t),
       ]);
       final matchesRaw = results[0] as List<dynamic>;
       final convRaw = results[1] as List<dynamic>;
       final profileJson = results[2] as Map<String, dynamic>;
+      final authMe = results[3] as Map<String, dynamic>;
       final user = profileJson['user'];
       String? username;
       if (user is Map<String, dynamic>) {
@@ -95,14 +98,27 @@ class _HomeScreenState extends State<HomeScreen> {
           _profileDisplayName = displayName;
           _loading = false;
         });
+        final membershipStatus = authMe['membershipStatus']?.toString();
+        final membershipType = authMe['membershipType']?.toString();
+        if (!_expiredPromptShown &&
+            membershipStatus == 'EXPIRED' &&
+            membershipType == 'PREMIUM' &&
+            mounted) {
+          _expiredPromptShown = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            context.push(AppPaths.appSubscriptionExpired);
+          });
+        }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _loading = false;
           _profileCompletionPercent = null;
           _profileDisplayName = null;
         });
+        showApiErrorSnackBar(context, e);
       }
     }
   }

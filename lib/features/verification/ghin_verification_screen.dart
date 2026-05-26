@@ -96,6 +96,54 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
     }
   }
 
+  Future<void> _submitAppeal() async {
+    final session = context.read<AuthSession>();
+    final t = session.accessToken;
+    if (t == null) return;
+    final noteCtrl = TextEditingController();
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Submit an appeal'),
+        content: TextField(
+          controller: noteCtrl,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Explain why your GHIN details should be approved',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Submit appeal')),
+        ],
+      ),
+    );
+    if (submitted != true || !mounted) {
+      noteCtrl.dispose();
+      return;
+    }
+    final note = noteCtrl.text.trim();
+    noteCtrl.dispose();
+    if (note.isEmpty) {
+      showUserMessageSnackBar(context, 'Please describe your appeal.');
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await AccountApi(session.apiClient).submitGhinAppeal(accessToken: t, appealNote: note);
+      if (!mounted) return;
+      await _load();
+      if (mounted) {
+        showUserMessageSnackBar(context, 'Appeal submitted. We will review it soon.');
+      }
+    } catch (e) {
+      if (mounted) showApiErrorSnackBar(context, e);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   Future<void> _submit() async {
     final session = context.read<AuthSession>();
     final t = session.accessToken;
@@ -223,6 +271,7 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
             ),
           _Pane.rejected => _RejectedBody(
               onTryAgain: _tryAgainFromRejected,
+              onAppeal: _submitAppeal,
               onSupport: () => context.push(AppPaths.support),
               onBackToProfile: () {
                 context.read<AuthSession>().bumpProfileRefresh();
@@ -825,11 +874,13 @@ class _SuccessBody extends StatelessWidget {
 class _RejectedBody extends StatelessWidget {
   const _RejectedBody({
     required this.onTryAgain,
+    required this.onAppeal,
     required this.onSupport,
     required this.onBackToProfile,
   });
 
   final VoidCallback onTryAgain;
+  final VoidCallback onAppeal;
   final VoidCallback onSupport;
   final VoidCallback onBackToProfile;
 
@@ -908,6 +959,20 @@ class _RejectedBody extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('Try Again', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: OutlinedButton(
+              onPressed: onAppeal,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: CgColors.gray900,
+                side: const BorderSide(color: CgColors.gray300),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Submit appeal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 12),

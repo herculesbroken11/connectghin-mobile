@@ -473,7 +473,8 @@ class _GhinderScreenState extends State<GhinderScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final imageHeight = math.max(200.0, math.min(420.0, constraints.maxHeight * 0.6));
+                final cardHeight = math.min(constraints.maxHeight, 560.0);
+                final imageHeight = math.max(180.0, math.min(360.0, cardHeight * 0.58));
                 return Padding(
                   padding: const EdgeInsets.all(24),
                   child: GestureDetector(
@@ -499,10 +500,8 @@ class _GhinderScreenState extends State<GhinderScreen> {
                         child: Transform.rotate(
                           angle: _drag.dx * 0.001,
                           child: Container(
-                            constraints: BoxConstraints(
-                              maxWidth: 400,
-                              maxHeight: constraints.maxHeight,
-                            ),
+                            constraints: const BoxConstraints(maxWidth: 400),
+                            height: cardHeight,
                             decoration: BoxDecoration(
                               color: CgColors.white,
                               borderRadius: BorderRadius.circular(24),
@@ -510,7 +509,6 @@ class _GhinderScreenState extends State<GhinderScreen> {
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 SizedBox(
@@ -586,34 +584,33 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                 ],
                               ),
                             ),
-                                Padding(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        current.bio ?? '',
-                                        maxLines: 4,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(color: CgColors.gray700),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      if (current.homeCourse != null)
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.place_outlined, size: 16, color: CgColors.green600),
-                                            const SizedBox(width: 6),
-                                            Expanded(
-                                              child: Text(
-                                                'Home Course: ${current.homeCourse}',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(fontSize: 14, color: CgColors.gray600),
-                                              ),
-                                            ),
-                                          ],
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          current.bio ?? '',
+                                          style: const TextStyle(color: CgColors.gray700, height: 1.4),
                                         ),
-                                    ],
+                                        if (current.homeCourse != null) ...[
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.place_outlined, size: 16, color: CgColors.green600),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  'Home Course: ${current.homeCourse}',
+                                                  style: const TextStyle(fontSize: 14, color: CgColors.gray600),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],

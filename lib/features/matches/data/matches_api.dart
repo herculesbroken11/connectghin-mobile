@@ -8,4 +8,11 @@ class MatchesApi {
   Future<List<dynamic>> list(String accessToken) {
     return _apiClient.getJsonList('/matches', bearerToken: accessToken);
   }
+
+  Future<void> unmatch({
+    required String accessToken,
+    required String matchId,
+  }) {
+    return _apiClient.deleteJson('/matches/$matchId', bearerToken: accessToken);
+  }
 }

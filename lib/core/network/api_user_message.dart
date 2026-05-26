@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/design_tokens.dart';
+import '../../app/router/app_paths.dart';
 import 'api_client.dart';
 import 'nest_http_error.dart';
 
@@ -19,6 +21,9 @@ String messageFromApiError(
   String fallback = 'Something went wrong. Please try again.',
 }) {
   if (error is! ApiHttpException) {
+    if (error is FormatException) {
+      return 'Could not read the server response. Please try again.';
+    }
     if (isSignInCancelledError(error)) {
       return 'Sign-in was cancelled.';
     }
@@ -62,6 +67,9 @@ String messageFromApiError(
     case 400:
       return 'Please check your information and try again.';
     case 403:
+      if (isMessagingPremiumUpsell(e)) {
+        return 'Premium lets you message golfers before you match. View plans to upgrade.';
+      }
       return 'You can\'t do that with your current account.';
     case 404:
       return 'That wasn\'t found.';
@@ -90,8 +98,38 @@ String _sentenceCaseValidation(String s) {
   return s[0].toUpperCase() + s.substring(1);
 }
 
+/// True when backend blocked starting a chat without a match (premium upsell).
+bool isMessagingPremiumUpsell(Object error) {
+  if (error is! ApiHttpException || error.statusCode != 403) return false;
+  return error.body.toLowerCase().contains('match required');
+}
+
 /// Toast-style floating bar (Material SnackBar works well on Android and iOS).
 void showApiErrorSnackBar(BuildContext context, Object error, {String? prefix}) {
+  if (isMessagingPremiumUpsell(error)) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          messageFromApiError(error),
+          style: const TextStyle(color: CgColors.white, fontSize: 15, height: 1.35),
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: CgColors.gray900,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'View plans',
+          textColor: CgColors.green100,
+          onPressed: () => context.push(AppPaths.appMembership),
+        ),
+      ),
+    );
+    return;
+  }
   showUserMessageSnackBar(
     context,
     messageFromApiError(error),

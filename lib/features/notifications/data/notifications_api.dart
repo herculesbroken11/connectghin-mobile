@@ -39,4 +39,15 @@ class NotificationsApi {
       body: <String, dynamic>{'platform': platform, 'token': token},
     );
   }
+
+  Future<void> unregisterToken({
+    required String accessToken,
+    required String token,
+  }) {
+    return _apiClient.deleteJson(
+      '/devices/register-token',
+      bearerToken: accessToken,
+      body: <String, dynamic>{'token': token},
+    );
+  }
 }

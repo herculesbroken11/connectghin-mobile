@@ -25,6 +25,8 @@ dependencies:
   in_app_purchase: ^3.2.3
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^8.0.0
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
 
 dev_dependencies:
   flutter_test:
@@ -35,11 +37,11 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/branding/connectghin_logo.png
+  image_path: tool/branding/launcher_icon.png
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: assets/branding/connectghin_logo.png
+  adaptive_icon_foreground: tool/branding/launcher_icon.png
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/branding/connectghin_logo.png
+    - assets/env/config.env

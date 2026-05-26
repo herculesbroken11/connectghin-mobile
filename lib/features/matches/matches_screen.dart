@@ -150,6 +150,37 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   int get _unreadTotal => _all.where((r) => r.hasUnread).length;
 
+  Future<void> _confirmUnmatch(_MatchInboxRow r) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unmatch?'),
+        content: Text('Remove your match with ${r.card.displayName}? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: CgColors.destructive),
+            child: const Text('Unmatch'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final session = context.read<AuthSession>();
+    final t = session.accessToken;
+    if (t == null) return;
+    try {
+      await MatchesApi(session.apiClient).unmatch(accessToken: t, matchId: r.matchId);
+      if (mounted) {
+        showUserMessageSnackBar(context, 'Match removed.');
+        await _load();
+      }
+    } catch (e) {
+      if (mounted) showApiErrorSnackBar(context, e);
+    }
+  }
+
   Future<void> _openRow(_MatchInboxRow r) async {
     final session = context.read<AuthSession>();
     final t = session.accessToken;
@@ -191,7 +222,19 @@ class _MatchesScreenState extends State<MatchesScreen> {
     if (_error != null) {
       return ColoredBox(
         color: CgColors.gray50,
-        child: Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!))),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(_error!, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: _load, child: const Text('Retry')),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
@@ -265,6 +308,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                       color: CgColors.white,
                       child: InkWell(
                         onTap: () => _openRow(r),
+                        onLongPress: () => _confirmUnmatch(r),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           child: Row(

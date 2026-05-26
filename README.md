@@ -14,10 +14,11 @@
    - Set `GOOGLE_SERVER_CLIENT_ID` to the Google OAuth **Web client ID**.
    - Set the backend `GOOGLE_OAUTH_CLIENT_ID` to the same value.
    - In Google Cloud Console, also create an Android OAuth client for package `com.connectghin.app` using the debug SHA-1 from `cd android && ./gradlew signingReport`.
-4. Run app:
-   - `flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3001/api/v1 --dart-define=GOOGLE_SERVER_CLIENT_ID=<WEB_CLIENT_ID>`
-   - Emulator or USB phone helper: `tool\run_android_with_adb_reverse.cmd`
-   - Wi-Fi/LAN physical phone helper: `tool\run_android_lan.cmd <YOUR_LAN_IP>`
+4. Copy `.env.example` to `.env`, then run `tool\sync_env_to_asset.cmd` (writes `assets/env/config.env` for the app). Or use `tool\run_android_production.cmd` which syncs automatically.
+5. Run app:
+   - Production: `tool\run_android_production.cmd` or `flutter run` with production URL in `.env`
+   - Local emulator/USB: `tool\run_android_with_adb_reverse.cmd`
+   - Wi-Fi/LAN phone: `tool\run_android_lan.cmd <YOUR_LAN_IP>`
 
 ## Android Emulator And Phone Testing
 
@@ -42,7 +43,7 @@ Google Sign-In requires a Google Play services emulator image or a real Android 
 2. Optional local `.env` (`API_BASE_URL`)
 3. Fallback default: `http://10.0.2.2:3001/api/v1`
 
-For Android emulator Google login, prefer `--dart-define=GOOGLE_SERVER_CLIENT_ID=...` or the `tool\run_android_with_adb_reverse.cmd` helper, which reads `GOOGLE_SERVER_CLIENT_ID` from local `.env`.
+`GOOGLE_SERVER_CLIENT_ID` resolves from `--dart-define` first, then `.env` (must be in `pubspec.yaml` assets). Helpers `run_android_production.cmd` / `run_android_with_adb_reverse.cmd` pass the dart-define from `.env`.
 
 Use `--dart-define` for release builds so the APK points at the intended backend:
 

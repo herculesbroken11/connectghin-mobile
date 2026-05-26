@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "628563228753",
+    "project_id": "connectghin-6e881",
+    "storage_bucket": "connectghin-6e881.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:628563228753:android:109b85ea5ce1d060c2a070",
+        "android_client_info": {
+          "package_name": "com.connectghin.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHSzlcD4k5eNzyySL91Dc3alrsD0RWsE4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

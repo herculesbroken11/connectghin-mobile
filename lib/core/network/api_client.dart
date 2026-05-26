@@ -179,27 +179,34 @@ class ApiClient {
     return response;
   }
 
+  /// Nest/Prisma may return HTTP 200 with an empty body when there is no row (e.g. no GHIN request yet).
+  static dynamic _decodeJsonBody(String body) {
+    final trimmed = body.trim();
+    if (trimmed.isEmpty) return null;
+    return jsonDecode(trimmed);
+  }
+
   Future<Map<String, dynamic>> getJson(
     String path, {
     Map<String, String>? query,
     String? bearerToken,
   }) async {
     final response = await _getWithRetry(path, query: query, bearerToken: bearerToken);
-    final decoded = jsonDecode(response.body);
+    final decoded = _decodeJsonBody(response.body);
     if (decoded is! Map<String, dynamic>) {
       throw Exception('Expected JSON object from $path');
     }
     return decoded;
   }
 
-  /// For endpoints that may return JSON `null` (e.g. optional DB row).
+  /// For endpoints that may return JSON `null` or an empty body (no verification row yet).
   Future<Map<String, dynamic>?> getJsonObjectOrNull(
     String path, {
     Map<String, String>? query,
     String? bearerToken,
   }) async {
     final response = await _getWithRetry(path, query: query, bearerToken: bearerToken);
-    final decoded = jsonDecode(response.body);
+    final decoded = _decodeJsonBody(response.body);
     if (decoded == null) {
       return null;
     }
@@ -228,7 +235,10 @@ class ApiClient {
     String? bearerToken,
   }) async {
     final response = await _postWithRetry(path, body: body, bearerToken: bearerToken);
-    final decoded = jsonDecode(response.body);
+    final decoded = _decodeJsonBody(response.body);
+    if (decoded == null) {
+      return <String, dynamic>{};
+    }
     if (decoded is! Map<String, dynamic>) {
       throw Exception('Expected JSON object from $path');
     }
@@ -241,7 +251,10 @@ class ApiClient {
     String? bearerToken,
   }) async {
     final response = await _patchWithRetry(path, body: body, bearerToken: bearerToken);
-    final decoded = jsonDecode(response.body);
+    final decoded = _decodeJsonBody(response.body);
+    if (decoded == null) {
+      return <String, dynamic>{};
+    }
     if (decoded is! Map<String, dynamic>) {
       throw Exception('Expected JSON object from $path');
     }
@@ -284,7 +297,10 @@ class ApiClient {
       }
     }
     _throwIfNotOk(response);
-    final decoded = jsonDecode(response.body);
+    final decoded = _decodeJsonBody(response.body);
+    if (decoded == null) {
+      return <String, dynamic>{};
+    }
     if (decoded is! Map<String, dynamic>) {
       throw Exception('Expected JSON object from $path');
     }

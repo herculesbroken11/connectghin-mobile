@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'app/config/env_config.dart';
 import 'app/inbox_socket_binder.dart';
+import 'app/push_token_binder.dart';
 import 'app/router/app_router.dart';
 import 'app/session/auth_session.dart';
 import 'app/theme/app_theme.dart';
+import 'core/push/push_notifications.dart';
 import 'features/messages/data/inbox_realtime_tick.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (_) {
-    // Local .env is optional; production builds should use --dart-define.
-  }
+  await EnvConfig.load();
+  await PushNotifications.init();
   final session = AuthSession();
   await session.load();
   final router = createAppRouter(session);
@@ -38,11 +37,13 @@ class ConnectGhinApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InboxSocketBinder(
-      child: MaterialApp.router(
-        title: 'ConnectGHIN',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        routerConfig: router,
+      child: PushTokenBinder(
+        child: MaterialApp.router(
+          title: 'ConnectGHIN',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light(),
+          routerConfig: router,
+        ),
       ),
     );
   }

@@ -184,6 +184,19 @@ class AuthSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Clears local session and invalidates refresh token on the server when possible.
+  Future<void> logout() async {
+    final t = accessToken;
+    if (t != null && t.isNotEmpty) {
+      try {
+        await _authApi.logout(t);
+      } catch (_) {
+        /* offline — still clear locally */
+      }
+    }
+    await clear();
+  }
+
   Future<void> clear({bool keepAuthNotice = false}) async {
     accessToken = null;
     refreshToken = null;

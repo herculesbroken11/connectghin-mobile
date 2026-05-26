@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +10,7 @@ import '../../core/network/api_user_message.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
 import '../../core/widgets/cg_text_field.dart';
+import '../location/location_device.dart';
 import '../misc/data/account_api.dart';
 import '../profile/profile_screens.dart';
 import '../profiles/data/profiles_api.dart';
@@ -85,8 +87,10 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          CgLabeledField(label: 'User ID', child: CgTextField(controller: _targetUserId, hint: 'Target user id')),
-          const SizedBox(height: 12),
+          if (widget.targetUserId == null || widget.targetUserId!.trim().isEmpty) ...[
+            CgLabeledField(label: 'User ID', child: CgTextField(controller: _targetUserId, hint: 'Target user id')),
+            const SizedBox(height: 12),
+          ],
           const Text('Why are you reporting this profile?'),
           const SizedBox(height: 16),
           ...options.map(
@@ -215,8 +219,29 @@ class _LegalScaffold extends StatelessWidget {
 
 // --- Permissions & system states ---
 
-class LocationPermissionScreen extends StatelessWidget {
+class LocationPermissionScreen extends StatefulWidget {
   const LocationPermissionScreen({super.key});
+
+  @override
+  State<LocationPermissionScreen> createState() => _LocationPermissionScreenState();
+}
+
+class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
+  bool _busy = false;
+
+  Future<void> _allow() async {
+    setState(() => _busy = true);
+    final session = context.read<AuthSession>();
+    final err = await LocationDevice.requestAndSaveToProfile(session);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (err != null) {
+      showUserMessageSnackBar(context, err);
+      return;
+    }
+    showUserMessageSnackBar(context, 'Location saved to your profile.');
+    context.pop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,8 +249,8 @@ class LocationPermissionScreen extends StatelessWidget {
       icon: Icons.location_on_outlined,
       title: 'Enable location',
       body: 'We use your location to show golfers nearby. You can change this anytime in settings.',
-      primary: 'Allow location',
-      onPrimary: () => context.pop(),
+      primary: _busy ? 'Working…' : 'Allow location',
+      onPrimary: _busy ? null : _allow,
     );
   }
 }
@@ -238,9 +263,12 @@ class NotificationPermissionScreen extends StatelessWidget {
     return _StateScaffold(
       icon: Icons.notifications_active_outlined,
       title: 'Stay in the loop',
-      body: 'Turn on notifications for new matches and messages.',
-      primary: 'Allow notifications',
-      onPrimary: () => context.pop(),
+      body: 'Enable notifications in system settings for new matches and messages.',
+      primary: 'Open settings',
+      onPrimary: () async {
+        await Geolocator.openAppSettings();
+        if (context.mounted) context.pop();
+      },
     );
   }
 }
@@ -288,7 +316,7 @@ class _StateScaffold extends StatelessWidget {
   final String title;
   final String body;
   final String primary;
-  final VoidCallback onPrimary;
+  final VoidCallback? onPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -490,7 +518,7 @@ class LogoutConfirmScreen extends StatelessWidget {
                           height: 52,
                           child: ElevatedButton(
                             onPressed: () async {
-                              await context.read<AuthSession>().clear();
+                              await context.read<AuthSession>().logout();
                               if (context.mounted) context.go(AppPaths.welcome);
                             },
                             style: ElevatedButton.styleFrom(

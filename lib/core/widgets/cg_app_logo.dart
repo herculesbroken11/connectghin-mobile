@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// ConnectGHIN brand logo from [assets/branding/connectghin_logo.png].
+import '../../generated/brand_logo_bytes.dart';
+
+/// ConnectGHIN brand logo (embedded bytes; avoids Windows file-lock on asset PNG copy).
 class CgAppLogo extends StatelessWidget {
   const CgAppLogo({super.key, this.height = 88});
-
-  static const String assetPath = 'assets/branding/connectghin_logo.png';
 
   final double height;
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      assetPath,
+    return Image.memory(
+      kBrandLogoPngBytes,
       height: height,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,

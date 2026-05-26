@@ -19,7 +19,7 @@ class PlayerRatingsScreen extends StatefulWidget {
 class _PlayerRatingsScreenState extends State<PlayerRatingsScreen> {
   bool _loading = true;
   String? _error;
-  String _status = 'all';
+  String _status = 'approved';
   final _searchCtrl = TextEditingController();
   Map<String, dynamic>? _summary;
   List<dynamic> _items = const [];
@@ -155,11 +155,8 @@ class _PlayerRatingsScreenState extends State<PlayerRatingsScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Row(
                           children: [
+                            _statusChip('approved', 'Reviews'),
                             _statusChip('all', 'All'),
-                            _statusChip('approved', 'Approved'),
-                            _statusChip('flagged', 'Flagged'),
-                            _statusChip('pending', 'Pending'),
-                            _statusChip('removed', 'Removed'),
                           ],
                         ),
                       ),

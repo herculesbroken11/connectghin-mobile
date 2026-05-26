@@ -41,7 +41,7 @@ DateTime? _parseIso(dynamic v) {
 List<(String, String)> get _upgradeBenefits => const [
       ('Unlimited Swipes', 'No daily limit — swipe as much as you want'),
       ('Message Anyone', 'Send messages without matching first'),
-      ('See Who Likes You', 'View all profiles that liked you first'),
+      ('Priority in Discovery', 'Get seen by more golfers in your area'),
       ('Advanced Filters', 'Filter by skill level, distance, and more'),
       ('Priority Support', 'Get help faster with premium support'),
       ('Profile Boost', 'Appear first in discovery for 30 minutes daily'),
@@ -50,7 +50,7 @@ List<(String, String)> get _upgradeBenefits => const [
 List<(String, String)> get _manageBenefits => const [
       ('Unlimited Swipes', 'No daily limit — swipe as much as you want'),
       ('Message Anyone', 'Send messages without matching first'),
-      ('See Who Likes You', 'View all profiles that liked you first'),
+      ('Priority in Discovery', 'Get seen by more golfers in your area'),
       ('Advanced Filters', 'Filter by skill level, distance, and more'),
     ];
 
@@ -794,11 +794,18 @@ class _MembershipScreenState extends State<MembershipScreen> {
 }
 
 class SubscriptionExpiredScreen extends StatelessWidget {
-  const SubscriptionExpiredScreen({super.key});
+  const SubscriptionExpiredScreen({
+    super.key,
+    this.expiredAt,
+    this.planLabel = 'Premium',
+  });
+
+  final DateTime? expiredAt;
+  final String planLabel;
 
   @override
   Widget build(BuildContext context) {
-    final expiredOn = DateTime(2026, 4, 1);
+    final expiredOn = expiredAt ?? DateTime.now();
     final daysSince = DateTime.now().difference(expiredOn).inDays.clamp(0, 9999);
 
     return Scaffold(
@@ -853,7 +860,7 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                     children: [
                       const Text('Previous plan', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
                       const SizedBox(height: 4),
-                      const Text('Premium Monthly', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                      Text(planLabel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                       const SizedBox(height: 12),
                       const Text('Expired on', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
                       Text(_formatUiDate(expiredOn), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
@@ -866,7 +873,7 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                 const Text('What You\'re Missing', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
                 const SizedBox(height: 12),
                 _missingRow('Unlimited swipes on GHINder'),
-                _missingRow('See who liked you'),
+                _missingRow('Message anyone without matching first'),
                 _missingRow('Advanced filters'),
                 _missingRow('Priority customer support'),
                 const SizedBox(height: 24),
