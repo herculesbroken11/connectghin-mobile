@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../app/design_tokens.dart';
 import '../../generated/brand_logo_bytes.dart';
 
-/// ConnectGHIN brand logo (embedded bytes; avoids Windows file-lock on asset PNG copy).
+/// ConnectGHIN brand logo (embedded bytes; avoids Windows file-lock on assets/*.png).
 class CgAppLogo extends StatelessWidget {
   const CgAppLogo({super.key, this.height = 88});
 
@@ -15,7 +16,7 @@ class CgAppLogo extends StatelessWidget {
       height: height,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,
-      errorBuilder: (_, __, ___) => const Icon(Icons.sports_golf, size: 48, color: Color(0xFF166534)),
+      errorBuilder: (_, __, ___) => Icon(Icons.sports_golf, size: height * 0.55, color: CgColors.green800),
     );
   }
 }

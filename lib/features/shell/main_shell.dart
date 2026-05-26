@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/design_tokens.dart';
 import 'app_bottom_nav_bar.dart';
 
-/// Bottom navigation matching React `Root.tsx` (Home, Discover, GHINder, Matches, Profile).
+/// Bottom navigation: Home, Discover, GHINder, Matches, Settings.
 class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.navigationShell});
 

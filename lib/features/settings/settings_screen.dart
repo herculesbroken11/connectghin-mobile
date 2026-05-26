@@ -9,6 +9,8 @@ import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
 import '../../core/push/push_notifications.dart';
 import '../../core/push/push_token_registry.dart';
+import '../../core/widgets/cg_switch.dart';
+import 'logout_confirm_dialog.dart';
 import '../location/location_device.dart';
 import '../misc/data/account_api.dart';
 import 'data/settings_api.dart';
@@ -176,13 +178,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: CgColors.gray50,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
-          onPressed: () => context.pop(),
-        ),
+        leading: GoRouter.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
+                onPressed: () => context.pop(),
+              )
+            : null,
         title: const Text(
           'Settings',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CgColors.gray900),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: CgColors.gray900,
+            decoration: TextDecoration.none,
+            inherit: false,
+          ),
         ),
       ),
       body: _loading
@@ -193,6 +203,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsCard(
                   children: [
                     _sectionBand('ACCOUNT'),
+                    _navRow(
+                      context,
+                      icon: Icons.account_circle_outlined,
+                      title: 'My Profile',
+                      onTap: () => context.push(AppPaths.appProfile),
+                    ),
                     _navRow(
                       context,
                       icon: Icons.person_outline_rounded,
@@ -239,14 +255,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _switchRow(
                       title: 'Push Notifications',
                       subtitle: PushNotifications.isSupported
-                          ? 'Server delivery when enabled; allow system permission on this device'
-                          : 'Available on Android when Firebase is configured',
+                          ? 'Alerts on this device when enabled'
+                          : 'Available when Firebase is configured',
                       value: _pushEnabled,
                       onChanged: _onPushEnabledChanged,
                     ),
                     _switchRow(
                       title: 'New Matches',
-                      subtitle: 'Local preference for in-app reminders (main Push toggle controls delivery)',
+                      subtitle: 'Notify when you get a new match',
                       value: _notifyMatches,
                       onChanged: (v) {
                         setState(() => _notifyMatches = v);
@@ -255,7 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _switchRow(
                       title: 'New Messages',
-                      subtitle: 'Local preference for in-app reminders (main Push toggle controls delivery)',
+                      subtitle: 'Notify when someone messages you',
                       value: _notifyMessages,
                       onChanged: (v) {
                         setState(() => _notifyMessages = v);
@@ -367,7 +383,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         side: const BorderSide(color: CgColors.gray200),
                       ),
                       child: InkWell(
-                        onTap: () => context.push(AppPaths.appLogoutConfirm),
+                        onTap: () => LogoutConfirmDialog.show(context),
                         borderRadius: BorderRadius.circular(14),
                         child: const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
@@ -417,9 +433,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title,
         style: const TextStyle(
           fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.6,
-          color: CgColors.gray600,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.8,
+          color: CgColors.gray500,
+          decoration: TextDecoration.none,
+          inherit: false,
         ),
       ),
     );
@@ -454,19 +472,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Text(
                           title,
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
                             color: CgColors.gray900,
+                            decoration: TextDecoration.none,
+                            inherit: false,
                           ),
                         ),
                         if (subtitle != null) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             subtitle,
                             style: const TextStyle(
                               fontSize: 13,
-                              height: 1.3,
+                              height: 1.35,
                               color: CgColors.gray500,
+                              decoration: TextDecoration.none,
+                              inherit: false,
                             ),
                           ),
                         ],
@@ -495,43 +517,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: CgColors.gray900,
+                        decoration: TextDecoration.none,
+                        inherit: false,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 3),
                       Text(
-                        title,
+                        subtitle,
                         style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: CgColors.gray900,
+                          fontSize: 13,
+                          color: CgColors.gray500,
+                          height: 1.35,
+                          decoration: TextDecoration.none,
+                          inherit: false,
                         ),
                       ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(fontSize: 12, color: CgColors.gray500, height: 1.3),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
               ),
-              Switch(
-                value: value,
-                onChanged: onChanged,
-                activeThumbColor: CgColors.white,
-                activeTrackColor: CgColors.gray900,
-                inactiveThumbColor: CgColors.white,
-                inactiveTrackColor: CgColors.gray300,
-                trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-              ),
+              CgSwitch(value: value, onChanged: onChanged),
             ],
           ),
         ),

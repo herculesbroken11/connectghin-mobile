@@ -48,4 +48,8 @@ $chunkBody;
 final Uint8List kBrandLogoPngBytes = base64Decode(_kBrandLogoPngBase64);
 "@ | Set-Content -Path $dartPath -Encoding UTF8
 
+$appLogo = Join-Path $mobileRoot 'assets\branding\app_logo.png'
+$splashSrc = if (Test-Path -LiteralPath $appLogo) { $appLogo } else { $src }
+& (Join-Path $PSScriptRoot 'generate_launch_splash.ps1') -Source $splashSrc
+
 Write-Host "Wrote $dartPath and $iconPath"

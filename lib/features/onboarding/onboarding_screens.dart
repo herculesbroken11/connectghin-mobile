@@ -328,7 +328,7 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
           const SizedBox(height: 8),
           Text(
             _places == null
-                ? 'Run tool/sync_env_to_asset.cmd after setting GOOGLE_PLACES_API_KEY in .env, or pass --dart-define. You can still type your address manually.'
+                ? 'Run tool/sync_env_to_asset.cmd after setting GOOGLE_PLACES_API_KEY in .env, or pass --dart-define=GOOGLE_PLACES_API_KEY=... You can still type your address manually.'
                 : 'Address suggestions use Google Places. You can still edit every field manually.',
             style: const TextStyle(fontSize: 12, color: CgColors.gray600, height: 1.35),
           ),

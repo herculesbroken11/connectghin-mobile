@@ -3,6 +3,7 @@ abstract final class AppPaths {
   static const welcome = '/';
   static const login = '/login';
   static const register = '/register';
+  static const registerPassword = '/register/password';
   /// Guest-readable legal (not under `/app` — avoids auth redirect).
   static const legalTerms = '/legal/terms-of-service';
   static const legalPrivacy = '/legal/privacy-policy';

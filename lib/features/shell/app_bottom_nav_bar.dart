@@ -13,7 +13,7 @@ class AppBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
 
-  static const labels = ['Home', 'Discover', 'GHINder', 'Matches', 'Profile'];
+  static const labels = ['Home', 'Discover', 'GHINder', 'Matches', 'Settings'];
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +105,7 @@ class _NavItem extends StatelessWidget {
       case 3:
         return sel ? Icons.favorite : Icons.favorite_border;
       case 4:
-        return sel ? Icons.person : Icons.person_outline;
+        return sel ? Icons.settings : Icons.settings_outlined;
       default:
         return Icons.circle_outlined;
     }

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../session/auth_session.dart';
 import '../../features/auth/auth_screens.dart';
+import '../../features/auth/register_password_screen.dart';
 import '../../features/auth/password_recovery_screens.dart';
 import '../../features/discover/discover_screen.dart';
 import '../../features/ghinder/ghinder_screen.dart';
@@ -45,7 +46,8 @@ GoRouter createAppRouter(AuthSession auth) {
       final path = state.matchedLocation;
       final authed = auth.isLoggedIn;
       final needsAuth = path.startsWith('/app/') || path == '/app';
-      final isAuthPage = path == AppPaths.login || path == AppPaths.register;
+      final isAuthPage =
+          path == AppPaths.login || path == AppPaths.register || path == AppPaths.registerPassword;
       if (needsAuth && !authed) return AppPaths.login;
       if (authed && isAuthPage) return AppPaths.app;
       if (authed && path == AppPaths.welcome) return AppPaths.app;
@@ -60,6 +62,16 @@ GoRouter createAppRouter(AuthSession auth) {
       builder: (context, state) => LoginScreen(magicToken: state.uri.queryParameters['magicToken']),
     ),
     GoRoute(path: AppPaths.register, builder: (_, __) => const RegisterScreen()),
+    GoRoute(
+      path: AppPaths.registerPassword,
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is RegisterPasswordArgs) {
+          return RegisterPasswordScreen(args: extra);
+        }
+        return const RegisterScreen();
+      },
+    ),
     GoRoute(path: AppPaths.legalTerms, builder: (_, __) => const TermsOfServiceScreen()),
     GoRoute(path: AppPaths.legalPrivacy, builder: (_, __) => const PrivacyPolicyScreen()),
     GoRoute(path: AppPaths.forgotPassword, builder: (_, __) => const ForgotPasswordScreen()),
@@ -131,10 +143,10 @@ GoRouter createAppRouter(AuthSession auth) {
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AppPaths.appProfile,
+              path: AppPaths.appSettings,
               pageBuilder: (context, state) => NoTransitionPage<void>(
                 key: state.pageKey,
-                child: const ProfileScreen(),
+                child: const SettingsScreen(),
               ),
             ),
           ],
@@ -184,9 +196,9 @@ GoRouter createAppRouter(AuthSession auth) {
       builder: (_, __) => const MembershipScreen(),
     ),
     GoRoute(
-      path: AppPaths.appSettings,
+      path: AppPaths.appProfile,
       parentNavigatorKey: rootNavigatorKey,
-      builder: (_, __) => const SettingsScreen(),
+      builder: (_, __) => const ProfileScreen(),
     ),
     GoRoute(
       path: AppPaths.appNotifications,

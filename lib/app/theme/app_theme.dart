@@ -55,37 +55,73 @@ class AppTheme {
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
       ),
+      switchTheme: SwitchThemeData(
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return CgColors.white;
+          return CgColors.white;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return CgColors.green700;
+          return CgColors.gray300;
+        }),
+        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+      ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
           fontSize: 30,
           fontWeight: FontWeight.w500,
           color: CgColors.gray900,
           height: 1.25,
+          decoration: TextDecoration.none,
         ),
         headlineMedium: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w500,
           color: CgColors.gray900,
           height: 1.3,
+          decoration: TextDecoration.none,
         ),
         titleLarge: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w500,
           color: CgColors.gray900,
+          decoration: TextDecoration.none,
         ),
         titleMedium: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: CgColors.gray900,
+          decoration: TextDecoration.none,
         ),
-        bodyLarge: TextStyle(fontSize: 16, color: CgColors.gray900, height: 1.5),
-        bodyMedium: TextStyle(fontSize: 14, color: CgColors.gray600, height: 1.5),
-        bodySmall: TextStyle(fontSize: 12, color: CgColors.gray600, height: 1.5),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          color: CgColors.gray900,
+          height: 1.5,
+          decoration: TextDecoration.none,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          color: CgColors.gray600,
+          height: 1.5,
+          decoration: TextDecoration.none,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 12,
+          color: CgColors.gray600,
+          height: 1.5,
+          decoration: TextDecoration.none,
+        ),
         labelLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: CgColors.gray900,
+          decoration: TextDecoration.none,
         ),
+      ).apply(
+        bodyColor: CgColors.gray900,
+        displayColor: CgColors.gray900,
+        decoration: TextDecoration.none,
       ),
     );
   }

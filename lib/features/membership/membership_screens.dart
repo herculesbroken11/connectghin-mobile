@@ -14,13 +14,12 @@ import '../../core/widgets/cg_outline_button.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
 import '../subscriptions/data/subscriptions_api.dart';
+import '../subscriptions/iap_product_config.dart';
 
 /// Display strings aligned with membership mockups (actual charge is provided by in-app purchase products).
 const String kPremiumMonthlyDisplay = '\$19.99';
 const String kPremiumYearlyDisplay = '\$79.99';
 const String kRenewMonthlyDisplay = '\$9.99';
-const String kIapMonthlyProductId = 'connectghin.premium.monthly';
-const String kIapYearlyProductId = 'connectghin.premium.yearly';
 
 String _formatUiDate(DateTime d) {
   const months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -130,10 +129,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
         });
         return;
       }
-      final response = await _iap.queryProductDetails({
-        kIapMonthlyProductId,
-        kIapYearlyProductId,
-      });
+      final ids = IapProductConfig.allIds;
+      final response = await _iap.queryProductDetails(ids);
       if (!mounted) return;
       ProductDetails? byId(String id) {
         for (final p in response.productDetails) {
@@ -141,10 +138,24 @@ class _MembershipScreenState extends State<MembershipScreen> {
         }
         return null;
       }
+      final monthly = byId(IapProductConfig.monthlyProductId);
+      final yearly = byId(IapProductConfig.yearlyProductId);
+      String? err = response.error?.message;
+      if (response.notFoundIDs.isNotEmpty) {
+        final missing = response.notFoundIDs.join(', ');
+        final emulatorHint = Platform.isAndroid
+            ? ' LDPlayer/emulators need Google Play and published subscription products.'
+            : '';
+        err =
+            'Products not found in store: $missing. In Play Console (app com.connectghin.app), create subscriptions with these exact product IDs, activate them, and use a licensed test account.$emulatorHint';
+      } else if (monthly == null && yearly == null) {
+        err ??=
+            'No subscription products returned. Add ${IapProductConfig.monthlyProductId} and ${IapProductConfig.yearlyProductId} in Google Play Console.';
+      }
       setState(() {
-        _monthlyProduct = byId(kIapMonthlyProductId);
-        _yearlyProduct = byId(kIapYearlyProductId);
-        _storeError = response.error?.message;
+        _monthlyProduct = monthly;
+        _yearlyProduct = yearly;
+        _storeError = err;
         _storeLoading = false;
       });
     } catch (_) {
@@ -160,9 +171,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
     if (_storeLoading) return;
     final product = _yearlyIapSelected ? (_yearlyProduct ?? _monthlyProduct) : (_monthlyProduct ?? _yearlyProduct);
     if (product == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_storeError ?? 'No subscription product found in the store.')),
-      );
+      final msg = _storeError ??
+          'No subscription product found. Expected IDs: '
+          '${IapProductConfig.monthlyProductId}, ${IapProductConfig.yearlyProductId}';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       return;
     }
     setState(() => _purchaseBusy = true);

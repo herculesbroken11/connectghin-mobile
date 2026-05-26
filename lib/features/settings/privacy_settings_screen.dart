@@ -6,6 +6,7 @@ import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/widgets/cg_switch.dart';
 import '../misc/data/account_api.dart';
 
 /// GHINder privacy mock: grouped toggles (saved per change), data/account rows, disclaimer.
@@ -332,15 +333,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   ),
                 )
               else
-                Switch(
-                  value: value,
-                  onChanged: onChanged,
-                  activeThumbColor: CgColors.white,
-                  activeTrackColor: CgColors.gray900,
-                  inactiveThumbColor: CgColors.white,
-                  inactiveTrackColor: CgColors.gray300,
-                  trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-                ),
+                CgSwitch(value: value, onChanged: onChanged),
             ],
           ),
         ),

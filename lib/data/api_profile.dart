@@ -1,5 +1,40 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/network/api_image_url.dart';
+
+String? _firstProfilePhotoUrl(List<dynamic>? photos) {
+  if (photos == null || photos.isEmpty) return null;
+  for (final p in _sortProfilePhotos(photos)) {
+    final resolved = ApiImageUrl.resolve(p['imageUrl'] as String?);
+    if (resolved != null) return resolved;
+  }
+  return null;
+}
+
+List<Map<String, dynamic>> _sortProfilePhotos(List<dynamic> photos) {
+  final maps = photos.whereType<Map<String, dynamic>>().toList();
+  maps.sort((a, b) {
+    final aPrimary = a['isPrimary'] == true ? 1 : 0;
+    final bPrimary = b['isPrimary'] == true ? 1 : 0;
+    if (aPrimary != bPrimary) return bPrimary.compareTo(aPrimary);
+    final aOrder = a['sortOrder'] as int? ?? 0;
+    final bOrder = b['sortOrder'] as int? ?? 0;
+    return aOrder.compareTo(bOrder);
+  });
+  return maps;
+}
+
+List<String> _profilePhotoUrlList(Map<String, dynamic>? user) {
+  final raw = user?['profilePhotos'] as List<dynamic>?;
+  if (raw == null) return [];
+  final urls = <String>[];
+  for (final p in _sortProfilePhotos(raw)) {
+    final resolved = ApiImageUrl.resolve(p['imageUrl'] as String?);
+    if (resolved != null) urls.add(resolved);
+  }
+  return urls;
+}
+
 /// Normalized card row from discovery / matches / conversation participants.
 @immutable
 class ApiGolferCard {
@@ -41,9 +76,7 @@ class ApiGolferCard {
     final userId = (json['userId'] as String?) ?? (user?['id'] as String?);
     if (userId == null) return null;
     final photos = (user?['profilePhotos'] as List<dynamic>?) ?? (json['profilePhotos'] as List<dynamic>?);
-    final imageUrl = photos != null && photos.isNotEmpty
-        ? (photos.first as Map<String, dynamic>)['imageUrl'] as String?
-        : null;
+    final imageUrl = _firstProfilePhotoUrl(photos);
     final city = json['city'] as String? ?? '';
     final state = json['state'] as String? ?? '';
     final distanceMiles = _parseDecimal(json['distanceMiles']);
@@ -91,9 +124,7 @@ class ApiGolferCard {
     final profile = user['profile'] as Map<String, dynamic>?;
     if (id == null || profile == null) return null;
     final photos = user['profilePhotos'] as List<dynamic>?;
-    final imageUrl = photos != null && photos.isNotEmpty
-        ? (photos.first as Map<String, dynamic>)['imageUrl'] as String?
-        : null;
+    final imageUrl = _firstProfilePhotoUrl(photos);
     final city = profile['city'] as String? ?? '';
     final state = profile['state'] as String? ?? '';
     final cityLine = [city, state].where((s) => s.isNotEmpty).join(', ');
@@ -160,19 +191,6 @@ class OtherUserProfileDetail {
     return null;
   }
 
-  static List<String> _photoList(Map<String, dynamic>? user) {
-    final raw = user?['profilePhotos'] as List<dynamic>?;
-    if (raw == null) return [];
-    final out = <String>[];
-    for (final p in raw) {
-      if (p is Map<String, dynamic>) {
-        final u = p['imageUrl'] as String?;
-        if (u != null && u.isNotEmpty) out.add(u);
-      }
-    }
-    return out;
-  }
-
   static List<String> _splitLookingFor(String? s) {
     if (s == null || s.trim().isEmpty) return [];
     return s
@@ -199,7 +217,7 @@ class OtherUserProfileDetail {
       age: age,
       cityLine: cityLine.isEmpty ? 'Nearby' : cityLine,
       handicap: ApiGolferCard.parseDecimal(json['handicap']),
-      photoUrls: _photoList(user),
+      photoUrls: _profilePhotoUrlList(user),
       verified: json['isGHINVerified'] as bool? ?? false,
       bio: json['bio'] as String?,
       homeCourse: json['homeCourse'] as String?,

@@ -24,12 +24,14 @@ class CgSocialSignInButton extends StatelessWidget {
     required this.leading,
     required this.onPressed,
     this.busy = false,
+    this.minHeight = 48,
   });
 
   final String label;
   final Widget leading;
   final VoidCallback? onPressed;
   final bool busy;
+  final double minHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class CgSocialSignInButton extends StatelessWidget {
         foregroundColor: CgColors.gray900,
         backgroundColor: CgColors.white,
         side: const BorderSide(color: CgColors.gray300),
-        minimumSize: const Size(double.infinity, 52),
+        minimumSize: Size(double.infinity, minHeight),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -55,7 +57,10 @@ class CgSocialSignInButton extends StatelessWidget {
           else
             leading,
           const SizedBox(width: 12),
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(fontSize: minHeight < 46 ? 14 : 15, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

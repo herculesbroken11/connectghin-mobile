@@ -18,7 +18,7 @@ class NoConnectionScreen extends StatelessWidget {
     AppPaths.appDiscover,
     AppPaths.appGhinder,
     AppPaths.appMatches,
-    AppPaths.appProfile,
+    AppPaths.appSettings,
   ];
 
   void _tryAgain(BuildContext context) {

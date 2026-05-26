@@ -16,6 +16,7 @@ import '../location/location_device.dart';
 import '../misc/data/account_api.dart';
 import '../profile/profile_screens.dart';
 import '../profiles/data/profiles_api.dart';
+import '../settings/logout_confirm_dialog.dart';
 import '../shell/app_bottom_nav_bar.dart';
 
 export '../membership/membership_screens.dart';
@@ -480,126 +481,30 @@ class PremiumFeaturesDemoScreen extends StatelessWidget {
   }
 }
 
-class LogoutConfirmScreen extends StatelessWidget {
+/// Legacy route: opens the same dialog as Settings (avoids full-screen black backdrop).
+class LogoutConfirmScreen extends StatefulWidget {
   const LogoutConfirmScreen({super.key});
 
-  static const _tabPaths = <String>[
-    AppPaths.app,
-    AppPaths.appDiscover,
-    AppPaths.appGhinder,
-    AppPaths.appMatches,
-    AppPaths.appProfile,
-  ];
+  @override
+  State<LogoutConfirmScreen> createState() => _LogoutConfirmScreenState();
+}
+
+class _LogoutConfirmScreenState extends State<LogoutConfirmScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await LogoutConfirmDialog.show(context);
+      if (mounted) context.pop();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: Material(
-              color: Colors.black.withValues(alpha: 0.45),
-              child: InkWell(
-                onTap: () => context.pop(),
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                child: const SizedBox.expand(),
-              ),
-            ),
-          ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Material(
-                color: CgColors.white,
-                elevation: 12,
-                shadowColor: Colors.black26,
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFE4E6),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.logout_rounded, size: 32, color: CgColors.destructive),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Log Out?',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: CgColors.gray900,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Are you sure you want to log out of your ConnectGHIN account?',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15,
-                            height: 1.45,
-                            color: CgColors.gray700,
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              await context.read<AuthSession>().logout();
-                              if (context.mounted) context.go(AppPaths.welcome);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: CgColors.destructive,
-                              foregroundColor: CgColors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: const Text('Log Out', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: OutlinedButton(
-                            onPressed: () => context.pop(),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: CgColors.gray900,
-                              side: const BorderSide(color: CgColors.gray300),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            child: const Text('Cancel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 4,
-        onDestinationSelected: (i) {
-          context.pop();
-          context.go(_tabPaths[i]);
-        },
-      ),
+    return const Scaffold(
+      backgroundColor: CgColors.gray50,
+      body: SizedBox.shrink(),
     );
   }
 }

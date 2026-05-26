@@ -33,7 +33,7 @@ class _SetLocationScreenState extends State<SetLocationScreen> {
     AppPaths.appDiscover,
     AppPaths.appGhinder,
     AppPaths.appMatches,
-    AppPaths.appProfile,
+    AppPaths.appSettings,
   ];
 
   @override

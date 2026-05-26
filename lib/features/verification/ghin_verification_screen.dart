@@ -265,7 +265,7 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
           _Pane.success => _SuccessBody(
               onViewProfile: () {
                 context.read<AuthSession>().bumpProfileRefresh();
-                context.go(AppPaths.appProfile);
+                context.go(AppPaths.appSettings);
               },
               onHome: () => context.go(AppPaths.app),
             ),

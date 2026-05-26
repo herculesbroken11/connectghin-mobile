@@ -1,4 +1,4 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'env_config.dart';
 
 /// Backend REST base URL including `/api/v1` prefix.
 ///
@@ -15,7 +15,7 @@ abstract final class ApiConfig {
     if (defined.isNotEmpty) {
       return defined;
     }
-    final envBase = _readDotenv('API_BASE_URL');
+    final envBase = EnvConfig.get('API_BASE_URL');
     if (envBase != null && envBase.isNotEmpty) {
       return envBase;
     }
@@ -27,16 +27,5 @@ abstract final class ApiConfig {
     final u = Uri.parse(baseUrl);
     final origin = Uri(scheme: u.scheme, host: u.host, port: u.hasPort ? u.port : null);
     return '${origin.toString().replaceAll(RegExp(r'/$'), '')}/chat';
-  }
-
-  static String? _readDotenv(String key) {
-    try {
-      if (!dotenv.isInitialized) {
-        return null;
-      }
-      return dotenv.env[key];
-    } catch (_) {
-      return null;
-    }
   }
 }

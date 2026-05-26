@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
+import '../../core/network/api_image_url.dart';
 import '../../core/network/api_user_message.dart';
 import '../../data/api_profile.dart';
 import '../../core/widgets/cg_primary_button.dart';
@@ -184,8 +185,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
     final urls = <String>[];
     for (final p in photos) {
-      final url = p['imageUrl'] as String?;
-      if (url != null && url.trim().isNotEmpty) urls.add(url.trim());
+      final url = ApiImageUrl.resolve(p['imageUrl'] as String?);
+      if (url != null) urls.add(url);
     }
     return urls;
   }
@@ -247,23 +248,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     if (_loading && _card == null) {
-      return const ColoredBox(
-        color: CgColors.gray50,
-        child:
-            Center(child: CircularProgressIndicator(color: CgColors.green700)),
+      return const Scaffold(
+        backgroundColor: CgColors.gray50,
+        body: Center(child: CircularProgressIndicator(color: CgColors.green700)),
       );
     }
     if (_error != null && _card == null) {
-      return ColoredBox(
-        color: CgColors.gray50,
-        child: Center(
+      return Scaffold(
+        backgroundColor: CgColors.gray50,
+        body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(_error!, textAlign: TextAlign.center),
+                Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 16),
                 OutlinedButton(onPressed: _load, child: const Text('Retry')),
               ],
@@ -274,19 +279,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     final g = _card ?? _fallbackCardFromProfile();
     if (g == null) {
-      return ColoredBox(
-        color: CgColors.gray50,
-        child: Center(
+      return Scaffold(
+        backgroundColor: CgColors.gray50,
+        body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('Unable to load profile details right now.'),
+                Text(
+                  'Unable to load profile details right now.',
+                  style: textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 12),
                 CgPrimaryButton(
                     label: 'Open Settings',
-                    onPressed: () => context.push(AppPaths.appSettings)),
+                    onPressed: () => context.go(AppPaths.appSettings)),
                 const SizedBox(height: 12),
                 OutlinedButton(onPressed: _load, child: const Text('Retry')),
               ],
@@ -306,9 +315,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final smoke = _profileJson?['smokingPreference'] as String? ?? '—';
     final music = _profileJson?['musicPreference'] as String? ?? '—';
 
-    return ColoredBox(
-      color: CgColors.gray50,
-      child: RefreshIndicator(
+    return Scaffold(
+      backgroundColor: CgColors.gray50,
+      body: RefreshIndicator(
         color: CgColors.green700,
         onRefresh: _load,
         child: CustomScrollView(
@@ -346,7 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               right: 8,
                               child: IconButton(
                                 onPressed: () =>
-                                    context.push(AppPaths.appSettings),
+                                    context.go(AppPaths.appSettings),
                                 style: IconButton.styleFrom(
                                   backgroundColor:
                                       Colors.white.withValues(alpha: 0.2),
@@ -456,10 +465,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('${g.displayName}$age',
-                                      style: const TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w500)),
+                                  Text(
+                                    '${g.displayName}$age',
+                                    style: textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: CgColors.gray900,
+                                      decoration: TextDecoration.none,
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
@@ -492,10 +505,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 16),
                         Text(
                           bio,
-                          style: const TextStyle(
-                              color: CgColors.gray700,
-                              height: 1.45,
-                              fontSize: 16),
+                          style: textTheme.bodyLarge?.copyWith(
+                            color: CgColors.gray700,
+                            height: 1.45,
+                            decoration: TextDecoration.none,
+                          ),
                         ),
                         const SizedBox(height: 24),
                         Row(
@@ -590,9 +604,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                   SizedBox(width: 12),
                                   Expanded(
-                                      child: Text('Notifications',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.w500))),
+                                    child: Text(
+                                      'Notifications',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        color: CgColors.gray900,
+                                        decoration: TextDecoration.none,
+                                        inherit: false,
+                                      ),
+                                    ),
+                                  ),
                                   Icon(Icons.chevron_right,
                                       color: CgColors.gray400),
                                 ],
@@ -624,12 +645,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
-          Text(v,
-              style:
-                  const TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
+          Text(
+            v,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: CgColors.gray900,
+              decoration: TextDecoration.none,
+              inherit: false,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(l,
-              style: const TextStyle(fontSize: 12, color: CgColors.gray600)),
+          Text(
+            l,
+            style: const TextStyle(
+              fontSize: 12,
+              color: CgColors.gray600,
+              decoration: TextDecoration.none,
+              inherit: false,
+            ),
+          ),
         ],
       ),
     );
@@ -648,9 +683,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: CgColors.gray900,
+              decoration: TextDecoration.none,
+              inherit: false,
+            ),
+          ),
           const SizedBox(height: 16),
           child,
         ],
@@ -832,8 +874,16 @@ class _KeyValueRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-            child: Text(k,
-                style: const TextStyle(fontSize: 14, color: CgColors.gray600))),
+          child: Text(
+            k,
+            style: const TextStyle(
+              fontSize: 14,
+              color: CgColors.gray600,
+              decoration: TextDecoration.none,
+              inherit: false,
+            ),
+          ),
+        ),
         if (badge)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -845,15 +895,31 @@ class _KeyValueRow extends StatelessWidget {
               children: [
                 Icon(Icons.check, size: 14, color: CgColors.gray700),
                 SizedBox(width: 4),
-                Text('Verified', style: TextStyle(fontSize: 12)),
+                Text(
+                  'Verified',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: CgColors.gray900,
+                    decoration: TextDecoration.none,
+                    inherit: false,
+                  ),
+                ),
               ],
             ),
           )
         else
           Flexible(
-              child: Text(v,
-                  style: const TextStyle(fontSize: 14, color: CgColors.gray900),
-                  textAlign: TextAlign.right)),
+            child: Text(
+              v,
+              style: const TextStyle(
+                fontSize: 14,
+                color: CgColors.gray900,
+                decoration: TextDecoration.none,
+                inherit: false,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
       ],
     );
   }

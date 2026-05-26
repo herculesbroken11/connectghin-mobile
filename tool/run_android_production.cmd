@@ -6,10 +6,18 @@ REM
 REM Usage:
 REM   tool\run_android_production.cmd
 REM   tool\run_android_production.cmd emulator-5556
+REM   tool\run_android_production.cmd emulator-5556 --no-clean
+REM LDPlayer: adb id emulator-5556 = Flutter id emulator-5556 (name may show as 2304FPN6DG).
 
 cd /d "%~dp0.."
 
-echo == Sync .env -^> assets/env/config.env ==
+if /I not "%~2"=="--no-clean" (
+  echo == Prepare build (fixes Windows file-lock errno 32) ==
+  call "%~dp0prepare_android_build.cmd"
+  echo.
+)
+
+echo == Sync .env -^> lib/generated/app_env.dart ==
 call "%~dp0sync_env_to_asset.cmd"
 if errorlevel 1 exit /b 1
 echo.
@@ -49,6 +57,8 @@ if "%DEVICE%"=="" (
 )
 
 echo == Production API: https://api.connectghin.com/api/v1 on %DEVICE% ==
+echo == Flutter may display LDPlayer as 2304FPN6DG - same device if only one adb device ==
+echo == If errno 32 persists, close Cursor and run: tool\build_install_android.cmd "%DEVICE%" ==
 call flutter run -d "%DEVICE%" ^
   --dart-define=API_BASE_URL=https://api.connectghin.com/api/v1 ^
   --dart-define=GOOGLE_SERVER_CLIENT_ID=%GOOGLE_SERVER_CLIENT_ID% ^
