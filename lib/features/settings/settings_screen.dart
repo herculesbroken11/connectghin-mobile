@@ -7,6 +7,8 @@ import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/push/push_notifications.dart';
+import '../../core/push/push_token_registry.dart';
 import '../location/location_device.dart';
 import '../misc/data/account_api.dart';
 import 'data/settings_api.dart';
@@ -105,6 +107,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     session.bumpProfileRefresh();
     if (!mounted) return;
     showUserMessageSnackBar(context, 'GPS location saved to your profile.');
+  }
+
+  Future<void> _onPushEnabledChanged(bool enabled) async {
+    setState(() => _pushEnabled = enabled);
+    await _patchUserSettings(<String, bool>{'pushEnabled': enabled});
+    if (!enabled || !PushNotifications.isSupported) {
+      return;
+    }
+    final granted = await PushNotifications.requestPermission();
+    if (!mounted) return;
+    if (granted) {
+      await PushTokenRegistry.requestResync();
+      return;
+    }
+    showUserMessageSnackBar(
+      context,
+      'Enable notifications in system settings to receive alerts on this device.',
+    );
   }
 
   Future<void> _patchUserSettings(Map<String, bool> patch) async {
@@ -218,15 +238,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _sectionBand('NOTIFICATIONS'),
                     _switchRow(
                       title: 'Push Notifications',
+                      subtitle: PushNotifications.isSupported
+                          ? 'Server delivery when enabled; allow system permission on this device'
+                          : 'Available on Android when Firebase is configured',
                       value: _pushEnabled,
-                      onChanged: (v) {
-                        setState(() => _pushEnabled = v);
-                        _patchUserSettings(<String, bool>{'pushEnabled': v});
-                      },
+                      onChanged: _onPushEnabledChanged,
                     ),
                     _switchRow(
                       title: 'New Matches',
-                      subtitle: 'Saved on this device until push notifications are enabled',
+                      subtitle: 'Local preference for in-app reminders (main Push toggle controls delivery)',
                       value: _notifyMatches,
                       onChanged: (v) {
                         setState(() => _notifyMatches = v);
@@ -235,7 +255,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _switchRow(
                       title: 'New Messages',
-                      subtitle: 'Saved on this device until push notifications are enabled',
+                      subtitle: 'Local preference for in-app reminders (main Push toggle controls delivery)',
                       value: _notifyMessages,
                       onChanged: (v) {
                         setState(() => _notifyMessages = v);

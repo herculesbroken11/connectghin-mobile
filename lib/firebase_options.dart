@@ -4,6 +4,21 @@ import 'package:flutter/foundation.dart'
 
 /// Firebase options for ConnectGHIN (`connectghin-6e881`).
 class DefaultFirebaseOptions {
+  /// Whether [currentPlatform] can be used on this device (Android only until iOS is configured).
+  static bool get isConfigured {
+    if (kIsWeb) {
+      return false;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return true;
+      case TargetPlatform.iOS:
+        return false;
+      default:
+        return false;
+    }
+  }
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       throw UnsupportedError('Firebase is not configured for web.');

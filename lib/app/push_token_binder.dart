@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../features/notifications/data/notifications_api.dart';
 import 'session/auth_session.dart';
 import '../core/push/push_notifications.dart';
+import '../core/push/push_token_registry.dart';
 
 /// Registers the FCM device token with the backend while logged in.
 class PushTokenBinder extends StatefulWidget {
@@ -18,6 +21,7 @@ class PushTokenBinder extends StatefulWidget {
 class _PushTokenBinderState extends State<PushTokenBinder> {
   late final AuthSession _session;
   late final VoidCallback _authListener;
+  StreamSubscription<String>? _tokenRefreshSub;
   String? _accessToken;
   String? _fcmToken;
 
@@ -27,12 +31,17 @@ class _PushTokenBinderState extends State<PushTokenBinder> {
     _session = context.read<AuthSession>();
     _authListener = () => _syncFromSession(_session);
     _session.addListener(_authListener);
-    PushNotifications.onTokenRefresh.listen(_onTokenRefresh);
+    if (PushNotifications.isSupported) {
+      _tokenRefreshSub = PushNotifications.onTokenRefresh.listen(_onTokenRefresh);
+    }
+    PushTokenRegistry.resync = () => _syncFromSession(_session, force: true);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncFromSession(_session));
   }
 
   @override
   void dispose() {
+    PushTokenRegistry.resync = null;
+    _tokenRefreshSub?.cancel();
     _session.removeListener(_authListener);
     super.dispose();
   }
@@ -46,8 +55,8 @@ class _PushTokenBinderState extends State<PushTokenBinder> {
     await _register(access, newToken);
   }
 
-  Future<void> _syncFromSession(AuthSession session) async {
-    if (!mounted) {
+  Future<void> _syncFromSession(AuthSession session, {bool force = false}) async {
+    if (!mounted || !PushNotifications.isSupported) {
       return;
     }
     final access = session.accessToken;
@@ -64,12 +73,15 @@ class _PushTokenBinderState extends State<PushTokenBinder> {
       }
       return;
     }
-    if (access == _accessToken && _fcmToken != null) {
+    if (!force && access == _accessToken && _fcmToken != null) {
       return;
     }
     _accessToken = access;
     final fcm = await PushNotifications.getToken();
     if (fcm == null || fcm.isEmpty) {
+      return;
+    }
+    if (fcm == _fcmToken && !force) {
       return;
     }
     _fcmToken = fcm;

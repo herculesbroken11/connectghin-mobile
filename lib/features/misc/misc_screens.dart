@@ -7,6 +7,8 @@ import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/push/push_notifications.dart';
+import '../../core/push/push_token_registry.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
 import '../../core/widgets/cg_text_field.dart';
@@ -255,20 +257,58 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
   }
 }
 
-class NotificationPermissionScreen extends StatelessWidget {
+class NotificationPermissionScreen extends StatefulWidget {
   const NotificationPermissionScreen({super.key});
+
+  @override
+  State<NotificationPermissionScreen> createState() =>
+      _NotificationPermissionScreenState();
+}
+
+class _NotificationPermissionScreenState extends State<NotificationPermissionScreen> {
+  bool _busy = false;
+
+  Future<void> _allow() async {
+    if (!PushNotifications.isSupported) {
+      if (!mounted) return;
+      showUserMessageSnackBar(
+        context,
+        'Push notifications are not set up on this device yet.',
+      );
+      context.pop();
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final granted = await PushNotifications.requestPermission();
+      if (granted) {
+        await PushTokenRegistry.requestResync();
+        if (!mounted) return;
+        context.pop();
+        return;
+      }
+      if (!mounted) return;
+      showUserMessageSnackBar(
+        context,
+        'Notifications are off. You can enable them in system settings.',
+      );
+      await Geolocator.openAppSettings();
+      if (!mounted) return;
+      context.pop();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return _StateScaffold(
       icon: Icons.notifications_active_outlined,
       title: 'Stay in the loop',
-      body: 'Enable notifications in system settings for new matches and messages.',
-      primary: 'Open settings',
-      onPrimary: () async {
-        await Geolocator.openAppSettings();
-        if (context.mounted) context.pop();
-      },
+      body:
+          'Allow notifications for new matches and messages. You can change this anytime in Settings.',
+      primary: _busy ? 'Working…' : 'Allow notifications',
+      onPrimary: _busy ? null : _allow,
     );
   }
 }

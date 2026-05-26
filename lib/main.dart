@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'app/config/env_config.dart';
 import 'app/inbox_socket_binder.dart';
+import 'app/push_navigation_binder.dart';
 import 'app/push_token_binder.dart';
 import 'app/router/app_router.dart';
 import 'app/session/auth_session.dart';
@@ -14,7 +15,9 @@ import 'features/messages/data/inbox_realtime_tick.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EnvConfig.load();
-  await PushNotifications.init();
+  if (PushNotifications.isSupported) {
+    await PushNotifications.init();
+  }
   final session = AuthSession();
   await session.load();
   final router = createAppRouter(session);
@@ -36,13 +39,16 @@ class ConnectGhinApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InboxSocketBinder(
-      child: PushTokenBinder(
-        child: MaterialApp.router(
-          title: 'ConnectGHIN',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          routerConfig: router,
+    return PushNavigationBinder(
+      router: router,
+      child: InboxSocketBinder(
+        child: PushTokenBinder(
+          child: MaterialApp.router(
+            title: 'ConnectGHIN',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(),
+            routerConfig: router,
+          ),
         ),
       ),
     );
