@@ -1,18 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../app/app_messenger.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import 'api_client.dart';
 import 'nest_http_error.dart';
 
-/// True when the user dismissed Google/Apple sign-in (no error toast needed).
+/// True when the user dismissed Google/Apple sign-in (no error UI needed).
 bool isSignInCancelledError(Object error) {
+  if (error is GoogleSignInException) {
+    return error.code == GoogleSignInExceptionCode.canceled ||
+        error.code == GoogleSignInExceptionCode.interrupted;
+  }
   final s = error.toString().toLowerCase();
-  return s.contains('cancel') ||
-      s.contains('aborted') ||
-      s.contains('12501') ||
-      s.contains('sign_in_canceled');
+  return s.contains('sign_in_canceled') || s.contains('12501');
+}
+
+String messageFromGoogleSignInError(Object error) {
+  if (error is GoogleSignInException) {
+    switch (error.code) {
+      case GoogleSignInExceptionCode.clientConfigurationError:
+      case GoogleSignInExceptionCode.providerConfigurationError:
+        return 'Google login is not set up for this app. '
+            'In Firebase (connectghin-6e881), add SHA-1 for package com.connectghin.app, '
+            'wait a few minutes, then reinstall ConnectGHIN.apk.';
+      case GoogleSignInExceptionCode.uiUnavailable:
+        return 'Could not open Google sign-in. Try again with the app in the foreground.';
+      case GoogleSignInExceptionCode.userMismatch:
+        return 'Google account mismatch. Sign out of Google on this device and try again.';
+      case GoogleSignInExceptionCode.canceled:
+      case GoogleSignInExceptionCode.interrupted:
+        return 'Sign-in was cancelled.';
+      case GoogleSignInExceptionCode.unknownError:
+        break;
+    }
+    final desc = error.description?.trim();
+    if (desc != null && desc.isNotEmpty) return desc;
+  }
+  final s = error.toString().toLowerCase();
+  if (s.contains('developer_error') || s.contains('apiexception: 10')) {
+    return 'Google login is not set up for this app. '
+        'Add release SHA-1 in Firebase for com.connectghin.app, then reinstall the APK.';
+  }
+  return messageFromApiError(error, fallback: 'Google sign-in failed. Please try again.');
 }
 
 /// Human-readable text from API failures (never raw JSON / `API 400: {...}`).
@@ -107,7 +139,8 @@ bool isMessagingPremiumUpsell(Object error) {
 /// Toast-style floating bar (Material SnackBar works well on Android and iOS).
 void showApiErrorSnackBar(BuildContext context, Object error, {String? prefix}) {
   if (isMessagingPremiumUpsell(error)) {
-    final messenger = ScaffoldMessenger.maybeOf(context);
+    final messenger =
+        ScaffoldMessenger.maybeOf(context) ?? rootScaffoldMessengerKey.currentState;
     if (messenger == null) return;
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
@@ -138,7 +171,8 @@ void showApiErrorSnackBar(BuildContext context, Object error, {String? prefix}) 
 }
 
 void showUserMessageSnackBar(BuildContext context, String message, {String? prefix}) {
-  final messenger = ScaffoldMessenger.maybeOf(context);
+  final messenger =
+      ScaffoldMessenger.maybeOf(context) ?? rootScaffoldMessengerKey.currentState;
   if (messenger == null) return;
   final msg = (prefix != null && prefix.isNotEmpty) ? '$prefix$message' : message;
   messenger.hideCurrentSnackBar();

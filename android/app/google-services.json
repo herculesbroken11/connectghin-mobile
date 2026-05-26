@@ -12,7 +12,20 @@
           "package_name": "com.connectghin.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "834516194643-1s7n7s6bhnhaovollf3k3c14vf2ntpg9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.connectghin.app",
+            "certificate_hash": "6136f26c1f56a5470f8feccce3754792cee07ae3"
+          }
+        },
+        {
+          "client_id": "834516194643-hnngdr8u7dp29j2a9om9b7q3er5kuki6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCHSzlcD4k5eNzyySL91Dc3alrsD0RWsE4"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "834516194643-hnngdr8u7dp29j2a9om9b7q3er5kuki6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

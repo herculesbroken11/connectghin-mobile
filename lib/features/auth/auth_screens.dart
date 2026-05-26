@@ -1,11 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
-import '../../app/config/app_secrets.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
@@ -15,22 +13,9 @@ import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
 import '../../core/widgets/cg_text_field.dart';
 import '../../core/widgets/google_mark.dart';
+import 'google_sign_in_helper.dart';
 import 'register_password_screen.dart';
 import 'widgets/auth_multi_login_widgets.dart';
-
-String _googleServerClientId() => AppSecrets.googleServerClientId;
-
-Future<void>? _googleSignInInitialize;
-String? _initializedGoogleServerClientId;
-
-Future<void> _ensureGoogleSignInInitialized(String serverClientId) {
-  if (_initializedGoogleServerClientId == serverClientId && _googleSignInInitialize != null) {
-    return _googleSignInInitialize!;
-  }
-  _initializedGoogleServerClientId = serverClientId;
-  _googleSignInInitialize = GoogleSignIn.instance.initialize(serverClientId: serverClientId);
-  return _googleSignInInitialize!;
-}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.magicToken});
@@ -47,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _busy = false;
   bool _googleBusy = false;
   bool _appleBusy = false;
+  String? _googleError;
 
   bool get _canUseAppleSignIn =>
       !kIsWeb &&
@@ -97,22 +83,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginWithGoogle() async {
-    setState(() => _googleBusy = true);
+    setState(() {
+      _googleBusy = true;
+      _googleError = null;
+    });
     try {
-      final serverClientId = _googleServerClientId();
-      if (serverClientId.isEmpty) {
-        showUserMessageSnackBar(context, 'Google login is not configured for this build.');
-        return;
-      }
+      final idToken = await GoogleSignInHelper.obtainIdToken();
       final session = context.read<AuthSession>();
-      final googleSignIn = GoogleSignIn.instance;
-      await _ensureGoogleSignInInitialized(serverClientId);
-      final account = await googleSignIn.authenticate();
-      final auth = account.authentication;
-      final idToken = auth.idToken;
-      if (idToken == null || idToken.isEmpty) {
-        throw Exception('Google sign-in did not return an id token');
-      }
       final res = await session.authApi.loginWithGoogle(idToken: idToken);
       await session.setTokens(
         access: res['accessToken'] as String,
@@ -122,7 +99,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       context.go(AppPaths.app);
     } catch (e) {
-      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
+      if (!mounted || isSignInCancelledError(e)) return;
+      setState(() => _googleError = messageFromGoogleSignInError(e));
+      showUserMessageSnackBar(context, messageFromGoogleSignInError(e));
     } finally {
       if (mounted) setState(() => _googleBusy = false);
     }
@@ -236,6 +215,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   leading: const GoogleMark(),
                   onPressed: _loginWithGoogle,
                 ),
+                if (_googleError != null) ...[
+                  SizedBox(height: gap(10)),
+                  CgAuthInlineError(
+                    message: _googleError!,
+                    onDismiss: () => setState(() => _googleError = null),
+                  ),
+                ],
                 SizedBox(height: gap(14)),
                 const CgOrDivider(),
                 SizedBox(height: gap(14)),
@@ -354,6 +340,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _over18 = false;
   bool _googleBusy = false;
   bool _appleBusy = false;
+  String? _googleError;
   final _fullName = TextEditingController();
   final _email = TextEditingController();
 
@@ -387,22 +374,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _continueWithGoogle() async {
-    setState(() => _googleBusy = true);
+    setState(() {
+      _googleBusy = true;
+      _googleError = null;
+    });
     try {
-      final serverClientId = _googleServerClientId();
-      if (serverClientId.isEmpty) {
-        showUserMessageSnackBar(context, 'Google sign up is not configured for this build.');
-        return;
-      }
+      final idToken = await GoogleSignInHelper.obtainIdToken();
       final session = context.read<AuthSession>();
-      final googleSignIn = GoogleSignIn.instance;
-      await _ensureGoogleSignInInitialized(serverClientId);
-      final account = await googleSignIn.authenticate();
-      final auth = account.authentication;
-      final idToken = auth.idToken;
-      if (idToken == null || idToken.isEmpty) {
-        throw Exception('Google sign-in did not return an id token');
-      }
       final res = await session.authApi.loginWithGoogle(idToken: idToken);
       await session.setTokens(
         access: res['accessToken'] as String,
@@ -412,7 +390,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       context.go(AppPaths.onboardingBasic);
     } catch (e) {
-      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
+      if (!mounted || isSignInCancelledError(e)) return;
+      setState(() => _googleError = messageFromGoogleSignInError(e));
+      showUserMessageSnackBar(context, messageFromGoogleSignInError(e));
     } finally {
       if (mounted) setState(() => _googleBusy = false);
     }
@@ -519,6 +499,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   leading: const GoogleMark(),
                   onPressed: _continueWithGoogle,
                 ),
+                if (_googleError != null) ...[
+                  SizedBox(height: gap(8)),
+                  CgAuthInlineError(
+                    message: _googleError!,
+                    onDismiss: () => setState(() => _googleError = null),
+                  ),
+                ],
                 SizedBox(height: gap(10)),
                 const CgOrDivider(label: 'or email'),
                 SizedBox(height: gap(10)),

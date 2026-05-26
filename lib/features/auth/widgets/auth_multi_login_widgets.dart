@@ -67,6 +67,45 @@ class CgSocialSignInButton extends StatelessWidget {
   }
 }
 
+/// Visible auth error (login/register screens — not hidden snackbars).
+class CgAuthInlineError extends StatelessWidget {
+  const CgAuthInlineError({super.key, required this.message, this.onDismiss});
+
+  final String message;
+  final VoidCallback? onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: CgColors.red50,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.error_outline, color: CgColors.red700, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: CgColors.red700, fontSize: 13, height: 1.35),
+              ),
+            ),
+            if (onDismiss != null)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: onDismiss,
+                icon: const Icon(Icons.close, size: 18, color: CgColors.red700),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class CgOrDivider extends StatelessWidget {
   const CgOrDivider({super.key, this.label = 'or'});
 

@@ -1,0 +1,14 @@
+﻿ConnectGHIN â€” install on a real phone (no PC / no adb)
+
+1. Copy ConnectGHIN.apk to your phone (USB, email, Drive, WhatsApp, etc.).
+2. Open Files or Downloads and tap ConnectGHIN.apk.
+3. If asked, allow install from this app (unknown sources).
+4. Tap Install, then Open ConnectGHIN.
+
+Requires: internet (uses https://api.connectghin.com).
+
+If install says signatures do not match: uninstall old ConnectGHIN first (Settings â†’ Apps).
+
+If Google sign-in fails on this APK, add this release SHA-1 in Firebase Console
+(Project connectghin-6e881 â†’ Project settings â†’ Your apps â†’ Android â†’ Add fingerprint):
+61:36:F2:6C:1F:56:A5:47:0F:8F:EC:CE:C3:75:47:92:CE:E0:7A:E3
