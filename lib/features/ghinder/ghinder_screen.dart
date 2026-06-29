@@ -20,6 +20,10 @@ import '../messages/data/messages_api.dart';
 import '../profiles/data/profiles_api.dart';
 import '../swipes/data/swipes_api.dart';
 import '../swipes/swipe_daily_quota.dart';
+import '../../core/widgets/cg_handicap_verified_badge.dart';
+import '../../core/widgets/cg_premium_badge.dart';
+import '../../core/widgets/cg_rating_chip.dart';
+import 'foursome_feed_tab.dart';
 
 class GhinderScreen extends StatefulWidget {
   const GhinderScreen({super.key});
@@ -39,6 +43,7 @@ class _GhinderScreenState extends State<GhinderScreen> {
   String? _myPhotoUrl;
   double? _myHandicap;
   SwipeDailyQuota? _quota;
+  int _tabIndex = 0;
 
   @override
   void initState() {
@@ -400,42 +405,9 @@ class _GhinderScreenState extends State<GhinderScreen> {
     }
 
     final current = _current;
-    if (current == null) {
-      return ColoredBox(
-        color: CgColors.gray50,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: const BoxDecoration(color: CgColors.green50, shape: BoxShape.circle),
-                  child: const Icon(Icons.sentiment_satisfied_alt, size: 48, color: CgColors.green600),
-                ),
-                const SizedBox(height: 24),
-                Text('No more profiles', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 20)),
-                const SizedBox(height: 8),
-                Text(
-                  "You've seen everyone in your area for now. Check Discover or pull to refresh later.",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 24),
-                CgPrimaryButton(label: 'Refresh stack', onPressed: _load),
-                const SizedBox(height: 12),
-                CgOutlineButton(label: 'Go to Discover', onPressed: () => context.go(AppPaths.appDiscover)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
 
-    final ageStr = current.age != null ? ', ${current.age}' : '';
-    final hcp = current.handicap != null ? '${current.handicap} HCP' : '';
+    final ageStr = current?.age != null ? ', ${current!.age}' : '';
+    final hcp = current?.handicap != null ? '${current!.handicap} HCP' : '';
 
     return ColoredBox(
       color: CgColors.gray50,
@@ -444,32 +416,82 @@ class _GhinderScreenState extends State<GhinderScreen> {
           Container(
             width: double.infinity,
             color: CgColors.white,
-            padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('GHINder', style: Theme.of(context).textTheme.headlineMedium),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    if (_quota != null && !_quota!.isPremium && _quota!.dailyLimit != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Text(
-                          '${_quota!.remaining} left today',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: CgColors.gray600,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Find Your 4th', style: Theme.of(context).textTheme.headlineMedium),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Golfers looking to fill their foursome nearby',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
                           ),
-                        ),
+                        ],
                       ),
-                    Text('${_index + 1} / ${_profiles.length}', style: const TextStyle(color: CgColors.gray600)),
+                    ),
+                    if (_tabIndex == 0 && _quota != null && !_quota!.isPremium && _quota!.dailyLimit != null)
+                      Text(
+                        '${_quota!.remaining} left today',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: CgColors.gray600),
+                      ),
                   ],
                 ),
+                const SizedBox(height: 14),
+                _FindFourthTabBar(
+                  index: _tabIndex,
+                  onChanged: (i) => setState(() => _tabIndex = i),
+                ),
+                if (_tabIndex == 0 && current != null) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text('${_index + 1} / ${_profiles.length}', style: const TextStyle(color: CgColors.gray600)),
+                  ),
+                ],
               ],
             ),
           ),
+          if (_tabIndex == 1)
+            const Expanded(child: FoursomeFeedTab())
+          else if (current == null)
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 96,
+                        height: 96,
+                        decoration: const BoxDecoration(color: CgColors.green50, shape: BoxShape.circle),
+                        child: const Icon(Icons.sentiment_satisfied_alt, size: 48, color: CgColors.green600),
+                      ),
+                      const SizedBox(height: 24),
+                      Text('No more profiles', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 20)),
+                      const SizedBox(height: 8),
+                      Text(
+                        "You've seen everyone in your area for now. Try the Foursome Feed or check Discover.",
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 24),
+                      CgPrimaryButton(label: 'Refresh stack', onPressed: _load),
+                      const SizedBox(height: 12),
+                      CgOutlineButton(label: 'Go to Discover', onPressed: () => context.go(AppPaths.appDiscover)),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -529,21 +551,32 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                       ),
                                     ),
                                   ),
-                                  if (current.verified)
+                                  if (current.verified || current.isPremium)
                                     Positioned(
-                                      top: 16,
-                                      right: 16,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(color: CgColors.blue600, borderRadius: BorderRadius.circular(999)),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.check, size: 16, color: CgColors.white),
-                                            SizedBox(width: 4),
-                                            Text('Verified', style: TextStyle(color: CgColors.white)),
-                                          ],
-                                        ),
+                                      top: 12,
+                                      left: 12,
+                                      right: 12,
+                                      child: Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        alignment: WrapAlignment.spaceBetween,
+                                        children: [
+                                          if (current.isPremium) const CgPremiumBadge(compact: true),
+                                          if (current.verified)
+                                            const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
+                                          if (hcp.isNotEmpty)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withValues(alpha: 0.55),
+                                                borderRadius: BorderRadius.circular(999),
+                                              ),
+                                              child: Text(
+                                                hcp,
+                                                style: const TextStyle(color: CgColors.white, fontWeight: FontWeight.w600, fontSize: 12),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
                                   Positioned(
@@ -562,14 +595,30 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                                 style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w500, color: CgColors.white),
                                               ),
                                               const SizedBox(height: 8),
-                                              Text(
-                                                current.cityLine,
-                                                style: TextStyle(color: CgColors.white.withValues(alpha: 0.9)),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.place_outlined, size: 16, color: CgColors.white.withValues(alpha: 0.9)),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      current.homeCourse != null && current.homeCourse!.isNotEmpty
+                                                          ? '${current.homeCourse} • ${current.distanceMiles != null ? '${current.distanceMiles!.toStringAsFixed(1)} mi' : current.cityLine}'
+                                                          : current.cityLine,
+                                                      style: TextStyle(color: CgColors.white.withValues(alpha: 0.9)),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              CgRatingChip(
+                                                averageRating: current.rating.averageRating,
+                                                reviewCount: current.rating.reviewCount,
+                                                compact: true,
                                               ),
                                             ],
                                           ),
                                         ),
-                                        if (hcp.isNotEmpty)
+                                        if (hcp.isNotEmpty && !current.verified && !current.isPremium)
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                             decoration: BoxDecoration(color: CgColors.green600, borderRadius: BorderRadius.circular(8)),
@@ -609,6 +658,25 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                             ],
                                           ),
                                         ],
+                                        if (current.preferenceChips.isNotEmpty) ...[
+                                          const SizedBox(height: 14),
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 8,
+                                            children: current.preferenceChips
+                                                .map(
+                                                  (c) => Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: CgColors.gray100,
+                                                      borderRadius: BorderRadius.circular(999),
+                                                    ),
+                                                    child: Text(c, style: const TextStyle(fontSize: 12, color: CgColors.gray700)),
+                                                  ),
+                                                )
+                                                .toList(),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -624,6 +692,7 @@ class _GhinderScreenState extends State<GhinderScreen> {
               },
             ),
           ),
+          if (_tabIndex == 0 && current != null)
           Container(
             color: CgColors.white,
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
@@ -658,6 +727,68 @@ class _GhinderScreenState extends State<GhinderScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FindFourthTabBar extends StatelessWidget {
+  const _FindFourthTabBar({required this.index, required this.onChanged});
+
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: CgColors.gray100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TabChip(label: 'Swipe', selected: index == 0, onTap: () => onChanged(0)),
+          ),
+          Expanded(
+            child: _TabChip(label: 'Foursome Feed', selected: index == 1, onTap: () => onChanged(1)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabChip extends StatelessWidget {
+  const _TabChip({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? CgColors.white : Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      elevation: selected ? 1 : 0,
+      shadowColor: Colors.black26,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: selected ? CgColors.gray900 : CgColors.gray600,
+            ),
+          ),
+        ),
       ),
     );
   }

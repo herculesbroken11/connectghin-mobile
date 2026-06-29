@@ -8,6 +8,9 @@ import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../data/api_profile.dart';
 import '../../core/widgets/cg_empty_state.dart';
+import '../../core/widgets/cg_handicap_verified_badge.dart';
+import '../../core/widgets/cg_premium_badge.dart';
+import '../../core/widgets/cg_rating_chip.dart';
 import '../../core/widgets/cg_outline_button.dart';
 import '../../core/network/api_user_message.dart';
 import '../../core/widgets/cg_primary_button.dart';
@@ -160,7 +163,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Verified only'),
+                      title: const Text('Handicap verified only'),
                       value: _verifiedOnly,
                       activeThumbColor: CgColors.green700,
                       onChanged: (v) => setModal(() => _verifiedOnly = v),
@@ -357,21 +360,28 @@ class _GolferCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (golfer.verified)
+                if (golfer.verified || golfer.isPremium)
                   Positioned(
                     top: 12,
+                    left: 12,
                     right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: CgColors.blue600, borderRadius: BorderRadius.circular(999)),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check, size: 12, color: CgColors.white),
-                          SizedBox(width: 4),
-                          Text('GHIN Verified', style: TextStyle(fontSize: 11, color: CgColors.white)),
-                        ],
-                      ),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      alignment: WrapAlignment.spaceBetween,
+                      children: [
+                        if (golfer.isPremium) const CgPremiumBadge(compact: true),
+                        if (golfer.verified) const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
+                        if (hcp != '— HCP')
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(hcp, style: const TextStyle(color: CgColors.white, fontWeight: FontWeight.w600, fontSize: 11)),
+                          ),
+                      ],
                     ),
                   ),
                 Positioned(
@@ -407,11 +417,12 @@ class _GolferCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: CgColors.green600, borderRadius: BorderRadius.circular(8)),
-                        child: Text(hcp, style: const TextStyle(color: CgColors.white, fontWeight: FontWeight.w500)),
-                      ),
+                      if (hcp != '— HCP' && !golfer.verified && !golfer.isPremium)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(color: CgColors.green600, borderRadius: BorderRadius.circular(8)),
+                          child: Text(hcp, style: const TextStyle(color: CgColors.white, fontWeight: FontWeight.w500)),
+                        ),
                     ],
                   ),
                 ),
@@ -423,6 +434,21 @@ class _GolferCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Row(
+                  children: [
+                    CgRatingChip(
+                      averageRating: golfer.rating.averageRating,
+                      reviewCount: golfer.rating.reviewCount,
+                      compact: true,
+                    ),
+                    const Spacer(),
+                    Text(
+                      golfer.cityLine,
+                      style: const TextStyle(fontSize: 12, color: CgColors.gray500),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Text(golfer.bio ?? '', style: const TextStyle(fontSize: 14, color: CgColors.gray700)),
                 const SizedBox(height: 16),
                 Row(
@@ -447,7 +473,7 @@ class _GolferCard extends StatelessWidget {
                           foregroundColor: CgColors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Text('Like'),
+                        child: const Text('Connect'),
                       ),
                     ),
                   ],

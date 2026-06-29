@@ -45,6 +45,11 @@ abstract final class CgColors {
   static const Color orange600 = Color(0xFFEA580C);
   static const Color orange700 = Color(0xFFC2410C);
 
+  static const Color premiumGold = Color(0xFFFFB800);
+  static const Color premiumGoldDark = Color(0xFFB45309);
+  static const Color teal50 = Color(0xFFF0FDFA);
+  static const Color teal600 = Color(0xFF0D9488);
+  static const Color teal700 = Color(0xFF0F766E);
   static const Color primaryDark = Color(0xFF030213);
   static const Color inputBg = Color(0xFFF3F3F5);
   static const Color destructive = Color(0xFFD4183D);

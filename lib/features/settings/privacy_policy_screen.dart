@@ -110,9 +110,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 ),
                 _numberedSection(
                   '4',
-                  'GHIN Verification',
+                  'Handicap Verification',
                   const Text(
-                    'When you submit a GHIN number, we verify it with the GHIN database. '
+                    'When you submit a GHIN number for handicap verification, we verify it against the official GHIN database. '
                     'Your handicap index may be displayed on your profile as part of your public profile information.',
                     style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),

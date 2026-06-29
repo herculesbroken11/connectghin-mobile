@@ -57,6 +57,10 @@ android/app/*.keystore
 android/key.properties
 android/**/GeneratedPluginRegistrant.java
 
+# Release / sideload APKs (tool/build_release_apk.ps1 → dist/)
+*.apk
+/dist/
+
 # iOS/macOS generated files
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh

@@ -92,7 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         showUserMessageSnackBar(
           context,
-          'Preference saved. Your saved city or GPS on your profile is still used for Discover & GHINder.',
+          'Preference saved. Your saved city or GPS on your profile is still used for Discover & Find Your 4th.',
         );
       }
       return;
@@ -218,7 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _navRow(
                       context,
                       icon: Icons.verified_user_outlined,
-                      title: 'GHIN Verification',
+                      title: 'Handicap Verification',
                       onTap: () => context.push(AppPaths.appVerification),
                     ),
                     _navRow(
@@ -307,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       context,
                       icon: Icons.location_on_outlined,
                       title: 'Set your location',
-                      subtitle: 'City or GPS for Discover & GHINder',
+                      subtitle: 'City or GPS for Discover & Find Your 4th',
                       onTap: () => context.push(AppPaths.appManualLocation),
                       showDividerAfter: false,
                     ),

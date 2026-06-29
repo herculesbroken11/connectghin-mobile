@@ -73,7 +73,7 @@ class WelcomeScreen extends StatelessWidget {
                         Expanded(
                           child: _HeroTrustChip(
                             icon: Icons.verified_outlined,
-                            label: 'GHIN Verified',
+                            label: 'Handicap Verified',
                             compact: short,
                           ),
                         ),

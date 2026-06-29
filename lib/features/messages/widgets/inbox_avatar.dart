@@ -2,19 +2,23 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/design_tokens.dart';
+import '../../../core/widgets/cg_handicap_verified_badge.dart';
+import '../../../core/widgets/cg_premium_badge.dart';
 
-/// Circular avatar with optional unread dot (top-right) and GHIN verified badge (bottom-right).
+/// Circular avatar with optional unread dot, premium badge, and handicap verified badge.
 class InboxAvatar extends StatelessWidget {
   const InboxAvatar({
     super.key,
     required this.imageUrl,
     required this.verified,
+    this.isPremium = false,
     this.showUnreadDot = false,
     this.radius = 28,
   });
 
   final String? imageUrl;
   final bool verified;
+  final bool isPremium;
   final bool showUnreadDot;
   final double radius;
 
@@ -51,16 +55,10 @@ class InboxAvatar extends StatelessWidget {
                 ),
               ),
             ),
-          if (verified)
-            Positioned(
-              right: -2,
-              bottom: -2,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(color: CgColors.white, shape: BoxShape.circle),
-                child: const Icon(Icons.verified, size: 16, color: CgColors.blue600),
-              ),
-            ),
+          if (isPremium)
+            Positioned(right: -2, bottom: -2, child: CgPremiumAvatarBadge(size: 18))
+          else if (verified)
+            Positioned(right: -2, bottom: -2, child: CgHandicapVerifiedAvatarBadge(size: 18)),
         ],
       ),
     );

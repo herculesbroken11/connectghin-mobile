@@ -13,7 +13,7 @@ class AppBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
 
-  static const labels = ['Home', 'Discover', 'GHINder', 'Matches', 'Settings'];
+  static const labels = ['Home', 'Discover', 'Find 4th', 'Matches', 'Settings'];
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +81,7 @@ class _NavItem extends StatelessWidget {
                   color: CgColors.green700,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.grid_view_rounded, color: CgColors.white, size: 26),
+                child: const Icon(Icons.sensors_rounded, color: CgColors.white, size: 26),
               )
             else
               Icon(_iconFor(index, selected), size: 24, color: _icon),

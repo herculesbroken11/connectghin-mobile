@@ -14,6 +14,12 @@ import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_text_field.dart';
 import '../matches/data/matches_api.dart';
 import '../messages/data/messages_api.dart';
+import '../../core/widgets/cg_handicap_verified_badge.dart';
+import '../../core/widgets/cg_player_ratings_profile_section.dart';
+import '../../core/widgets/cg_premium_badge.dart';
+import '../../core/widgets/cg_premium_locked_cta.dart';
+import '../../core/widgets/cg_rating_chip.dart';
+import '../player_ratings/data/player_ratings_api.dart';
 import '../profiles/data/profiles_api.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -28,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _profileJson;
   Map<String, dynamic>? _userJson;
   int _matchCount = 0;
+  GolferRatingSummary _ratingSummary = const GolferRatingSummary();
   bool _loading = true;
   String? _error;
   int _lastProfileTick = -1;
@@ -99,12 +106,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final api = ProfilesApi(session.apiClient);
       final matchesApi = MatchesApi(session.apiClient);
+      final ratingsApi = PlayerRatingsApi(session.apiClient);
+      final uid = session.userId;
+      GolferRatingSummary ratingSummary = const GolferRatingSummary();
       final results = await Future.wait<Object>([
         api.getMe(t),
         matchesApi.list(t),
+        if (uid != null) ratingsApi.listForUser(t, uid, status: 'approved', pageSize: 1) else Future.value(<String, dynamic>{}),
       ]);
       final profileJson = results[0] as Map<String, dynamic>;
       final matches = results[1] as List<dynamic>;
+      if (results.length > 2) {
+        final ratingsJson = results[2] as Map<String, dynamic>;
+        ratingSummary = GolferRatingSummary.fromJson(ratingsJson['profileSummary'] as Map<String, dynamic>?);
+      }
       final user = profileJson['user'] as Map<String, dynamic>?;
       final parsed = ApiGolferCard.fromDiscoveryProfile(profileJson);
       final preferredImage = _preferredProfileImageUrl(user);
@@ -128,6 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _userJson = user;
         _card = card;
         _matchCount = matches.length;
+        _ratingSummary = ratingSummary;
         _loading = false;
       });
     } catch (e) {
@@ -412,22 +428,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         Positioned(
                                           right: -2,
                                           bottom: -2,
-                                          child: Container(
-                                            width: 28,
-                                            height: 28,
-                                            decoration: const BoxDecoration(
-                                              color: CgColors.blue600,
-                                              shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                    color: Colors.black26,
-                                                    blurRadius: 4)
-                                              ],
-                                            ),
-                                            child: const Icon(Icons.check,
-                                                color: CgColors.white,
-                                                size: 16),
-                                          ),
+                                          child: CgHandicapVerifiedAvatarBadge(size: 28),
+                                        )
+                                      else if (_premium)
+                                        Positioned(
+                                          right: -2,
+                                          bottom: -2,
+                                          child: CgPremiumAvatarBadge(size: 28),
                                         ),
                                     ],
                                   ),
@@ -485,6 +492,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   .bodyMedium)),
                                     ],
                                   ),
+                                  const SizedBox(height: 8),
+                                  if (!_premium)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: CgColors.gray100,
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: const Text('Free member', style: TextStyle(fontSize: 12, color: CgColors.gray600)),
+                                    )
+                                  else
+                                    const Align(alignment: Alignment.centerLeft, child: CgPremiumBadge(compact: true)),
                                 ],
                               ),
                             ),
@@ -514,15 +533,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 24),
                         Row(
                           children: [
+                            Expanded(child: _miniStat('$_matchCount', 'Connections')),
+                            const SizedBox(width: 12),
                             Expanded(
-                                child: _miniStat('$_matchCount', 'Matches')),
+                              child: _miniStat(
+                                _ratingSummary.hasRating ? _ratingSummary.averageRating!.toStringAsFixed(1) : '—',
+                                'Rating',
+                                leading: _ratingSummary.hasRating
+                                    ? const Icon(Icons.star_rounded, color: CgColors.yellow500, size: 18)
+                                    : null,
+                              ),
+                            ),
                             const SizedBox(width: 12),
-                            Expanded(child: _miniStat('—', 'Profile Views')),
-                            const SizedBox(width: 12),
-                            Expanded(child: _miniStat('—', 'Likes')),
+                            Expanded(child: _miniStat('${_ratingSummary.reviewCount}', 'Reviews')),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+                        _whiteCard(
+                          title: 'TRUST PROFILE',
+                          trailing: CgRatingChip(
+                            averageRating: _ratingSummary.averageRating,
+                            reviewCount: _ratingSummary.reviewCount,
+                            compact: true,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(child: _trustStatusChip('Premium', _premium, Icons.workspace_premium_rounded)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _trustStatusChip('Handicap Verified', _verified, Icons.verified_user_rounded)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         _whiteCard(
                           title: 'Golf Information',
                           child: Column(
@@ -531,8 +573,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const SizedBox(height: 12),
                               _KeyValueRow('Member Since', _memberSinceLabel()),
                               const SizedBox(height: 12),
-                              _KeyValueRow('GHIN Status',
-                                  _verified ? 'Verified' : 'Not verified',
+                              _KeyValueRow('Handicap Status',
+                                  _verified ? 'Handicap Verified' : 'Not verified',
                                   badge: _verified),
                             ],
                           ),
@@ -567,8 +609,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Color(0xFF2563EB),
                               Color(0xFF1D4ED8)
                             ],
-                            title: 'Get GHIN Verified',
-                            subtitle: 'Stand out with the blue badge',
+                            title: 'Get Handicap Verified',
+                            subtitle: 'Build trust with other golfers',
                             icon: Icons.verified_user_outlined,
                             onTap: () => context.push(AppPaths.appVerification),
                           ),
@@ -580,7 +622,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               CgColors.green900
                             ],
                             title: 'Upgrade to Premium',
-                            subtitle: 'Unlock all features',
+                            subtitle: 'Post open spots, reply in the feed, and more',
                             icon: Icons.arrow_forward_ios,
                             onTap: () => context.push(AppPaths.appMembership),
                           ),
@@ -634,7 +676,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  static Widget _miniStat(String v, String l) {
+  static Widget _miniStat(String v, String l, {Widget? leading}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
@@ -645,16 +687,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
-          Text(
-            v,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: CgColors.gray900,
-              decoration: TextDecoration.none,
-              inherit: false,
+          if (leading != null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                leading,
+                const SizedBox(width: 4),
+                Text(
+                  v,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: CgColors.gray900,
+                    decoration: TextDecoration.none,
+                    inherit: false,
+                  ),
+                ),
+              ],
+            )
+          else
+            Text(
+              v,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: CgColors.gray900,
+                decoration: TextDecoration.none,
+                inherit: false,
+              ),
             ),
-          ),
           const SizedBox(height: 4),
           Text(
             l,
@@ -670,7 +731,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  static Widget _whiteCard({required String title, required Widget child}) {
+  static Widget _whiteCard({required String title, required Widget child, Widget? trailing}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -683,18 +744,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: CgColors.gray900,
-              decoration: TextDecoration.none,
-              inherit: false,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: title == 'TRUST PROFILE' ? 12 : 16,
+                    fontWeight: FontWeight.w600,
+                    color: title == 'TRUST PROFILE' ? CgColors.gray500 : CgColors.gray900,
+                    letterSpacing: title == 'TRUST PROFILE' ? 0.8 : 0,
+                    decoration: TextDecoration.none,
+                    inherit: false,
+                  ),
+                ),
+              ),
+              if (trailing != null) trailing,
+            ],
           ),
           const SizedBox(height: 16),
           child,
+        ],
+      ),
+    );
+  }
+
+  static Widget _trustStatusChip(String label, bool active, IconData icon) {
+    final inactiveLabel = label == 'Premium' ? 'Not Premium' : 'Not Verified';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: active ? CgColors.green50 : CgColors.gray100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: active ? CgColors.green600 : CgColors.gray200),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: active ? CgColors.green700 : CgColors.gray500),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              active ? label : inactiveLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: active ? CgColors.green800 : CgColors.gray600,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1155,6 +1252,11 @@ class ViewProfileScreen extends StatefulWidget {
 
 class _ViewProfileScreenState extends State<ViewProfileScreen> {
   OtherUserProfileDetail? _detail;
+  GolferRatingSummary _ratingsSummary = const GolferRatingSummary();
+  List<Map<String, dynamic>> _recentReviews = [];
+  int _totalReviewCount = 0;
+  bool _viewerPremium = false;
+  bool _isMatched = false;
   bool _loading = true;
   String? _error;
   late final PageController _photoController;
@@ -1182,15 +1284,56 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
       _error = null;
     });
     try {
-      final j = await ProfilesApi(session.apiClient)
-          .getPublic(accessToken: t, userId: widget.userId);
+      final api = ProfilesApi(session.apiClient);
+      final ratingsApi = PlayerRatingsApi(session.apiClient);
+      final matchesApi = MatchesApi(session.apiClient);
+      final results = await Future.wait<Object>([
+        api.getPublic(accessToken: t, userId: widget.userId),
+        ratingsApi.listForUser(t, widget.userId, status: 'approved', pageSize: 3),
+        api.getMe(t),
+        matchesApi.list(t),
+      ]);
+      final j = results[0] as Map<String, dynamic>;
+      final ratingsJson = results[1] as Map<String, dynamic>;
+      final meJson = results[2] as Map<String, dynamic>;
+      final matches = results[3] as List<dynamic>;
       final detail = OtherUserProfileDetail.fromPublicProfileJson(
         j,
         distanceMilesHint: widget.distanceMilesHint,
       );
+      final summary = GolferRatingSummary.fromJson(
+        ratingsJson['profileSummary'] as Map<String, dynamic>?,
+      );
+      final reviews = (ratingsJson['items'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .toList();
+      final totalReviews = (ratingsJson['total'] as num?)?.toInt() ?? summary.reviewCount;
+      final meUser = meJson['user'] as Map<String, dynamic>?;
+      final viewerPremium = meUser?['membershipType'] == 'PREMIUM';
+      final viewerId = session.userId;
+      var matched = false;
+      if (viewerId != null) {
+        for (final m in matches) {
+          final map = m as Map<String, dynamic>;
+          final u1 = map['userOne'] as Map<String, dynamic>?;
+          final u2 = map['userTwo'] as Map<String, dynamic>?;
+          final id1 = u1?['id'] as String?;
+          final id2 = u2?['id'] as String?;
+          if ((id1 == viewerId && id2 == widget.userId) ||
+              (id2 == viewerId && id1 == widget.userId)) {
+            matched = map['isActive'] != false;
+            break;
+          }
+        }
+      }
       if (mounted) {
         setState(() {
           _detail = detail;
+          _ratingsSummary = summary;
+          _recentReviews = reviews;
+          _totalReviewCount = totalReviews;
+          _viewerPremium = viewerPremium;
+          _isMatched = matched;
           _loading = false;
           _error = detail == null ? 'Could not load profile' : null;
         });
@@ -1264,8 +1407,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     }
 
     add('Pace', d.playFrequency);
-    add('Competition level', d.skillLevel);
-    add('Drinking', d.drinkingPreference);
+    add('Competition', d.skillLevel);
     add('Smoking', d.smokingPreference);
     add('Music', d.musicPreference);
     return rows;
@@ -1376,32 +1518,13 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                             children: [
                               _HeaderCircleBtn(
                                   icon: Icons.share_rounded, onTap: _share),
+                              if (d.isPremium) ...[
+                                const SizedBox(height: 10),
+                                const CgPremiumBadge(compact: true),
+                              ],
                               if (d.verified) ...[
                                 const SizedBox(height: 10),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: CgColors.blue600,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.verified_rounded,
-                                          color: CgColors.white, size: 16),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'GHIN Verified',
-                                        style: TextStyle(
-                                          color: CgColors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                const CgHandicapVerifiedBadge(),
                               ],
                             ],
                           ),
@@ -1520,6 +1643,30 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (d.isPremium) const CgPremiumBadge(compact: true),
+                      if (d.verified) const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
+                      CgRatingChip(
+                        averageRating: _ratingsSummary.averageRating ?? d.rating.averageRating,
+                        reviewCount: _ratingsSummary.reviewCount > 0 ? _ratingsSummary.reviewCount : d.rating.reviewCount,
+                        compact: true,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  CgProfileRatingStatsCard(
+                    summary: _ratingsSummary.hasRating ? _ratingsSummary : d.rating,
+                    showRateButton: !isOwnProfile,
+                    onRatePlayer: isOwnProfile
+                        ? null
+                        : () => context.push(
+                              '${AppPaths.appRatePlayer}?userId=${Uri.encodeComponent(widget.userId)}',
+                            ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1605,27 +1752,61 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     const SizedBox(height: 12),
                     _PreferenceCard(rows: prefs),
                   ],
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      onPressed: _message,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: CgColors.green700,
-                        foregroundColor: CgColors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: const Icon(Icons.chat_bubble_outline_rounded,
-                          size: 22),
-                      label: const Text('Send Message',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
-                    ),
+                  const SizedBox(height: 28),
+                  CgPlayerRatingsProfileSection(
+                    summary: _ratingsSummary.hasRating ? _ratingsSummary : d.rating,
+                    recentReviews: _recentReviews,
+                    totalReviewCount: _totalReviewCount,
+                    userId: widget.userId,
                   ),
-                  const SizedBox(height: 12),
-                  Row(
+                  const SizedBox(height: 28),
+                  if (!isOwnProfile && !_viewerPremium && !_isMatched)
+                    CgPremiumLockedCta(
+                      message: 'Message — Upgrade to Premium',
+                      helpText: 'Premium members can message golfers directly',
+                      onUpgrade: () => context.push(AppPaths.appMembership),
+                    )
+                  else if (!isOwnProfile)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: _message,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: CgColors.green700,
+                          foregroundColor: CgColors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.chat_bubble_outline_rounded,
+                            size: 22),
+                        label: const Text('Send Message',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  if (!isOwnProfile) const SizedBox(height: 12),
+                  if (!isOwnProfile)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: () => context.go(AppPaths.appGhinder),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: CgColors.green700,
+                          foregroundColor: CgColors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.person_add_outlined, size: 22),
+                        label: const Text('Invite to Your Foursome',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  if (!isOwnProfile) const SizedBox(height: 12),
+                  if (!isOwnProfile)
+                    Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
@@ -1664,67 +1845,6 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  if (isOwnProfile)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton.icon(
-                        onPressed: () => context.push(
-                          '${AppPaths.appPlayerRatings}?userId=${Uri.encodeComponent(widget.userId)}',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: CgColors.gray900,
-                          side: const BorderSide(color: CgColors.gray300),
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                        icon: const Icon(Icons.star_outline_rounded, size: 20),
-                        label: const Text('View Ratings',
-                            style: TextStyle(fontWeight: FontWeight.w500)),
-                      ),
-                    )
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => context.push(
-                              '${AppPaths.appPlayerRatings}?userId=${Uri.encodeComponent(widget.userId)}',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: CgColors.gray900,
-                              side: const BorderSide(color: CgColors.gray300),
-                              minimumSize: const Size(0, 48),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.star_outline_rounded, size: 20),
-                            label: const Text('View Ratings',
-                                style: TextStyle(fontWeight: FontWeight.w500)),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => context.push(
-                              '${AppPaths.appRatePlayer}?userId=${Uri.encodeComponent(widget.userId)}',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: CgColors.green700,
-                              side: const BorderSide(color: CgColors.green700),
-                              minimumSize: const Size(0, 48),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.rate_review_outlined, size: 20),
-                            label: const Text('Rate Player',
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                      ],
-                    ),
                 ],
               ),
             ),

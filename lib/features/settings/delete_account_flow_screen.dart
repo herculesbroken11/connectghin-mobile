@@ -155,7 +155,7 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
         const SizedBox(height: 12),
         _infoCard(
           icon: Icons.verified_user_outlined,
-          title: 'GHIN Verification',
+          title: 'Handicap Verification',
           body: 'Verification status will be removed',
         ),
         const SizedBox(height: 12),

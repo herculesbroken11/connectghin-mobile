@@ -11,6 +11,7 @@ import '../../core/formatting/relative_time.dart';
 import '../../core/network/api_user_message.dart';
 import '../../data/api_profile.dart';
 import '../../core/widgets/cg_empty_state.dart';
+import '../../core/widgets/cg_rating_chip.dart';
 import '../messages/data/inbox_realtime_tick.dart';
 import '../messages/data/messages_api.dart';
 import '../messages/widgets/inbox_avatar.dart';
@@ -252,10 +253,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Matches', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+                Text('Connections', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 Text(
-                  total == 0 ? 'No connections yet' : '$total connection${total == 1 ? '' : 's'}',
+                  total == 0 ? 'No playing partners yet' : '$total playing partner${total == 1 ? '' : 's'}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: CgColors.gray600),
                 ),
                 if (total > 0) ...[
@@ -275,7 +276,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
               child: CgEmptyState(
                 icon: const Icon(Icons.people_outline, size: 44, color: CgColors.gray400),
                 title: 'No matches yet',
-                description: 'Start swiping on GHINder to connect with golfers in your area. Your matches will appear here.',
+                description: 'Start swiping on Find Your 4th to connect with golfers in your area.',
                 actionLabel: 'Start Swiping',
                 onAction: () => context.go(AppPaths.appGhinder),
               ),
@@ -304,6 +305,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                     final r = list[i];
                     final c = r.card;
                     final title = c.age != null ? '${c.displayName}, ${c.age}' : c.displayName;
+                    final hcp = c.handicap != null ? '${c.handicap} HCP' : null;
                     return Material(
                       color: CgColors.white,
                       child: InkWell(
@@ -316,6 +318,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                               InboxAvatar(
                                 imageUrl: c.imageUrl,
                                 verified: c.verified,
+                                isPremium: c.isPremium,
                                 showUnreadDot: r.hasUnread,
                               ),
                               const SizedBox(width: 14),
@@ -326,9 +329,18 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: Text(
-                                            title,
-                                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: CgColors.gray900),
+                                          child: Text.rich(
+                                            TextSpan(
+                                              text: title,
+                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: CgColors.gray900),
+                                              children: [
+                                                if (hcp != null)
+                                                  TextSpan(
+                                                    text: '  $hcp',
+                                                    style: const TextStyle(fontWeight: FontWeight.normal, fontSize: 13, color: CgColors.gray500),
+                                                  ),
+                                              ],
+                                            ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -338,6 +350,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                           style: const TextStyle(fontSize: 12, color: CgColors.gray500),
                                         ),
                                       ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    CgRatingChip(
+                                      averageRating: c.rating.averageRating,
+                                      reviewCount: c.rating.reviewCount,
+                                      compact: true,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(

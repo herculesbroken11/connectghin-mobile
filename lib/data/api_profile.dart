@@ -35,6 +35,46 @@ List<String> _profilePhotoUrlList(Map<String, dynamic>? user) {
   return urls;
 }
 
+/// Parsed rating summary from API `ratingSummary` / `profileSummary` objects.
+@immutable
+class GolferRatingSummary {
+  const GolferRatingSummary({
+    this.averageRating,
+    this.reviewCount = 0,
+    this.averageHandicapAccuracy,
+    this.averageSportsmanship,
+    this.averagePaceOfPlay,
+    this.playAgainPercent = 0,
+  });
+
+  final double? averageRating;
+  final int reviewCount;
+  final double? averageHandicapAccuracy;
+  final double? averageSportsmanship;
+  final double? averagePaceOfPlay;
+  final int playAgainPercent;
+
+  bool get hasRating => averageRating != null && averageRating! > 0 && reviewCount > 0;
+
+  static GolferRatingSummary fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const GolferRatingSummary();
+    double? parseAvg(dynamic v) => v is num ? v.toDouble() : double.tryParse('$v');
+    final avg = parseAvg(json['averageRating']);
+    final countRaw = json['reviewCount'] ?? json['totalRatings'];
+    final count = countRaw is int ? countRaw : int.tryParse('$countRaw') ?? 0;
+    final playAgainRaw = json['playAgainPercent'];
+    final playAgain = playAgainRaw is int ? playAgainRaw : int.tryParse('$playAgainRaw') ?? 0;
+    return GolferRatingSummary(
+      averageRating: avg,
+      reviewCount: count,
+      averageHandicapAccuracy: parseAvg(json['averageHandicapAccuracy']),
+      averageSportsmanship: parseAvg(json['averageSportsmanship']),
+      averagePaceOfPlay: parseAvg(json['averagePaceOfPlay']),
+      playAgainPercent: playAgain,
+    );
+  }
+}
+
 /// Normalized card row from discovery / matches / conversation participants.
 @immutable
 class ApiGolferCard {
@@ -47,8 +87,14 @@ class ApiGolferCard {
     this.distanceMiles,
     required this.imageUrl,
     required this.verified,
+    this.isPremium = false,
+    this.rating = const GolferRatingSummary(),
     this.bio,
     this.homeCourse,
+    this.skillLevel,
+    this.playFrequency,
+    this.smokingPreference,
+    this.musicPreference,
   });
 
   final String userId;
@@ -59,8 +105,28 @@ class ApiGolferCard {
   final double? distanceMiles;
   final String? imageUrl;
   final bool verified;
+  final bool isPremium;
+  final GolferRatingSummary rating;
   final String? bio;
   final String? homeCourse;
+  final String? skillLevel;
+  final String? playFrequency;
+  final String? smokingPreference;
+  final String? musicPreference;
+
+  List<String> get preferenceChips {
+    final chips = <String>[];
+    void add(String? v) {
+      final t = v?.trim();
+      if (t != null && t.isNotEmpty) chips.add(t);
+    }
+
+    add(playFrequency);
+    add(skillLevel);
+    add(smokingPreference == 'No' ? 'No smoking' : smokingPreference);
+    add(musicPreference);
+    return chips.take(3).toList();
+  }
 
   static double? parseDecimal(dynamic v) {
     if (v == null) return null;
@@ -69,6 +135,18 @@ class ApiGolferCard {
   }
 
   static double? _parseDecimal(dynamic v) => parseDecimal(v);
+
+  static bool _parsePremium(Map<String, dynamic> json, Map<String, dynamic>? user) {
+    if (json['isPremium'] == true) return true;
+    final mt = user?['membershipType'] as String? ?? json['membershipType'] as String?;
+    return mt == 'PREMIUM';
+  }
+
+  static GolferRatingSummary _parseRating(Map<String, dynamic> json, Map<String, dynamic>? user) {
+    final direct = GolferRatingSummary.fromJson(json['ratingSummary'] as Map<String, dynamic>?);
+    if (direct.hasRating) return direct;
+    return GolferRatingSummary.fromJson(user?['ratingSummary'] as Map<String, dynamic>?);
+  }
 
   /// `GET /discovery/candidates` profile row (includes nested `user`).
   static ApiGolferCard? fromDiscoveryProfile(Map<String, dynamic> json) {
@@ -91,8 +169,14 @@ class ApiGolferCard {
       distanceMiles: distanceMiles ?? (distanceKm != null ? distanceKm * 0.621371 : null),
       imageUrl: imageUrl,
       verified: json['isGHINVerified'] as bool? ?? false,
+      isPremium: _parsePremium(json, user),
+      rating: _parseRating(json, user),
       bio: json['bio'] as String?,
       homeCourse: json['homeCourse'] as String?,
+      skillLevel: json['skillLevel'] as String?,
+      playFrequency: json['playFrequency'] as String?,
+      smokingPreference: json['smokingPreference'] as String?,
+      musicPreference: json['musicPreference'] as String?,
     );
   }
 
@@ -137,8 +221,14 @@ class ApiGolferCard {
       distanceMiles: null,
       imageUrl: imageUrl,
       verified: profile['isGHINVerified'] as bool? ?? false,
+      isPremium: _parsePremium(user, user),
+      rating: _parseRating(user, user),
       bio: profile['bio'] as String?,
       homeCourse: profile['homeCourse'] as String?,
+      skillLevel: profile['skillLevel'] as String?,
+      playFrequency: profile['playFrequency'] as String?,
+      smokingPreference: profile['smokingPreference'] as String?,
+      musicPreference: profile['musicPreference'] as String?,
     );
   }
 }
@@ -154,6 +244,8 @@ class OtherUserProfileDetail {
     required this.handicap,
     required this.photoUrls,
     required this.verified,
+    this.isPremium = false,
+    this.rating = const GolferRatingSummary(),
     this.bio,
     this.homeCourse,
     this.lookingForTags = const [],
@@ -173,6 +265,8 @@ class OtherUserProfileDetail {
   final double? handicap;
   final List<String> photoUrls;
   final bool verified;
+  final bool isPremium;
+  final GolferRatingSummary rating;
   final String? bio;
   final String? homeCourse;
   final List<String> lookingForTags;
@@ -182,7 +276,6 @@ class OtherUserProfileDetail {
   final String? skillLevel;
   final String? playFrequency;
   final DateTime? memberSince;
-  /// Optional miles string when passed from Discover/GHINder (e.g. `"2.5"`).
   final String? distanceMilesHint;
 
   static DateTime? _parseDate(dynamic v) {
@@ -219,6 +312,8 @@ class OtherUserProfileDetail {
       handicap: ApiGolferCard.parseDecimal(json['handicap']),
       photoUrls: _profilePhotoUrlList(user),
       verified: json['isGHINVerified'] as bool? ?? false,
+      isPremium: json['isPremium'] == true || user?['membershipType'] == 'PREMIUM',
+      rating: GolferRatingSummary.fromJson(json['ratingSummary'] as Map<String, dynamic>?),
       bio: json['bio'] as String?,
       homeCourse: json['homeCourse'] as String?,
       lookingForTags: _splitLookingFor(json['lookingFor'] as String?),
@@ -230,5 +325,115 @@ class OtherUserProfileDetail {
       memberSince: _parseDate(user?['createdAt']),
       distanceMilesHint: distanceMilesHint,
     );
+  }
+}
+
+/// Foursome feed post from `GET /foursome-feed`.
+@immutable
+class FoursomeFeedPost {
+  const FoursomeFeedPost({
+    required this.id,
+    required this.posterId,
+    required this.courseName,
+    required this.locationLine,
+    required this.roundDate,
+    required this.teeTime,
+    required this.spotsNeeded,
+    required this.gameStyle,
+    this.handicapPreference,
+    this.feeLabel,
+    this.notes,
+    required this.status,
+    required this.posterName,
+    this.posterHandicap,
+    this.posterImageUrl,
+    this.posterVerified = false,
+    this.posterPremium = false,
+    this.posterRating = const GolferRatingSummary(),
+    required this.createdAt,
+  });
+
+  final String id;
+  final String posterId;
+  final String courseName;
+  final String locationLine;
+  final DateTime roundDate;
+  final String teeTime;
+  final int spotsNeeded;
+  final String gameStyle;
+  final String? handicapPreference;
+  final String? feeLabel;
+  final String? notes;
+  final String status;
+  final String posterName;
+  final double? posterHandicap;
+  final String? posterImageUrl;
+  final bool posterVerified;
+  final bool posterPremium;
+  final GolferRatingSummary posterRating;
+  final DateTime createdAt;
+
+  static FoursomeFeedPost? fromJson(Map<String, dynamic> json) {
+    final id = json['id'] as String?;
+    if (id == null) return null;
+    final poster = json['poster'] as Map<String, dynamic>?;
+    final posterId = (json['posterId'] as String?) ?? (json['userId'] as String?) ?? poster?['id'] as String?;
+    if (posterId == null) return null;
+
+    final photos = poster?['profilePhotos'] as List<dynamic>?;
+    final imageUrl = _firstProfilePhotoUrl(photos);
+    final profile = poster?['profile'] as Map<String, dynamic>?;
+
+    final city = json['city'] as String? ?? '';
+    final state = json['state'] as String? ?? '';
+    final location = json['location'] as String? ??
+        [city, state].where((s) => s.isNotEmpty).join(', ');
+
+    final roundDateRaw = json['roundDate'] ?? json['date'];
+    final roundDate = roundDateRaw is String ? DateTime.tryParse(roundDateRaw) : null;
+    if (roundDate == null) return null;
+
+    final createdRaw = json['createdAt'] as String?;
+    final createdAt = createdRaw != null ? DateTime.tryParse(createdRaw) ?? DateTime.now() : DateTime.now();
+
+    return FoursomeFeedPost(
+      id: id,
+      posterId: posterId,
+      courseName: json['courseName'] as String? ?? 'Course',
+      locationLine: location.isEmpty ? 'Nearby' : location,
+      roundDate: roundDate,
+      teeTime: json['teeTime'] as String? ?? '',
+      spotsNeeded: json['spotsNeeded'] is int
+          ? json['spotsNeeded'] as int
+          : int.tryParse('${json['spotsNeeded'] ?? 1}') ?? 1,
+      gameStyle: json['gameStyle'] as String? ?? 'CASUAL',
+      handicapPreference: json['handicapPreference'] as String?,
+      feeLabel: json['feeLabel'] as String?,
+      notes: json['notes'] as String?,
+      status: json['status'] as String? ?? 'OPEN',
+      posterName: poster?['displayName'] as String? ??
+          profile?['displayName'] as String? ??
+          poster?['username'] as String? ??
+          'Golfer',
+      posterHandicap: ApiGolferCard.parseDecimal(profile?['handicap'] ?? poster?['handicap']),
+      posterImageUrl: imageUrl,
+      posterVerified: profile?['isGHINVerified'] == true || poster?['isGHINVerified'] == true,
+      posterPremium: poster?['isPremium'] == true || poster?['membershipType'] == 'PREMIUM',
+      posterRating: GolferRatingSummary.fromJson(poster?['ratingSummary'] as Map<String, dynamic>?),
+      createdAt: createdAt,
+    );
+  }
+
+  String get gameStyleLabel {
+    switch (gameStyle.toUpperCase()) {
+      case 'COMPETITIVE':
+        return 'Competitive';
+      case 'TOURNAMENT':
+        return 'Tournament';
+      case 'SERIOUS':
+        return 'Serious';
+      default:
+        return 'Casual';
+    }
   }
 }

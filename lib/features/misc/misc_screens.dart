@@ -472,7 +472,7 @@ class PremiumFeaturesDemoScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Premium features')),
       body: ListView(
         children: const [
-          ListTile(title: Text('Unlimited swipes'), subtitle: Text('GHINder without daily limits')),
+          ListTile(title: Text('Unlimited swipes'), subtitle: Text('Find Your 4th without daily limits')),
           ListTile(title: Text('Direct messages'), subtitle: Text('Reach out before matching')),
           ListTile(title: Text('Profile insights'), subtitle: Text('See who viewed you')),
         ],

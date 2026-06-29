@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/design_tokens.dart';
 import 'app_bottom_nav_bar.dart';
 
-/// Bottom navigation: Home, Discover, GHINder, Matches, Settings.
+/// Bottom navigation: Home, Discover, Find 4th, Matches, Settings.
 class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.navigationShell});
 

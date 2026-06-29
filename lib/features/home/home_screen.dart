@@ -312,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 !_isGhinVerified
-                                    ? 'Add your GHIN number to get verified'
+                                    ? 'Get Handicap Verified to build trust'
                                     : 'Finish photos and profile details to reach 100%',
                                 style: const TextStyle(fontSize: 12, color: CgColors.yellow800),
                               ),
@@ -376,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Center(
                         child: Text(
-                          _loading ? 'Loading…' : 'No matches yet — try GHINder!',
+                          _loading ? 'Loading…' : 'No matches yet — try Find Your 4th!',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
