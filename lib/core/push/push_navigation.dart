@@ -15,7 +15,14 @@ abstract final class PushNavigation {
     final type = data['type'];
     final conversationId = data['conversationId'];
     if (conversationId != null && conversationId.isNotEmpty) {
-      router.go(AppPaths.appMessageThread(conversationId));
+      final senderId = data['senderId'];
+      if (senderId != null && senderId.isNotEmpty) {
+        router.go(
+          '${AppPaths.appMessageThread(conversationId)}?peer=${Uri.encodeComponent(senderId)}',
+        );
+      } else {
+        router.go(AppPaths.appMessageThread(conversationId));
+      }
       return;
     }
 

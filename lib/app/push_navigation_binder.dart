@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../core/network/api_user_message.dart';
+import '../core/push/in_app_push_banner.dart';
 import '../core/push/push_notifications.dart';
+import '../core/push/push_navigation.dart';
 import '../features/messages/data/inbox_realtime_tick.dart';
 
 /// Wires FCM tap / foreground handlers to [GoRouter] and inbox refresh.
@@ -40,14 +41,19 @@ class _PushNavigationBinderState extends State<PushNavigationBinder> {
       return;
     }
     context.read<InboxRealtimeTick>().ping();
-    final title = message.notification?.title;
-    if (title == null || title.isEmpty) {
-      return;
+
+    final conversationId = message.data['conversationId'];
+    if (conversationId != null && conversationId.isNotEmpty) {
+      final loc = widget.router.state.matchedLocation;
+      if (loc.contains('/app/messages/$conversationId')) {
+        return;
+      }
     }
-    final body = message.notification?.body;
-    showUserMessageSnackBar(
+
+    InAppPushBanner.show(
       context,
-      body != null && body.isNotEmpty ? '$title — $body' : title,
+      message: message,
+      onTap: () => PushNavigation.navigateFromMessage(widget.router, message),
     );
   }
 

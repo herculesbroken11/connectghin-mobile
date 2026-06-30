@@ -201,29 +201,13 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
                 _PremiumUpgradeBanner(onUnlock: _showPremiumGate),
                 const SizedBox(height: 12),
               ],
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _gameStyleFilters.entries.map((e) {
-                  final selected = _gameStyle == e.key;
-                  return FilterChip(
-                    label: Text(e.value),
-                    selected: selected,
-                    showCheckmark: false,
-                    labelStyle: TextStyle(
-                      color: selected ? CgColors.white : CgColors.gray700,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                    backgroundColor: CgColors.gray100,
-                    selectedColor: CgColors.green700,
-                    side: BorderSide(color: selected ? CgColors.green700 : CgColors.gray200),
-                    onSelected: (_) {
-                      setState(() => _gameStyle = e.key);
-                      _load();
-                    },
-                  );
-                }).toList(),
+              _GameStyleFilterBar(
+                selectedKey: _gameStyle,
+                onSelected: (key) {
+                  if (_gameStyle == key) return;
+                  setState(() => _gameStyle = key);
+                  _load();
+                },
               ),
               const SizedBox(height: 16),
               if (_posts.isEmpty)
@@ -264,6 +248,50 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _GameStyleFilterBar extends StatelessWidget {
+  const _GameStyleFilterBar({
+    required this.selectedKey,
+    required this.onSelected,
+  });
+
+  final String selectedKey;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _gameStyleFilters.entries.map((entry) {
+          final selected = selectedKey == entry.key;
+          return Padding(
+            padding: EdgeInsets.only(right: entry.key == 'SERIOUS' ? 0 : 8),
+            child: Material(
+              color: selected ? CgColors.green700 : CgColors.gray100,
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () => onSelected(entry.key),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  child: Text(
+                    entry.value,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? CgColors.white : CgColors.gray700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
