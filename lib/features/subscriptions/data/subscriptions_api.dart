@@ -5,6 +5,11 @@ class SubscriptionsApi {
 
   final ApiClient _apiClient;
 
+  /// Backend-verified subscription status (never trust client-only premium flags).
+  Future<Map<String, dynamic>> billingMe(String accessToken) {
+    return _apiClient.getJson('/billing/me', bearerToken: accessToken);
+  }
+
   Future<Map<String, dynamic>?> me(String accessToken) {
     return _apiClient.getJsonObjectOrNull('/subscriptions/me', bearerToken: accessToken);
   }
@@ -47,6 +52,7 @@ class SubscriptionsApi {
     );
   }
 
+  /// Legacy Google verify endpoint (prefer [verifyGooglePlayPurchase]).
   Future<Map<String, dynamic>> verifyGoogleEntitlement(
     String accessToken, {
     required String purchaseToken,
@@ -55,6 +61,42 @@ class SubscriptionsApi {
       '/subscriptions/entitlements/verify/google',
       bearerToken: accessToken,
       body: <String, dynamic>{'purchaseToken': purchaseToken},
+    );
+  }
+
+  /// Verifies a Google Play subscription with backend Google Play Developer API checks.
+  Future<Map<String, dynamic>> verifyGooglePlayPurchase(
+    String accessToken, {
+    required String purchaseToken,
+    required String productId,
+    String? packageName,
+  }) {
+    return _apiClient.postJson(
+      '/billing/google/verify',
+      bearerToken: accessToken,
+      body: <String, dynamic>{
+        'purchaseToken': purchaseToken,
+        'productId': productId,
+        if (packageName != null && packageName.isNotEmpty) 'packageName': packageName,
+      },
+    );
+  }
+
+  /// Re-verifies the user's Google Play subscription with the backend.
+  Future<Map<String, dynamic>> restoreGooglePlayPurchases(
+    String accessToken, {
+    String? purchaseToken,
+    String? productId,
+    String? packageName,
+  }) {
+    return _apiClient.postJson(
+      '/billing/google/restore',
+      bearerToken: accessToken,
+      body: <String, dynamic>{
+        if (purchaseToken != null && purchaseToken.isNotEmpty) 'purchaseToken': purchaseToken,
+        if (productId != null && productId.isNotEmpty) 'productId': productId,
+        if (packageName != null && packageName.isNotEmpty) 'packageName': packageName,
+      },
     );
   }
 

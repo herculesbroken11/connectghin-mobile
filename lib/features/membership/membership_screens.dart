@@ -17,9 +17,9 @@ import '../subscriptions/data/subscriptions_api.dart';
 import '../subscriptions/iap_product_config.dart';
 
 /// Display strings aligned with membership mockups (actual charge is provided by in-app purchase products).
-const String kPremiumMonthlyDisplay = '\$19.99';
-const String kPremiumYearlyDisplay = '\$79.99';
-const String kRenewMonthlyDisplay = '\$9.99';
+const String kPremiumMonthlyDisplay = '\$3.99';
+const String kPremiumYearlyDisplay = '\$39.99';
+const String kRenewMonthlyDisplay = '\$3.99';
 
 String _formatUiDate(DateTime d) {
   const months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -73,6 +73,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
   Map<String, dynamic>? _subscription;
   bool _yearlyIapSelected = true;
   bool _purchaseBusy = false;
+  bool _restoreBusy = false;
   bool _cancelBusy = false;
 
   @override
@@ -96,12 +97,12 @@ class _MembershipScreenState extends State<MembershipScreen> {
     setState(() => _loading = true);
     try {
       final me = await session.authApi.me(t);
-      final sub = await SubscriptionsApi(session.apiClient).me(t);
+      final billing = await SubscriptionsApi(session.apiClient).billingMe(t);
       if (!mounted) return;
       setState(() {
-        _membershipType = me['membershipType']?.toString();
-        _membershipStatus = me['membershipStatus']?.toString();
-        _subscription = sub;
+        _membershipType = me['membershipType']?.toString() ?? billing['membershipType']?.toString();
+        _membershipStatus = me['membershipStatus']?.toString() ?? billing['membershipStatus']?.toString();
+        _subscription = billing['subscription'] as Map<String, dynamic>?;
         _loading = false;
       });
     } catch (_) {
@@ -190,7 +191,30 @@ class _MembershipScreenState extends State<MembershipScreen> {
   }
 
   Future<void> _restorePurchases() async {
-    await _iap.restorePurchases();
+    final session = context.read<AuthSession>();
+    final token = session.accessToken;
+    if (token == null) return;
+    setState(() => _restoreBusy = true);
+    try {
+      await _iap.restorePurchases();
+      if (Platform.isAndroid) {
+        await SubscriptionsApi(session.apiClient).restoreGooglePlayPurchases(
+          token,
+          packageName: IapProductConfig.androidPackageName,
+        );
+      }
+      session.bumpProfileRefresh();
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Restore complete. Subscription status synced from the store.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) showApiErrorSnackBar(context, e);
+    } finally {
+      if (mounted) setState(() => _restoreBusy = false);
+    }
   }
 
   Future<void> _onPurchaseUpdates(List<PurchaseDetails> purchaseDetailsList) async {
@@ -216,33 +240,54 @@ class _MembershipScreenState extends State<MembershipScreen> {
             SnackBar(content: Text(purchase.error?.message ?? 'Purchase failed')),
           );
         }
+      } else if (purchase.status == PurchaseStatus.canceled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Purchase canceled.')),
+          );
+        }
       } else if (purchase.status == PurchaseStatus.purchased || purchase.status == PurchaseStatus.restored) {
+        var verified = false;
         try {
           final api = SubscriptionsApi(session.apiClient);
           if (Platform.isIOS) {
             final tx = purchase.purchaseID ?? purchase.verificationData.serverVerificationData;
             if (tx.isNotEmpty) {
               await api.verifyAppleEntitlement(token, transactionId: tx);
+              verified = true;
             }
           } else if (Platform.isAndroid) {
             final tokenStr = purchase.verificationData.serverVerificationData;
-            if (tokenStr.isNotEmpty) {
-              await api.verifyGoogleEntitlement(token, purchaseToken: tokenStr);
+            final productId = purchase.productID;
+            if (tokenStr.isNotEmpty && productId.isNotEmpty) {
+              await api.verifyGooglePlayPurchase(
+                token,
+                purchaseToken: tokenStr,
+                productId: productId,
+                packageName: IapProductConfig.androidPackageName,
+              );
+              verified = true;
             }
           }
-          session.bumpProfileRefresh();
-          await _load();
-          if (mounted) {
+          if (verified) {
+            session.bumpProfileRefresh();
+            await _load();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Subscription updated successfully.')),
+              );
+            }
+            if (purchase.pendingCompletePurchase) {
+              await _iap.completePurchase(purchase);
+            }
+          } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Subscription updated successfully.')),
+              const SnackBar(content: Text('Purchase received but could not be verified. Try Restore Purchases.')),
             );
           }
         } catch (e) {
           if (mounted) showApiErrorSnackBar(context, e);
         }
-      }
-      if (purchase.pendingCompletePurchase) {
-        await _iap.completePurchase(purchase);
       }
     }
   }
@@ -569,6 +614,38 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  if (_storeLoading)
+                    const CgResponsiveContainer(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: LinearProgressIndicator(color: CgColors.green700),
+                      ),
+                    ),
+                  if (_storeError != null)
+                    CgResponsiveContainer(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: CgColors.orange600.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: CgColors.orange500.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline, size: 20, color: CgColors.orange700),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _storeError!,
+                                style: const TextStyle(fontSize: 12, color: CgColors.orange700, height: 1.35),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   const CgResponsiveContainer(
                     child: Text('Premium Benefits', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CgColors.gray900)),
                   ),
@@ -597,15 +674,19 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   const SizedBox(height: 16),
                   CgResponsiveContainer(
                     child: CgPrimaryButton(
-                      label: _purchaseBusy ? 'Opening store…' : 'Subscribe with App Store / Google Play',
+                      label: _purchaseBusy
+                          ? 'Opening store…'
+                          : Platform.isAndroid
+                              ? 'Subscribe with Google Play'
+                              : 'Subscribe with App Store / Google Play',
                       onPressed: _purchaseBusy || _storeLoading ? null : _startInAppPurchase,
                     ),
                   ),
                   const SizedBox(height: 8),
                   CgResponsiveContainer(
                     child: CgOutlineButton(
-                      label: 'Restore Purchases',
-                      onPressed: _storeLoading ? null : _restorePurchases,
+                      label: _restoreBusy ? 'Restoring…' : 'Restore Purchases',
+                      onPressed: _storeLoading || _restoreBusy ? null : _restorePurchases,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -912,7 +993,7 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       const Text('$kPremiumYearlyDisplay / year', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CgColors.green900)),
-                      const Text('Save 33% • Just \$6.67/month', style: TextStyle(fontSize: 13, color: CgColors.gray700)),
+                      const Text('Save 16% • Just \$3.33/month', style: TextStyle(fontSize: 13, color: CgColors.gray700)),
                       const SizedBox(height: 12),
                       CgPrimaryButton(
                         label: 'Renew Annual',
