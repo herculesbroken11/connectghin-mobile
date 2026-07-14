@@ -1,41 +1,49 @@
-{
+﻿{
   "project_info": {
-    "project_number": "628563228753",
-    "project_id": "connectghin-6e881",
-    "storage_bucket": "connectghin-6e881.firebasestorage.app"
+    "project_number": "97795397365",
+    "project_id": "connectghin-prod",
+    "storage_bucket": "connectghin-prod.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:628563228753:android:109b85ea5ce1d060c2a070",
+        "mobilesdk_app_id": "1:97795397365:android:9d52692608fadb000757bc",
         "android_client_info": {
           "package_name": "com.connectghin.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "834516194643-1s7n7s6bhnhaovollf3k3c14vf2ntpg9.apps.googleusercontent.com",
+          "client_id": "97795397365-8an9mhdscdj27prtke025qfv3lfjqspa.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.connectghin.app",
-            "certificate_hash": "6136f26c1f56a5470f8feccce3754792cee07ae3"
+            "certificate_hash": "6136f26c1f56a5470f8feccec3754792cee07ae3"
           }
         },
         {
-          "client_id": "834516194643-hnngdr8u7dp29j2a9om9b7q3er5kuki6.apps.googleusercontent.com",
+          "client_id": "97795397365-d29aauu0cg7thdpgjvcoh1njqvikva03.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.connectghin.app",
+            "certificate_hash": "dcdab48c49e91595ec50944594f7f0981151bba8"
+          }
+        },
+        {
+          "client_id": "97795397365-b1dg49rhrl9l5ioj095js4s4s1qgcbbu.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCHSzlcD4k5eNzyySL91Dc3alrsD0RWsE4"
+          "current_key": "AIzaSyCOWnaUQKevTgJg4ePWlI_ZzJ_o_L89xfU"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "834516194643-hnngdr8u7dp29j2a9om9b7q3er5kuki6.apps.googleusercontent.com",
+              "client_id": "97795397365-5mkjtqts7c4kpbp9bt9i4kt2tfcfcovr.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

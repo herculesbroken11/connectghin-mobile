@@ -7,7 +7,10 @@
 .env
 .env.*
 !.env.example
+!.env.*.example
 assets/env/config.env
+# Generated from .env (may contain Places API key / client IDs) — run tool/sync_env_to_asset.cmd
+lib/generated/app_env.dart
 .atom/
 .build/
 .buildlog/
@@ -49,16 +52,22 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Android local files
+# Android local files / signing (never commit)
 android/local.properties
 android/.gradle/
-android/app/*.jks
-android/app/*.keystore
+android/**/*.jks
+android/**/*.keystore
+android/upload-keystore.jks
 android/key.properties
 android/**/GeneratedPluginRegistrant.java
+**/*firebase-adminsdk*.json
+**/*service-account*.json
+*.pem
+*.p12
 
 # Release / sideload APKs (tool/build_release_apk.ps1 → dist/)
 *.apk
+*.aab
 /dist/
 
 # iOS/macOS generated files

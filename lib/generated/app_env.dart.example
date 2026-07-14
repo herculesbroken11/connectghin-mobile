@@ -1,0 +1,8 @@
+// TEMPLATE only. Copy to app_env.dart via: tool\sync_env_to_asset.cmd
+// Do not put real secrets in this example file.
+
+abstract final class AppEnvValues {
+  static const String apiBaseUrl = '';
+  static const String googleServerClientId = '';
+  static const String googlePlacesApiKey = '';
+}

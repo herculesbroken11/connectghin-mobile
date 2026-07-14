@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
-/// Firebase options for ConnectGHIN (`connectghin-6e881`).
+/// Firebase options for ConnectGHIN (`connectghin-prod`).
 class DefaultFirebaseOptions {
   /// Whether [currentPlatform] can be used on this device (Android only until iOS is configured).
   static bool get isConfigured {
@@ -38,10 +38,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCHSzlcD4k5eNzyySL91Dc3alrsD0RWsE4',
-    appId: '1:628563228753:android:109b85ea5ce1d060c2a070',
-    messagingSenderId: '628563228753',
-    projectId: 'connectghin-6e881',
-    storageBucket: 'connectghin-6e881.firebasestorage.app',
+    apiKey: 'AIzaSyCOWnaUQKevTgJg4ePWlI_ZzJ_o_L89xfU',
+    appId: '1:97795397365:android:9d52692608fadb000757bc',
+    messagingSenderId: '97795397365',
+    projectId: 'connectghin-prod',
+    storageBucket: 'connectghin-prod.firebasestorage.app',
   );
 }

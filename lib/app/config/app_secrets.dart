@@ -1,10 +1,10 @@
-import 'env_config.dart';
+﻿import 'env_config.dart';
 
-/// OAuth / Places / API config. Resolution order: `--dart-define` → synced `AppEnvValues` → default.
+/// OAuth / Places / API config. Resolution order: `--dart-define` â†’ synced `AppEnvValues` â†’ default.
 abstract final class AppSecrets {
   /// Google OAuth Web client ID (public; same as backend `GOOGLE_OAUTH_CLIENT_ID`).
   static const String googleServerClientIdDefault =
-      '834516194643-hnngdr8u7dp29j2a9om9b7q3er5kuki6.apps.googleusercontent.com';
+      '97795397365-5mkjtqts7c4kpbp9bt9i4kt2tfcfcovr.apps.googleusercontent.com';
 
   static String get googleServerClientId {
     const defined = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');

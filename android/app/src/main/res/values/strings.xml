@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Web OAuth client — must match GOOGLE_SERVER_CLIENT_ID / backend GOOGLE_OAUTH_CLIENT_ID -->
-    <string name="default_web_client_id">834516194643-hnngdr8u7dp29j2a9om9b7q3er5kuki6.apps.googleusercontent.com</string>
+    <!-- Web OAuth client â€” must match GOOGLE_SERVER_CLIENT_ID / backend GOOGLE_OAUTH_CLIENT_ID -->
+    <string name="default_web_client_id">97795397365-5mkjtqts7c4kpbp9bt9i4kt2tfcfcovr.apps.googleusercontent.com</string>
 </resources>

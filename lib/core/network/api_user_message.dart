@@ -23,7 +23,7 @@ String messageFromGoogleSignInError(Object error) {
       'Google Sign-In failed for this Play Store install. '
       'In Google Play Console → App integrity → App signing, copy the '
       'App signing key certificate SHA-1 (not only the upload key). '
-      'Add it in Firebase project connectghin-6e881 → Project settings → '
+      'Add it in Firebase project connectghin-prod → Project settings → '
       'Your Android app (com.connectghin.app) → Add fingerprint. '
       'Wait a few minutes, then update/reinstall the app from Play.';
 
