@@ -15,6 +15,7 @@ import '../auth/widgets/auth_multi_login_widgets.dart';
 import '../matches/data/matches_api.dart';
 import '../messages/data/inbox_realtime_tick.dart';
 import '../messages/data/messages_api.dart';
+import '../notifications/data/notifications_api.dart';
 import '../profiles/data/profiles_api.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   int _matchCount = 0;
   int _convCount = 0;
+  int _unreadNotifications = 0;
   List<ApiGolferCard> _recent = [];
   /// From `GET /profiles/me` → `profileCompletionPercent` (see backend `computeProfileCompletionPercent`).
   int? _profileCompletionPercent;
@@ -71,10 +73,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ProfilesApi(session.apiClient).getMe(t),
         session.authApi.me(t),
       ]);
+      final notificationsRaw = await NotificationsApi(session.apiClient).listNotifications(t).catchError((_) => <dynamic>[]);
       final matchesRaw = results[0] as List<dynamic>;
       final convRaw = results[1] as List<dynamic>;
       final profileJson = results[2] as Map<String, dynamic>;
       final authMe = results[3] as Map<String, dynamic>;
+      final unread = notificationsRaw.where((e) {
+        if (e is! Map) return false;
+        return e['isRead'] != true;
+      }).length;
       final user = profileJson['user'];
       String? username;
       if (user is Map<String, dynamic>) {
@@ -92,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _matchCount = matchesRaw.length;
           _convCount = convRaw.length;
+          _unreadNotifications = unread;
           _recent = recent.take(3).toList();
           _profileCompletionPercent = pct is int ? pct : int.tryParse('$pct');
           _isGhinVerified = verified;
@@ -111,15 +119,37 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _loading = false;
           _profileCompletionPercent = null;
           _profileDisplayName = null;
         });
-        showApiErrorSnackBar(context, e);
       }
+    }
+  }
+
+  Future<void> _openNotifications() async {
+    await context.push(AppPaths.appNotifications);
+    if (!mounted) return;
+    // Refresh badge after inbox read/mark-all actions.
+    await _refreshUnreadNotifications();
+  }
+
+  Future<void> _refreshUnreadNotifications() async {
+    final session = context.read<AuthSession>();
+    final t = session.accessToken;
+    if (t == null) return;
+    try {
+      final raw = await NotificationsApi(session.apiClient).listNotifications(t);
+      final unread = raw.where((e) {
+        if (e is! Map) return false;
+        return e['isRead'] != true;
+      }).length;
+      if (mounted) setState(() => _unreadNotifications = unread);
+    } catch (_) {
+      // Keep last known badge state on refresh failure.
     }
   }
 
@@ -200,20 +230,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => context.push(AppPaths.appNotifications),
+                          onPressed: _openNotifications,
                           icon: Stack(
                             clipBehavior: Clip.none,
                             children: [
                               const Icon(Icons.notifications_none_rounded, size: 26, color: CgColors.gray600),
-                              Positioned(
-                                right: 2,
-                                top: 2,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(color: CgColors.red500, shape: BoxShape.circle),
+                              if (_unreadNotifications > 0)
+                                Positioned(
+                                  right: 2,
+                                  top: 2,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(color: CgColors.red500, shape: BoxShape.circle),
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

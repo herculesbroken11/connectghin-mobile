@@ -95,7 +95,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  "No worries! Enter your email and we'll send you reset instructions.",
+                  "No worries! Enter your email and we'll send you reset instructions.\n"
+                  'Signed in with Google? You can keep using Continue with Google — '
+                  'forgot password is only needed if you want an email/password login too.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 15, height: 1.45, color: CgColors.gray600),
                 ),
@@ -195,7 +197,8 @@ class ForgotPasswordSentScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  "Didn't receive the email? Check your spam folder or try again.",
+                  "Didn't receive the email? Check spam, confirm SMTP is configured on the server, "
+                  'or if you use Google Sign-In open the app and tap Continue with Google.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.gray500),
                 ),

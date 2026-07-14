@@ -131,7 +131,12 @@ After first upload, create subscriptions in Play Console:
 - connectghin_monthly
 - connectghin_yearly
 
-If Google Sign-In fails on the internal test build, add this release SHA-1 in Firebase:
+If Google Sign-In works on a sideloaded APK but FAILS after installing from Play Store:
+  Play App Signing resigns the app. Add the Play Console "App signing key certificate"
+  SHA-1 (Setup → App integrity → App signing) to Firebase for com.connectghin.app.
+  Keep the upload-key SHA-1 registered as well for local release APKs.
+
+Upload keystore SHA-1 (local release / sideload APK only):
 $sha1
 "@
 Set-Content -Path (Join-Path $distDir 'PLAY_UPLOAD.txt') -Value $uploadTxt -Encoding UTF8

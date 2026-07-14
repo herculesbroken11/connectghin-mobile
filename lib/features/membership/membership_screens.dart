@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -168,6 +170,83 @@ class _MembershipScreenState extends State<MembershipScreen> {
     }
   }
 
+  bool _isAlreadyOwnedError(IAPError? error) {
+    final code = (error?.code ?? '').toLowerCase();
+    final message = (error?.message ?? '').toLowerCase();
+    return code.contains('itemalreadyowned') ||
+        message.contains('itemalreadyowned') ||
+        message.contains('already subscribed') ||
+        message.contains('already owned');
+  }
+
+  String _redactToken(String token) {
+    if (token.length <= 12) return '***';
+    return '${token.substring(0, 6)}…${token.substring(token.length - 4)}';
+  }
+
+  /// Syncs an owned Google Play purchase to the backend, then acknowledges it.
+  Future<bool> _verifyAndFinishPurchase(PurchaseDetails purchase) async {
+    final session = context.read<AuthSession>();
+    final token = session.accessToken;
+    if (token == null) return false;
+
+    final api = SubscriptionsApi(session.apiClient);
+    var verified = false;
+
+    if (Platform.isIOS) {
+      final tx = purchase.purchaseID ?? purchase.verificationData.serverVerificationData;
+      if (tx.isNotEmpty) {
+        await api.verifyAppleEntitlement(token, transactionId: tx);
+        verified = true;
+      }
+    } else if (Platform.isAndroid) {
+      final tokenStr = purchase.verificationData.serverVerificationData;
+      final productId = purchase.productID;
+      developer.log(
+        'Google purchase sync productId=$productId token=${_redactToken(tokenStr)}',
+        name: 'IAP',
+      );
+      if (tokenStr.isNotEmpty && productId.isNotEmpty) {
+        await api.verifyGooglePlayPurchase(
+          token,
+          purchaseToken: tokenStr,
+          productId: productId,
+          packageName: IapProductConfig.androidPackageName,
+        );
+        verified = true;
+      }
+    }
+
+    if (verified && purchase.pendingCompletePurchase) {
+      await _iap.completePurchase(purchase);
+    }
+    return verified;
+  }
+
+  /// Pulls already-owned Android subscriptions and verifies each with the backend.
+  Future<int> _syncAndroidOwnedPurchases() async {
+    if (!Platform.isAndroid) return 0;
+    final addition = _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
+    final past = await addition.queryPastPurchases();
+    if (past.error != null) {
+      developer.log('queryPastPurchases error: ${past.error!.message}', name: 'IAP');
+    }
+    var synced = 0;
+    for (final purchase in past.pastPurchases) {
+      if (purchase.status != PurchaseStatus.purchased && purchase.status != PurchaseStatus.restored) {
+        continue;
+      }
+      if (!IapProductConfig.allIds.contains(purchase.productID)) continue;
+      try {
+        if (await _verifyAndFinishPurchase(purchase)) synced++;
+      } catch (e) {
+        developer.log('Failed syncing past purchase ${purchase.productID}: $e', name: 'IAP');
+        rethrow;
+      }
+    }
+    return synced;
+  }
+
   Future<void> _startInAppPurchase() async {
     if (_storeLoading) return;
     final product = _yearlyIapSelected ? (_yearlyProduct ?? _monthlyProduct) : (_monthlyProduct ?? _yearlyProduct);
@@ -179,14 +258,38 @@ class _MembershipScreenState extends State<MembershipScreen> {
       return;
     }
     setState(() => _purchaseBusy = true);
-    final purchased = await _iap.buyNonConsumable(
-      purchaseParam: PurchaseParam(productDetails: product),
-    );
-    if (!purchased && mounted) {
-      setState(() => _purchaseBusy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to start purchase. Try again.')),
+    final session = context.read<AuthSession>();
+    try {
+      // If Play already owns the plan ("Confirm plan" / itemAlreadyOwned), sync instead of buying again.
+      if (Platform.isAndroid) {
+        final synced = await _syncAndroidOwnedPurchases();
+        if (synced > 0) {
+          if (!mounted) return;
+          session.bumpProfileRefresh();
+          await _load();
+          if (mounted) {
+            setState(() => _purchaseBusy = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Existing Google Play subscription synced. Premium should unlock now.')),
+            );
+          }
+          return;
+        }
+      }
+      final purchased = await _iap.buyNonConsumable(
+        purchaseParam: PurchaseParam(productDetails: product),
       );
+      if (!purchased && mounted) {
+        setState(() => _purchaseBusy = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to start purchase. Try Restore Purchases.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _purchaseBusy = false);
+        showApiErrorSnackBar(context, e);
+      }
     }
   }
 
@@ -196,8 +299,15 @@ class _MembershipScreenState extends State<MembershipScreen> {
     if (token == null) return;
     setState(() => _restoreBusy = true);
     try {
-      await _iap.restorePurchases();
+      var synced = 0;
       if (Platform.isAndroid) {
+        synced = await _syncAndroidOwnedPurchases();
+      }
+      await _iap.restorePurchases();
+      // Brief wait so restore stream events can arrive and verify.
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      if (Platform.isAndroid && synced == 0) {
+        // Fallback: backend may already have a prior purchaseToken hash/token.
         await SubscriptionsApi(session.apiClient).restoreGooglePlayPurchases(
           token,
           packageName: IapProductConfig.androidPackageName,
@@ -206,8 +316,17 @@ class _MembershipScreenState extends State<MembershipScreen> {
       session.bumpProfileRefresh();
       await _load();
       if (mounted) {
+        final unlocked = _isPremiumActive;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Restore complete. Subscription status synced from the store.')),
+          SnackBar(
+            content: Text(
+              unlocked
+                  ? 'Premium restored successfully.'
+                  : synced > 0
+                      ? 'Store purchase found, but backend verification failed. Check server Google Play credentials.'
+                      : 'No active subscription found on this Google account.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -235,6 +354,32 @@ class _MembershipScreenState extends State<MembershipScreen> {
         setState(() => _purchaseBusy = false);
       }
       if (purchase.status == PurchaseStatus.error) {
+        // Play says already owned → sync existing entitlement instead of dead-ending.
+        if (_isAlreadyOwnedError(purchase.error)) {
+          try {
+            if (Platform.isAndroid) {
+              await _syncAndroidOwnedPurchases();
+            } else {
+              await _iap.restorePurchases();
+            }
+            session.bumpProfileRefresh();
+            await _load();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _isPremiumActive
+                        ? 'Existing subscription synced. Premium unlocked.'
+                        : 'Play shows an existing subscription. Tap Restore Purchases, or confirm Google Play API credentials on the server.',
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) showApiErrorSnackBar(context, e);
+          }
+          continue;
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(purchase.error?.message ?? 'Purchase failed')),
@@ -247,28 +392,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
           );
         }
       } else if (purchase.status == PurchaseStatus.purchased || purchase.status == PurchaseStatus.restored) {
-        var verified = false;
         try {
-          final api = SubscriptionsApi(session.apiClient);
-          if (Platform.isIOS) {
-            final tx = purchase.purchaseID ?? purchase.verificationData.serverVerificationData;
-            if (tx.isNotEmpty) {
-              await api.verifyAppleEntitlement(token, transactionId: tx);
-              verified = true;
-            }
-          } else if (Platform.isAndroid) {
-            final tokenStr = purchase.verificationData.serverVerificationData;
-            final productId = purchase.productID;
-            if (tokenStr.isNotEmpty && productId.isNotEmpty) {
-              await api.verifyGooglePlayPurchase(
-                token,
-                purchaseToken: tokenStr,
-                productId: productId,
-                packageName: IapProductConfig.androidPackageName,
-              );
-              verified = true;
-            }
-          }
+          final verified = await _verifyAndFinishPurchase(purchase);
           if (verified) {
             session.bumpProfileRefresh();
             await _load();
@@ -276,9 +401,6 @@ class _MembershipScreenState extends State<MembershipScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Subscription updated successfully.')),
               );
-            }
-            if (purchase.pendingCompletePurchase) {
-              await _iap.completePurchase(purchase);
             }
           } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

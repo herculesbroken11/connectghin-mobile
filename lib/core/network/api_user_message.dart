@@ -19,13 +19,19 @@ bool isSignInCancelledError(Object error) {
 }
 
 String messageFromGoogleSignInError(Object error) {
+  const playShaHelp =
+      'Google Sign-In failed for this Play Store install. '
+      'In Google Play Console → App integrity → App signing, copy the '
+      'App signing key certificate SHA-1 (not only the upload key). '
+      'Add it in Firebase project connectghin-6e881 → Project settings → '
+      'Your Android app (com.connectghin.app) → Add fingerprint. '
+      'Wait a few minutes, then update/reinstall the app from Play.';
+
   if (error is GoogleSignInException) {
     switch (error.code) {
       case GoogleSignInExceptionCode.clientConfigurationError:
       case GoogleSignInExceptionCode.providerConfigurationError:
-        return 'Google login is not set up for this app. '
-            'In Firebase (connectghin-6e881), add SHA-1 for package com.connectghin.app, '
-            'wait a few minutes, then reinstall ConnectGHIN.apk.';
+        return playShaHelp;
       case GoogleSignInExceptionCode.uiUnavailable:
         return 'Could not open Google sign-in. Try again with the app in the foreground.';
       case GoogleSignInExceptionCode.userMismatch:
@@ -37,12 +43,21 @@ String messageFromGoogleSignInError(Object error) {
         break;
     }
     final desc = error.description?.trim();
-    if (desc != null && desc.isNotEmpty) return desc;
+    if (desc != null && desc.isNotEmpty) {
+      final lower = desc.toLowerCase();
+      if (lower.contains('10') || lower.contains('developer_error') || lower.contains('sha')) {
+        return playShaHelp;
+      }
+      return desc;
+    }
   }
   final s = error.toString().toLowerCase();
-  if (s.contains('developer_error') || s.contains('apiexception: 10')) {
-    return 'Google login is not set up for this app. '
-        'Add release SHA-1 in Firebase for com.connectghin.app, then reinstall the APK.';
+  if (s.contains('developer_error') ||
+      s.contains('apiexception: 10') ||
+      s.contains('api_exception: 10') ||
+      s.contains('code=10') ||
+      s.contains('status{statuscode=10')) {
+    return playShaHelp;
   }
   return messageFromApiError(error, fallback: 'Google sign-in failed. Please try again.');
 }
