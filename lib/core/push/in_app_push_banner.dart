@@ -116,7 +116,7 @@ class InAppPushBanner {
 
   static String _resolveTitle(RemoteMessage message) {
     final raw = message.notification?.title?.trim() ?? '';
-    if (raw.isEmpty) return 'ConnectGHIN';
+    if (raw.isEmpty) return 'Connectghin';
     return _humanizeName(raw);
   }
 
@@ -145,7 +145,7 @@ class InAppPushBanner {
       case 'NEW_MATCH':
         return const _BannerStyle(
           label: 'New match',
-          icon: Icons.favorite_rounded,
+          icon: Icons.thumb_up_alt_rounded,
           iconBg: Color(0xFFFCE7F3),
           iconFg: Color(0xFFDB2777),
         );

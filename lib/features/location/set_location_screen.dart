@@ -176,7 +176,7 @@ class _SetLocationScreenState extends State<SetLocationScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Get the best discovery experience by allowing ConnectGHIN to access your location',
+                        'Get the best discovery experience by allowing Connectghin to access your location',
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.45,

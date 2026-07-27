@@ -44,7 +44,7 @@ class ConnectGhinApp extends StatelessWidget {
       child: InboxSocketBinder(
         child: PushTokenBinder(
           child: MaterialApp.router(
-            title: 'ConnectGHIN',
+            title: 'Connectghin',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
             scaffoldMessengerKey: rootScaffoldMessengerKey,

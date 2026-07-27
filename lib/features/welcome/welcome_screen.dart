@@ -21,7 +21,7 @@ class WelcomeScreen extends StatelessWidget {
     final short = cgIsShortScreen(context);
     final wide = MediaQuery.sizeOf(context).width >= 700;
     return Scaffold(
-      backgroundColor: CgColors.white,
+      backgroundColor: CgColors.cream,
       body: SafeArea(
         top: false,
         child: Column(
@@ -103,13 +103,25 @@ class WelcomeScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Join the Premier Golf Network',
+                            'Connectghin',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: wide ? 26 : (short ? 20 : 23),
+                              fontSize: wide ? 28 : (short ? 22 : 25),
                               fontWeight: FontWeight.w800,
-                              color: CgColors.gray900,
+                              color: CgColors.green800,
                               letterSpacing: -0.4,
+                              height: 1.15,
+                            ),
+                          ),
+                          SizedBox(height: short ? 6 : 8),
+                          Text(
+                            'The Premier Golf Network',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: wide ? 18 : (short ? 15 : 16),
+                              fontWeight: FontWeight.w700,
+                              color: CgColors.gray900,
+                              letterSpacing: -0.2,
                               height: 1.2,
                             ),
                           ),

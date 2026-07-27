@@ -13,19 +13,20 @@ class AppBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
 
-  static const labels = ['Home', 'Discover', 'Find 4th', 'Matches', 'Settings'];
+  static const labels = ['Home', 'Discover', 'Pair Up', 'Matches', 'Settings'];
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      elevation: 8,
+      elevation: 12,
       color: CgColors.white,
+      shadowColor: CgColors.charcoal.withValues(alpha: 0.18),
       child: SafeArea(
         child: Container(
-          decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: CgColors.gray200)),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: CgColors.gray200.withValues(alpha: 0.9))),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(
@@ -34,7 +35,7 @@ class AppBottomNavBar extends StatelessWidget {
                 index: i,
                 selected: currentIndex == i,
                 label: labels[i],
-                isGhinder: i == 2,
+                isPairUp: i == 2,
                 onTap: () => onDestinationSelected(i),
               ),
             ),
@@ -50,14 +51,14 @@ class _NavItem extends StatelessWidget {
     required this.index,
     required this.selected,
     required this.label,
-    required this.isGhinder,
+    required this.isPairUp,
     required this.onTap,
   });
 
   final int index;
   final bool selected;
   final String label;
-  final bool isGhinder;
+  final bool isPairUp;
   final VoidCallback onTap;
 
   Color get _icon => selected ? CgColors.green700 : CgColors.gray400;
@@ -73,23 +74,50 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isGhinder)
+            if (isPairUp)
               Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: CgColors.green700,
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [CgColors.fairway, CgColors.green900],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: CgColors.green900.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: CgColors.premiumGold, width: 2),
                 ),
-                child: const Icon(Icons.sensors_rounded, color: CgColors.white, size: 26),
+                child: const Icon(Icons.sports_golf, color: CgColors.white, size: 26),
               )
             else
               Icon(_iconFor(index, selected), size: 24, color: _icon),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: _text, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 11,
+                color: _text,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
+            if (selected && !isPairUp) ...[
+              const SizedBox(height: 3),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  color: CgColors.premiumGold,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -99,11 +127,11 @@ class _NavItem extends StatelessWidget {
   IconData _iconFor(int i, bool sel) {
     switch (i) {
       case 0:
-        return sel ? Icons.home : Icons.home_outlined;
+        return sel ? Icons.home_rounded : Icons.home_outlined;
       case 1:
-        return Icons.search;
+        return Icons.explore_outlined;
       case 3:
-        return sel ? Icons.favorite : Icons.favorite_border;
+        return sel ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined;
       case 4:
         return sel ? Icons.settings : Icons.settings_outlined;
       default:

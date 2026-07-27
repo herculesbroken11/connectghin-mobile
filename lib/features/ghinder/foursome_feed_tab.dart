@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
+import '../../core/constants/us_states.dart';
 import '../../core/formatting/relative_time.dart';
 import '../../core/network/api_user_message.dart';
 import '../../core/widgets/cg_handicap_verified_badge.dart';
@@ -16,15 +17,12 @@ import '../../core/widgets/cg_premium_locked_cta.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_rating_chip.dart';
 import '../../data/api_profile.dart';
-import '../profiles/data/profiles_api.dart';
 import 'data/foursome_feed_api.dart';
 
 const _gameStyleFilters = <String, String>{
-  'ALL': 'All',
   'CASUAL': 'Casual',
-  'COMPETITIVE': 'Competitive',
-  'TOURNAMENT': 'Tournament',
   'SERIOUS': 'Serious',
+  'TOURNAMENT': 'Tournament',
 };
 
 class FoursomeFeedTab extends StatefulWidget {
@@ -38,7 +36,7 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
   bool _loading = true;
   String? _error;
   List<FoursomeFeedPost> _posts = [];
-  String _gameStyle = 'ALL';
+  String _gameStyle = 'CASUAL';
   bool _isPremium = false;
 
   @override
@@ -56,9 +54,6 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
       _error = null;
     });
     try {
-      final me = await ProfilesApi(session.apiClient).getMe(t);
-      final user = me['user'] as Map<String, dynamic>?;
-      final premium = user?['membershipType'] == 'PREMIUM';
       final data = await FoursomeFeedApi(session.apiClient).list(
         t,
         gameStyle: _gameStyle,
@@ -67,6 +62,9 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
           .map((e) => FoursomeFeedPost.fromJson(e as Map<String, dynamic>))
           .whereType<FoursomeFeedPost>()
           .toList();
+      final premium = data['isPremiumViewer'] == true ||
+          data['canContact'] == true ||
+          data['canPost'] == true;
       if (mounted) {
         setState(() {
           _posts = items;
@@ -95,6 +93,7 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
             child: const SizedBox.expand(),
           ),
           CgPremiumGateModal(
+            subtitle: 'Unlock Find Your 4th features',
             onUpgrade: () {
               Navigator.pop(ctx);
               context.push(AppPaths.appMembership);
@@ -142,27 +141,30 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => _CreatePostSheet(
-        onSubmit: (fields) async {
-          final session = context.read<AuthSession>();
-          final t = session.accessToken;
-          if (t == null) return;
-          await FoursomeFeedApi(session.apiClient).create(
-            accessToken: t,
-            courseName: fields.courseName,
-            city: fields.city,
-            state: fields.state,
-            roundDateIso: fields.roundDateIso,
-            teeTime: fields.teeTime,
-            spotsNeeded: fields.spotsNeeded,
-            gameStyle: fields.gameStyle,
-            handicapPreference: fields.handicapPreference,
-            feeLabel: fields.feeLabel,
-            notes: fields.notes,
-          );
-          if (ctx.mounted) Navigator.pop(ctx);
-          await _load();
-        },
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+        child: _CreatePostSheet(
+          onSubmit: (fields) async {
+            final session = context.read<AuthSession>();
+            final t = session.accessToken;
+            if (t == null) return;
+            await FoursomeFeedApi(session.apiClient).create(
+              accessToken: t,
+              courseName: fields.courseName,
+              city: fields.city,
+              state: fields.state,
+              roundDateIso: fields.roundDateIso,
+              teeTime: fields.teeTime,
+              spotsNeeded: fields.spotsNeeded,
+              gameStyle: fields.gameStyle,
+              handicapPreference: fields.handicapPreference,
+              feeLabel: fields.feeLabel,
+              notes: fields.notes,
+            );
+            if (ctx.mounted) Navigator.pop(ctx);
+            await _load();
+          },
+        ),
       ),
     );
   }
@@ -246,6 +248,17 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
               icon: const Icon(Icons.add_rounded, color: CgColors.white),
               label: const Text('Post spot', style: TextStyle(color: CgColors.white, fontWeight: FontWeight.w600)),
             ),
+          )
+        else
+          Positioned(
+            right: 20,
+            bottom: 16,
+            child: FloatingActionButton.extended(
+              onPressed: _showPremiumGate,
+              backgroundColor: CgColors.premiumGold,
+              icon: const Icon(Icons.lock_rounded, color: CgColors.white),
+              label: const Text('Post spot', style: TextStyle(color: CgColors.white, fontWeight: FontWeight.w700)),
+            ),
           ),
       ],
     );
@@ -263,27 +276,33 @@ class _GameStyleFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: CgColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: CgColors.gray200),
+        boxShadow: CgShadows.soft,
+      ),
       child: Row(
         children: _gameStyleFilters.entries.map((entry) {
           final selected = selectedKey == entry.key;
-          return Padding(
-            padding: EdgeInsets.only(right: entry.key == 'SERIOUS' ? 0 : 8),
+          return Expanded(
             child: Material(
-              color: selected ? CgColors.green700 : CgColors.gray100,
-              borderRadius: BorderRadius.circular(999),
+              color: selected ? CgColors.green700 : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
               child: InkWell(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(10),
                 onTap: () => onSelected(entry.key),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
                   child: Text(
                     entry.value,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: selected ? CgColors.white : CgColors.gray700,
+                      fontWeight: FontWeight.w700,
+                      color: selected ? CgColors.white : CgColors.gray600,
                     ),
                   ),
                 ),
@@ -304,19 +323,19 @@ class _PremiumUpgradeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
       decoration: BoxDecoration(
-        color: CgColors.yellow50,
+        color: const Color(0xFFF8F1E3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: CgColors.yellow200),
+        border: Border.all(color: CgColors.premiumGold.withValues(alpha: 0.55)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.workspace_premium_rounded, color: CgColors.premiumGoldDark),
+          const Icon(Icons.workspace_premium_rounded, color: CgColors.premiumGold, size: 22),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
-              'Upgrade to post & reply — Premium members can post open spots and contact golfers directly.',
+              'Upgrade to post & reply. Premium members can post open spots and contact golfers directly.',
               style: TextStyle(fontSize: 13, color: CgColors.gray700, height: 1.35),
             ),
           ),
@@ -324,9 +343,10 @@ class _PremiumUpgradeBanner extends StatelessWidget {
           TextButton(
             onPressed: onUnlock,
             style: TextButton.styleFrom(
-              backgroundColor: CgColors.orange600,
+              backgroundColor: CgColors.premiumGold,
               foregroundColor: CgColors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text('Unlock', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
@@ -358,8 +378,9 @@ class _FoursomePostCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: CgColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2))],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: CgColors.gray200.withValues(alpha: 0.9)),
+        boxShadow: CgShadows.soft,
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -463,13 +484,14 @@ class _FoursomePostCard extends StatelessWidget {
               _styleChip(p.gameStyleLabel, _styleColor(p.gameStyle)),
               if (p.handicapPreference != null && p.handicapPreference!.isNotEmpty)
                 _neutralChip(p.handicapPreference!),
-              if (p.feeLabel != null && p.feeLabel!.isNotEmpty)
-                _feeChip(p.feeLabel!),
+              if (p.feeLabel != null && p.feeLabel!.isNotEmpty) _feeChip(p.feeLabel!),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
+              const Icon(Icons.groups_outlined, size: 18, color: CgColors.green700),
+              const SizedBox(width: 6),
               _spotsDots(p.spotsNeeded),
               const SizedBox(width: 8),
               Text(
@@ -485,7 +507,7 @@ class _FoursomePostCard extends StatelessWidget {
           const SizedBox(height: 14),
           if (isPremium)
             CgPrimaryButton(
-              label: 'Contact this golfer',
+              label: 'Join / Contact',
               onPressed: onContact,
             )
           else
@@ -551,17 +573,18 @@ class _FoursomePostCard extends StatelessWidget {
     );
   }
 
-  Widget _spotsDots(int spots) {
+  Widget _spotsDots(int spotsOpen) {
+    final filled = (4 - spotsOpen).clamp(0, 4);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(4, (i) {
-        final filled = i < spots;
+        final occupied = i < filled;
         return Container(
           width: 8,
           height: 8,
           margin: const EdgeInsets.only(right: 4),
           decoration: BoxDecoration(
-            color: filled ? CgColors.green600 : CgColors.gray200,
+            color: occupied ? CgColors.green600 : CgColors.gray200,
             shape: BoxShape.circle,
           ),
         );
@@ -608,7 +631,6 @@ class _CreatePostSheet extends StatefulWidget {
 class _CreatePostSheetState extends State<_CreatePostSheet> {
   final _course = TextEditingController();
   final _city = TextEditingController();
-  final _state = TextEditingController();
   final _teeTime = TextEditingController(text: '7:30 AM');
   final _hcpPref = TextEditingController();
   final _fee = TextEditingController();
@@ -616,13 +638,34 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   DateTime _date = DateTime.now().add(const Duration(days: 1));
   int _spots = 1;
   String _style = 'CASUAL';
+  String? _stateCode;
   bool _saving = false;
+
+  InputDecoration _fieldDecoration(String label, {String? hint}) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: CgColors.inputBg,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: CgColors.gray200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: CgColors.green700, width: 1.5),
+      ),
+    );
+  }
 
   @override
   void dispose() {
     _course.dispose();
     _city.dispose();
-    _state.dispose();
     _teeTime.dispose();
     _hcpPref.dispose();
     _fee.dispose();
@@ -641,13 +684,18 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   }
 
   Future<void> _save() async {
-    if (_course.text.trim().isEmpty) return;
+    if (_course.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Course name is required')),
+      );
+      return;
+    }
     setState(() => _saving = true);
     try {
       await widget.onSubmit(_CreatePostFields(
         courseName: _course.text.trim(),
         city: _city.text.trim(),
-        state: _state.text.trim(),
+        state: _stateCode,
         roundDateIso: DateTime(_date.year, _date.month, _date.day).toIso8601String(),
         teeTime: _teeTime.text.trim(),
         spotsNeeded: _spots,
@@ -664,63 +712,206 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final dateLabel =
+        '${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][_date.weekday - 1]}, '
+        '${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][_date.month - 1]} ${_date.day}';
+
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, bottom + 20),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Post open spot', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: CgColors.gray300,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
-            TextField(controller: _course, decoration: const InputDecoration(labelText: 'Course name *')),
+            const Text(
+              'Post open spot',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: CgColors.gray900),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Invite golfers to fill your foursome.',
+              style: TextStyle(fontSize: 13, color: CgColors.gray500),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _course,
+              textCapitalization: TextCapitalization.words,
+              decoration: _fieldDecoration('Course name *', hint: 'e.g. Harding Park'),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: TextField(controller: _city, decoration: const InputDecoration(labelText: 'City'))),
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: _city,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: _fieldDecoration('City', hint: 'San Francisco'),
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: TextField(controller: _state, decoration: const InputDecoration(labelText: 'State'))),
+                Expanded(
+                  flex: 2,
+                  child: DropdownButtonFormField<String>(
+                    value: _stateCode,
+                    isExpanded: true,
+                    decoration: _fieldDecoration('State'),
+                    hint: const Text('Select', style: TextStyle(fontSize: 14)),
+                    items: kUsStates
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s.code,
+                            child: Text(s.code, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => _stateCode = v),
+                  ),
+                ),
               ],
             ),
+            const SizedBox(height: 8),
+            if (_stateCode != null)
+              Text(
+                kUsStates.firstWhere((s) => s.code == _stateCode).name,
+                style: const TextStyle(fontSize: 12, color: CgColors.gray500),
+              ),
             const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Round date'),
-              subtitle: Text('${_date.month}/${_date.day}/${_date.year}'),
-              trailing: const Icon(Icons.calendar_month_outlined),
-              onTap: _pickDate,
+            Material(
+              color: CgColors.inputBg,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _pickDate,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_month_outlined, color: CgColors.green700),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Round date', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                            const SizedBox(height: 2),
+                            Text(dateLabel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, color: CgColors.gray400),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            TextField(controller: _teeTime, decoration: const InputDecoration(labelText: 'Tee time')),
             const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
-              value: _spots,
-              decoration: const InputDecoration(labelText: 'Spots needed'),
-              items: const [
-                DropdownMenuItem(value: 1, child: Text('1 spot')),
-                DropdownMenuItem(value: 2, child: Text('2 spots')),
-                DropdownMenuItem(value: 3, child: Text('3 spots')),
-              ],
-              onChanged: (v) => setState(() => _spots = v ?? 1),
+            TextField(
+              controller: _teeTime,
+              decoration: _fieldDecoration('Tee time', hint: '7:30 AM'),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _style,
-              decoration: const InputDecoration(labelText: 'Game style'),
-              items: const [
-                DropdownMenuItem(value: 'CASUAL', child: Text('Casual')),
-                DropdownMenuItem(value: 'COMPETITIVE', child: Text('Competitive')),
-                DropdownMenuItem(value: 'TOURNAMENT', child: Text('Tournament')),
-                DropdownMenuItem(value: 'SERIOUS', child: Text('Serious')),
-              ],
-              onChanged: (v) => setState(() => _style = v ?? 'CASUAL'),
+            const Text(
+              'SPOTS NEEDED',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: CgColors.gray500),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [1, 2, 3].map((n) {
+                final selected = _spots == n;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: n == 3 ? 0 : 8),
+                    child: Material(
+                      color: selected ? CgColors.green700 : CgColors.gray100,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => setState(() => _spots = n),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            '$n',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: selected ? CgColors.white : CgColors.gray700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'GAME STYLE',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: CgColors.gray500),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: const [
+                ('CASUAL', 'Casual'),
+                ('SERIOUS', 'Serious'),
+                ('TOURNAMENT', 'Tournament'),
+              ].map((entry) {
+                final selected = _style == entry.$1;
+                return Material(
+                  color: selected ? CgColors.green700 : CgColors.gray100,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => setState(() => _style = entry.$1),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      child: Text(
+                        entry.$2,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: selected ? CgColors.white : CgColors.gray700,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _hcpPref,
+              decoration: _fieldDecoration('Handicap preference', hint: 'e.g. HCP 10–18'),
             ),
             const SizedBox(height: 12),
-            TextField(controller: _hcpPref, decoration: const InputDecoration(labelText: 'Handicap preference')),
+            TextField(
+              controller: _fee,
+              decoration: _fieldDecoration('Green fee / entry (optional)', hint: '\$85 green fee'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _fee, decoration: const InputDecoration(labelText: 'Green fee / entry fee (optional)')),
-            const SizedBox(height: 12),
-            TextField(controller: _notes, maxLines: 3, decoration: const InputDecoration(labelText: 'Notes')),
-            const SizedBox(height: 20),
-            CgPrimaryButton(label: _saving ? 'Posting…' : 'Post to feed', onPressed: _saving ? null : _save),
+            TextField(
+              controller: _notes,
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: _fieldDecoration('Notes', hint: 'Pace of play, net scoring, etc.'),
+            ),
+            const SizedBox(height: 22),
+            CgPrimaryButton(
+              label: _saving ? 'Posting…' : 'Post to feed',
+              onPressed: _saving ? null : _save,
+            ),
           ],
         ),
       ),

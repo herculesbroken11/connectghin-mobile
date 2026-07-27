@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 
-/// Dashed amber CTA shown when a premium-only action is locked.
+/// Amber CTA shown when a premium-only action is locked.
 class CgPremiumLockedCta extends StatelessWidget {
   const CgPremiumLockedCta({
     super.key,
@@ -32,7 +32,7 @@ class CgPremiumLockedCta extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: CgColors.premiumGold, width: 1.5, style: BorderStyle.solid),
+                border: Border.all(color: CgColors.premiumGold, width: 1.5),
               ),
               child: Row(
                 children: [
@@ -96,7 +96,7 @@ class CgPremiumGateModal extends StatelessWidget {
                 Container(
                   width: 56,
                   height: 56,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: CgColors.yellow100,
                     shape: BoxShape.circle,
                   ),
@@ -118,15 +118,16 @@ class CgPremiumGateModal extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: onUpgrade ?? () {
-                      Navigator.of(context).pop();
-                      context.push(AppPaths.appMembership);
-                    },
+                    onPressed: onUpgrade ??
+                        () {
+                          Navigator.of(context).pop();
+                          context.push(AppPaths.appMembership);
+                        },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: CgColors.orange600,
+                      backgroundColor: CgColors.premiumGold,
                       foregroundColor: CgColors.white,
                       minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text(
                       'Upgrade to Premium',

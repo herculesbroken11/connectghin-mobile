@@ -4,12 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/design_tokens.dart';
 
-/// In-app Privacy Policy (GHINder / ConnectGHIN design).
+/// In-app Privacy Policy (GHINder / Connectghin design).
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
   static const _headingBlue = Color(0xFF001F3F);
-  static const _privacyEmail = 'privacy@connectghin.com';
+  static const _privacyEmail = 'privacy@Connectghin.com';
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +101,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       _bullets(const [
-                        'Other ConnectGHIN users (profile information only)',
+                        'Other Connectghin users (profile information only)',
                         'Service providers who assist in our operations',
                         'Law enforcement when required by law',
                       ]),
@@ -150,7 +150,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   '7',
                   "Children's Privacy",
                   const Text(
-                    'ConnectGHIN is not intended for users under 18. We do not knowingly collect personal information from children under 18.',
+                    'Connectghin is not intended for users under 18. We do not knowingly collect personal information from children under 18.',
                     style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),
                 ),
@@ -239,7 +239,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'Contact our privacy team at privacy@connectghin.com',
+                      'Contact our privacy team at privacy@Connectghin.com',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.gray600),
                     ),

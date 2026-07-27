@@ -8,12 +8,12 @@ double cgCompactGap(BuildContext context, double base) {
   return base * 0.55;
 }
 
-/// Auth logo height by viewport.
+/// Auth logo height by viewport — larger for Connectghin brand presence.
 double cgAuthLogoHeight(BuildContext context) {
   final h = MediaQuery.sizeOf(context).height;
-  if (h < 640) return 48;
-  if (h < 760) return 60;
-  return 72;
+  if (h < 640) return 112;
+  if (h < 760) return 136;
+  return 160;
 }
 
 bool cgIsShortScreen(BuildContext context) => MediaQuery.sizeOf(context).height < 760;

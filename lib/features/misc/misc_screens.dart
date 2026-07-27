@@ -17,7 +17,6 @@ import '../misc/data/account_api.dart';
 import '../profile/profile_screens.dart';
 import '../profiles/data/profiles_api.dart';
 import '../settings/logout_confirm_dialog.dart';
-import '../shell/app_bottom_nav_bar.dart';
 
 export '../membership/membership_screens.dart';
 
@@ -193,7 +192,7 @@ class TermsOfServiceScreen extends StatelessWidget {
 }
 
 const _lorem =
-    'ConnectGHIN helps golfers discover matches, communicate, and manage golf-related profile information. '
+    'Connectghin helps golfers discover matches, communicate, and manage golf-related profile information. '
     'We collect account details, profile content, and app activity needed to deliver matching and messaging features. '
     'You control profile visibility through privacy settings, and may request account deletion from Settings. '
     'By using the app, you agree to provide accurate information, follow community rules, and avoid harassment, abuse, or impersonation. '
@@ -472,7 +471,7 @@ class PremiumFeaturesDemoScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Premium features')),
       body: ListView(
         children: const [
-          ListTile(title: Text('Unlimited swipes'), subtitle: Text('Find Your 4th without daily limits')),
+          ListTile(title: Text('Unlimited swipes'), subtitle: Text('Pair Up without daily limits')),
           ListTile(title: Text('Direct messages'), subtitle: Text('Reach out before matching')),
           ListTile(title: Text('Profile insights'), subtitle: Text('See who viewed you')),
         ],

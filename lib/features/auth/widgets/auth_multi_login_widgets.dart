@@ -3,16 +3,23 @@ import 'package:flutter/material.dart';
 import '../../../app/design_tokens.dart';
 import '../../../core/widgets/cg_app_logo.dart';
 
-/// Brand logo on auth screens.
+/// Brand logo on auth screens (full art on a light plate for dark headers).
 class CgAuthBrandMark extends StatelessWidget {
-  const CgAuthBrandMark({super.key, this.size = 88});
+  const CgAuthBrandMark({
+    super.key,
+    this.size = 88,
+    this.variant = CgAppLogoVariant.full,
+    this.plate = true,
+  });
 
   /// Max height of the logo image.
   final double size;
+  final CgAppLogoVariant variant;
+  final bool plate;
 
   @override
   Widget build(BuildContext context) {
-    return CgAppLogo(height: size);
+    return CgAppLogo(height: size, variant: variant, plate: plate);
   }
 }
 

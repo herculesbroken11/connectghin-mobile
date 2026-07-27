@@ -95,6 +95,7 @@ class ApiGolferCard {
     this.playFrequency,
     this.smokingPreference,
     this.musicPreference,
+    this.drinkingPreference,
   });
 
   final String userId;
@@ -113,6 +114,7 @@ class ApiGolferCard {
   final String? playFrequency;
   final String? smokingPreference;
   final String? musicPreference;
+  final String? drinkingPreference;
 
   List<String> get preferenceChips {
     final chips = <String>[];
@@ -177,6 +179,7 @@ class ApiGolferCard {
       playFrequency: json['playFrequency'] as String?,
       smokingPreference: json['smokingPreference'] as String?,
       musicPreference: json['musicPreference'] as String?,
+      drinkingPreference: json['drinkingPreference'] as String?,
     );
   }
 
@@ -229,6 +232,7 @@ class ApiGolferCard {
       playFrequency: profile['playFrequency'] as String?,
       smokingPreference: profile['smokingPreference'] as String?,
       musicPreference: profile['musicPreference'] as String?,
+      drinkingPreference: profile['drinkingPreference'] as String?,
     );
   }
 }

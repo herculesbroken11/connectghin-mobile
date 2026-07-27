@@ -9,6 +9,11 @@ class SettingsApi {
     return _apiClient.getJsonObjectOrNull('/settings/me', bearerToken: accessToken);
   }
 
+  /// Dynamic Settings payload: profile + notification + privacy toggles.
+  Future<Map<String, dynamic>> getOverview(String accessToken) {
+    return _apiClient.getJson('/settings/overview', bearerToken: accessToken);
+  }
+
   Future<Map<String, dynamic>> patchMe({
     required String accessToken,
     required Map<String, bool> body,

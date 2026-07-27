@@ -20,6 +20,7 @@ import '../messages/data/messages_api.dart';
 import '../profiles/data/profiles_api.dart';
 import '../swipes/data/swipes_api.dart';
 import '../swipes/swipe_daily_quota.dart';
+import '../../core/widgets/cg_brand_header.dart';
 import '../../core/widgets/cg_handicap_verified_badge.dart';
 import '../../core/widgets/cg_premium_badge.dart';
 import '../../core/widgets/cg_rating_chip.dart';
@@ -44,6 +45,17 @@ class _GhinderScreenState extends State<GhinderScreen> {
   double? _myHandicap;
   SwipeDailyQuota? _quota;
   int _tabIndex = 0;
+  bool _isPremium = false;
+
+  // Pair Up preference filters (aligned with Discover).
+  double _filterDistance = 25; // 100 = Unlimited
+  double _maxHandicap = 36; // 36 = Any
+  String _smokePref = 'Any';
+  String _friendly420 = 'Any';
+  String _drinkPref = 'Any';
+  String _musicPref = 'Any';
+  String _playStyle = 'Any';
+  String _availability = 'Any';
 
   @override
   void initState() {
@@ -72,7 +84,18 @@ class _GhinderScreenState extends State<GhinderScreen> {
         }
         return;
       }
-      final raw = await DiscoverApi(session.apiClient).candidates(t);
+      final raw = await DiscoverApi(session.apiClient).candidates(
+        t,
+        handicapMin: 0,
+        handicapMax: _maxHandicap >= 36 ? null : _maxHandicap,
+        maxDistanceMiles: _filterDistance >= 100 ? null : _filterDistance,
+        skillLevel: _playStyle == 'Any' ? null : _playStyle,
+        playFrequency: _availability == 'Any' ? null : _availability,
+        musicPreference: _musicPref == 'Any' ? null : _musicPref,
+        drinkingPreference: _drinkPref == 'Any' ? null : _drinkPref,
+        smokingPreference: _smokePref == 'Any' ? null : _smokePref,
+        friendly420: _friendly420 == 'Any' ? null : _friendly420,
+      );
       final list = raw
           .map((e) => ApiGolferCard.fromDiscoveryProfile(e as Map<String, dynamic>))
           .whereType<ApiGolferCard>()
@@ -89,12 +112,14 @@ class _GhinderScreenState extends State<GhinderScreen> {
       }
       final h = me['handicap'];
       final myHcp = h is num ? h.toDouble() : double.tryParse('$h');
+      final premium = user?['membershipType'] == 'PREMIUM' || (quota?.isPremium ?? false);
       if (mounted) {
         setState(() {
-          _profiles = list;
+          _profiles = _applyFilters(list);
           _myPhotoUrl = myUrl;
           _myHandicap = myHcp;
           _quota = quota;
+          _isPremium = premium;
           _loading = false;
         });
       }
@@ -164,7 +189,7 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 12)],
                                 ),
-                                child: const Icon(Icons.favorite, color: Color(0xFFEF4444), size: 32),
+                                child: const Icon(Icons.sports_golf, color: CgColors.green700, size: 32),
                               ),
                             ),
                             Transform.translate(
@@ -293,7 +318,7 @@ class _GhinderScreenState extends State<GhinderScreen> {
       SnackBar(
         content: const Row(
           children: [
-            Icon(Icons.favorite_rounded, color: CgColors.white, size: 22),
+            Icon(Icons.thumb_up_alt_rounded, color: CgColors.white, size: 22),
             SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -365,6 +390,281 @@ class _GhinderScreenState extends State<GhinderScreen> {
     _advance(p, right: right);
   }
 
+  String get _distanceLabel {
+    if (_filterDistance >= 100) return 'Unlimited';
+    return '${_filterDistance.round()} mi';
+  }
+
+  List<ApiGolferCard> _applyFilters(List<ApiGolferCard> source) {
+    return source.where((g) {
+      if (_filterDistance < 100 && g.distanceMiles != null && g.distanceMiles! > _filterDistance) {
+        return false;
+      }
+      final h = g.handicap;
+      if (h != null && _maxHandicap < 36 && h > _maxHandicap) {
+        return false;
+      }
+      final chips = g.preferenceChips.map((e) => e.toLowerCase()).toList();
+      final smoke = (g.smokingPreference ?? '').toLowerCase();
+      final music = (g.musicPreference ?? '').toLowerCase();
+      final drink = (g.drinkingPreference ?? '').toLowerCase();
+      final skill = (g.skillLevel ?? '').toLowerCase();
+      final avail = (g.playFrequency ?? '').toLowerCase();
+      final bio = (g.bio ?? '').toLowerCase();
+
+      if (_smokePref != 'Any') {
+        if (_smokePref == 'No smoking') {
+          if (smoke.isNotEmpty && !(smoke.contains('no') || smoke.contains('never'))) return false;
+        } else if (_smokePref == 'OK') {
+          if (smoke.isNotEmpty && (smoke.contains('no') || smoke.contains('never'))) return false;
+        }
+      }
+      if (_friendly420 != 'Any') {
+        final hit = chips.any((c) => c.contains('420') || c.contains('cannabis') || c.contains('weed')) ||
+            smoke.contains('420') ||
+            bio.contains('420');
+        if (_friendly420 == 'Yes' && smoke.isNotEmpty && bio.isNotEmpty && !hit) return false;
+        if (_friendly420 == 'No' && hit) return false;
+      }
+      if (_drinkPref != 'Any' && drink.isNotEmpty) {
+        final want = _drinkPref.toLowerCase();
+        if (!drink.contains(want) && !chips.any((c) => c.contains(want)) && !bio.contains(want)) {
+          return false;
+        }
+      }
+      if (_musicPref != 'Any' && music.isNotEmpty) {
+        final want = _musicPref.toLowerCase();
+        if (!music.contains(want) && !chips.any((c) => c.contains(want))) {
+          if (want.contains('quiet') && !music.contains('quiet')) return false;
+          if (want.contains('music') && music.contains('quiet')) return false;
+        }
+      }
+      if (_playStyle != 'Any') {
+        final want = _playStyle.toLowerCase();
+        if (skill.isNotEmpty && !skill.contains(want) && !chips.any((c) => c.contains(want)) && !bio.contains(want)) {
+          return false;
+        }
+      }
+      if (_availability != 'Any') {
+        final want = _availability.toLowerCase();
+        if (avail.isNotEmpty && !avail.contains(want) && !chips.any((c) => c.contains(want)) && !bio.contains(want)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  void _openPairUpFilters() {
+    var distance = _filterDistance;
+    var maxHandicap = _maxHandicap;
+    var smoke = _smokePref;
+    var friendly420 = _friendly420;
+    var drink = _drinkPref;
+    var music = _musicPref;
+    var playStyle = _playStyle;
+    var availability = _availability;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: CgColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.88,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return StatefulBuilder(
+              builder: (context, setModal) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: CgColors.gray300,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 12, 8),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Filter Golfers',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: CgColors.gray900,
+                              ),
+                            ),
+                          ),
+                          Material(
+                            color: CgColors.gray100,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => Navigator.pop(ctx),
+                              child: const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Icon(Icons.close_rounded, color: CgColors.gray700),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                        children: [
+                          _PairFilterSectionLabel(
+                            label: 'DISTANCE',
+                            value: distance >= 100 ? 'Unlimited' : '${distance.round()} mi',
+                          ),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: CgColors.green700,
+                              inactiveTrackColor: CgColors.gray200,
+                              thumbColor: CgColors.green700,
+                              overlayColor: CgColors.green700.withValues(alpha: 0.12),
+                              trackHeight: 4,
+                            ),
+                            child: Slider(
+                              value: distance.clamp(5, 100),
+                              min: 5,
+                              max: 100,
+                              divisions: 19,
+                              onChanged: (v) => setModal(() => distance = v),
+                            ),
+                          ),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('5 mi', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                              Text('Unlimited', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _PairFilterSectionLabel(
+                            label: 'MAX HANDICAP',
+                            value: maxHandicap >= 36 ? 'Any' : maxHandicap.round().toString(),
+                          ),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: CgColors.green700,
+                              inactiveTrackColor: CgColors.gray200,
+                              thumbColor: CgColors.green700,
+                              overlayColor: CgColors.green700.withValues(alpha: 0.12),
+                              trackHeight: 4,
+                            ),
+                            child: Slider(
+                              value: maxHandicap.clamp(1, 36),
+                              min: 1,
+                              max: 36,
+                              divisions: 35,
+                              onChanged: (v) => setModal(() => maxHandicap = v),
+                            ),
+                          ),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('1', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                              Text('Any (36+)', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _PairFilterChipGroup(
+                            label: 'STYLE OF PLAY',
+                            options: const ['Any', 'Casual', 'Serious', 'Tournament'],
+                            selected: playStyle,
+                            onSelected: (v) => setModal(() => playStyle = v),
+                          ),
+                          _PairFilterChipGroup(
+                            label: 'AVAILABILITY',
+                            options: const ['Any', 'Weekdays', 'Weekends', 'Both'],
+                            selected: availability,
+                            onSelected: (v) => setModal(() => availability = v),
+                          ),
+                          _PairFilterChipGroup(
+                            label: 'MUSIC ON THE COURSE',
+                            options: const ['Any', 'Quiet rounds', 'Music OK'],
+                            selected: music,
+                            onSelected: (v) => setModal(() => music = v),
+                          ),
+                          _PairFilterChipGroup(
+                            label: 'DRINKING',
+                            options: const ['Any', 'No', 'Social', 'Yes'],
+                            selected: drink,
+                            onSelected: (v) => setModal(() => drink = v),
+                          ),
+                          _PairFilterChipGroup(
+                            label: '420 FRIENDLY',
+                            options: const ['Any', 'No', 'Yes'],
+                            selected: friendly420,
+                            onSelected: (v) => setModal(() => friendly420 = v),
+                          ),
+                          _PairFilterChipGroup(
+                            label: 'SMOKING',
+                            options: const ['Any', 'No smoking', 'OK'],
+                            selected: smoke,
+                            onSelected: (v) => setModal(() => smoke = v),
+                          ),
+                          const SizedBox(height: 8),
+                          CgPrimaryButton(
+                            label: 'Apply Filters',
+                            onPressed: () {
+                              setState(() {
+                                _filterDistance = distance;
+                                _maxHandicap = maxHandicap;
+                                _smokePref = smoke;
+                                _friendly420 = friendly420;
+                                _drinkPref = drink;
+                                _musicPref = music;
+                                _playStyle = playStyle;
+                                _availability = availability;
+                              });
+                              Navigator.pop(ctx);
+                              _load();
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          CgOutlineButton(
+                            label: 'Reset Filters',
+                            onPressed: () {
+                              setModal(() {
+                                distance = 25;
+                                maxHandicap = 36;
+                                smoke = 'Any';
+                                friendly420 = 'Any';
+                                drink = 'Any';
+                                music = 'Any';
+                                playStyle = 'Any';
+                                availability = 'Any';
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -410,37 +710,116 @@ class _GhinderScreenState extends State<GhinderScreen> {
     final hcp = current?.handicap != null ? '${current!.handicap} HCP' : '';
 
     return ColoredBox(
-      color: CgColors.gray50,
+      color: CgColors.cream,
       child: Column(
         children: [
-          Container(
-            width: double.infinity,
-            color: CgColors.white,
-            padding: const EdgeInsets.fromLTRB(24, 48, 24, 12),
+          CgBrandHeader(
+            padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Find Your 4th', style: Theme.of(context).textTheme.headlineMedium),
+                          Text(
+                            'Find Your 4th',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  color: CgColors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
                           const SizedBox(height: 4),
                           Text(
-                            'Golfers looking to fill their foursome nearby',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
+                            _tabIndex == 1
+                                ? 'Golfers looking to fill their foursome nearby'
+                                : 'Pair up with golfers near you',
+                            style: TextStyle(
+                              color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    if (_tabIndex == 0 && _quota != null && !_quota!.isPremium && _quota!.dailyLimit != null)
-                      Text(
-                        '${_quota!.remaining} left today',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: CgColors.gray600),
+                    if (_tabIndex == 0)
+                      Material(
+                        color: CgColors.charcoalSoft.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: _openPairUpFilters,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.tune_rounded, size: 18, color: CgColors.white),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Filters',
+                                  style: TextStyle(
+                                    color: CgColors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
+                    if (_tabIndex == 0 && _quota != null && !_quota!.isPremium && _quota!.dailyLimit != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8, top: 10),
+                        child: Text(
+                          '${_quota!.remaining} left',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: CgColors.premiumGoldLight,
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: EdgeInsets.only(left: _tabIndex == 0 ? 6 : 0, top: 2),
+                      child: Material(
+                        color: _isPremium
+                            ? CgColors.premiumGold.withValues(alpha: 0.28)
+                            : Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(999),
+                          onTap: () => context.push(AppPaths.appMembership),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.workspace_premium_rounded,
+                                  size: 16,
+                                  color: CgColors.premiumGoldLight,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Premium',
+                                  style: TextStyle(
+                                    color: CgColors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -450,9 +829,35 @@ class _GhinderScreenState extends State<GhinderScreen> {
                 ),
                 if (_tabIndex == 0 && current != null) ...[
                   const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text('${_index + 1} / ${_profiles.length}', style: const TextStyle(color: CgColors.gray600)),
+                  Row(
+                    children: [
+                      if (_filterDistance < 100 ||
+                          _maxHandicap < 36 ||
+                          _playStyle != 'Any' ||
+                          _availability != 'Any')
+                        Expanded(
+                          child: Text(
+                            'Filtered · $_distanceLabel'
+                            '${_playStyle != 'Any' ? ' · $_playStyle' : ''}',
+                            style: TextStyle(
+                              color: CgColors.white.withValues(alpha: 0.8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        )
+                      else
+                        const Spacer(),
+                      Text(
+                        '${_index + 1} / ${_profiles.length}',
+                        style: TextStyle(
+                          color: CgColors.white.withValues(alpha: 0.85),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -495,10 +900,15 @@ class _GhinderScreenState extends State<GhinderScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final cardHeight = math.min(constraints.maxHeight, 560.0);
-                final imageHeight = math.max(180.0, math.min(360.0, cardHeight * 0.58));
+                final cardHeight = math.min(constraints.maxHeight - 8, 580.0);
+                final course = current.homeCourse != null && current.homeCourse!.trim().isNotEmpty
+                    ? current.homeCourse!.trim()
+                    : current.cityLine;
+                final distance = current.distanceMiles != null
+                    ? '${current.distanceMiles!.toStringAsFixed(1)} mi'
+                    : null;
                 return Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
                   child: GestureDetector(
                     onHorizontalDragUpdate: (d) => setState(() => _drag += d.delta),
                     onHorizontalDragEnd: (d) {
@@ -522,163 +932,189 @@ class _GhinderScreenState extends State<GhinderScreen> {
                         child: Transform.rotate(
                           angle: _drag.dx * 0.001,
                           child: Container(
-                            constraints: const BoxConstraints(maxWidth: 400),
+                            constraints: const BoxConstraints(maxWidth: 420),
                             height: cardHeight,
                             decoration: BoxDecoration(
-                              color: CgColors.white,
+                              color: CgColors.charcoal,
                               borderRadius: BorderRadius.circular(24),
-                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 16)],
+                              boxShadow: CgShadows.card,
                             ),
                             clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                            child: Stack(
+                              fit: StackFit.expand,
                               children: [
-                                SizedBox(
-                                  height: imageHeight,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  if (current.imageUrl != null && current.imageUrl!.isNotEmpty)
-                                    CachedNetworkImage(imageUrl: current.imageUrl!, fit: BoxFit.cover)
-                                  else
-                                    Container(color: CgColors.gray200),
-                                  DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                      ),
+                                if (current.imageUrl != null && current.imageUrl!.isNotEmpty)
+                                  CachedNetworkImage(imageUrl: current.imageUrl!, fit: BoxFit.cover)
+                                else
+                                  Container(
+                                    color: CgColors.gray300,
+                                    child: const Icon(Icons.person, size: 96, color: CgColors.gray500),
+                                  ),
+                                const DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Color(0x66000000),
+                                        Color(0x14000000),
+                                        Color(0xCC000000),
+                                      ],
+                                      stops: [0, 0.4, 1],
                                     ),
                                   ),
-                                  if (current.verified || current.isPremium)
-                                    Positioned(
-                                      top: 12,
-                                      left: 12,
-                                      right: 12,
-                                      child: Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        alignment: WrapAlignment.spaceBetween,
-                                        children: [
-                                          if (current.isPremium) const CgPremiumBadge(compact: true),
-                                          if (current.verified)
-                                            const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
-                                          if (hcp.isNotEmpty)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withValues(alpha: 0.55),
-                                                borderRadius: BorderRadius.circular(999),
-                                              ),
-                                              child: Text(
-                                                hcp,
-                                                style: const TextStyle(color: CgColors.white, fontWeight: FontWeight.w600, fontSize: 12),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
+                                ),
+                                if (_drag.dx.abs() > 24)
                                   Positioned(
-                                    left: 24,
-                                    right: 24,
-                                    bottom: 24,
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                '${current.displayName}$ageStr',
-                                                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w500, color: CgColors.white),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.place_outlined, size: 16, color: CgColors.white.withValues(alpha: 0.9)),
-                                                  const SizedBox(width: 4),
-                                                  Expanded(
-                                                    child: Text(
-                                                      current.homeCourse != null && current.homeCourse!.isNotEmpty
-                                                          ? '${current.homeCourse} • ${current.distanceMiles != null ? '${current.distanceMiles!.toStringAsFixed(1)} mi' : current.cityLine}'
-                                                          : current.cityLine,
-                                                      style: TextStyle(color: CgColors.white.withValues(alpha: 0.9)),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              CgRatingChip(
-                                                averageRating: current.rating.averageRating,
-                                                reviewCount: current.rating.reviewCount,
-                                                compact: true,
-                                              ),
-                                            ],
+                                    top: 28,
+                                    left: _drag.dx > 0 ? 24 : null,
+                                    right: _drag.dx < 0 ? 24 : null,
+                                    child: Transform.rotate(
+                                      angle: _drag.dx > 0 ? -0.2 : 0.2,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: _drag.dx > 0 ? CgColors.green600 : CgColors.red500,
+                                            width: 3,
+                                          ),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          _drag.dx > 0 ? 'LIKE' : 'PASS',
+                                          style: TextStyle(
+                                            color: _drag.dx > 0 ? CgColors.green600 : CgColors.red500,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 22,
+                                            letterSpacing: 1.2,
                                           ),
                                         ),
-                                        if (hcp.isNotEmpty && !current.verified && !current.isPremium)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                            decoration: BoxDecoration(color: CgColors.green600, borderRadius: BorderRadius.circular(8)),
-                                            child: Text(
-                                              hcp,
-                                              style: const TextStyle(color: CgColors.white, fontSize: 16, fontWeight: FontWeight.w500),
-                                            ),
-                                          ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.all(24),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          current.bio ?? '',
-                                          style: const TextStyle(color: CgColors.gray700, height: 1.4),
+                                Positioned(
+                                  top: 14,
+                                  left: 14,
+                                  right: 14,
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: [
+                                            if (current.isPremium) const CgPremiumBadge(compact: true),
+                                            if (current.verified)
+                                              const CgHandicapVerifiedBadge(compact: true),
+                                          ],
                                         ),
-                                        if (current.homeCourse != null) ...[
-                                          const SizedBox(height: 16),
-                                          Row(
-                                            children: [
-                                              const Icon(Icons.place_outlined, size: 16, color: CgColors.green600),
-                                              const SizedBox(width: 6),
-                                              Expanded(
-                                                child: Text(
-                                                  'Home Course: ${current.homeCourse}',
-                                                  style: const TextStyle(fontSize: 14, color: CgColors.gray600),
-                                                ),
+                                      ),
+                                      if (hcp.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: CgColors.charcoal.withValues(alpha: 0.72),
+                                            borderRadius: BorderRadius.circular(999),
+                                          ),
+                                          child: Text(
+                                            hcp,
+                                            style: const TextStyle(
+                                              color: CgColors.white,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 18,
+                                  right: 18,
+                                  bottom: 18,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${current.displayName}$ageStr',
+                                        style: const TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.w700,
+                                          color: CgColors.white,
+                                          height: 1.15,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.place_outlined,
+                                            size: 16,
+                                            color: CgColors.white.withValues(alpha: 0.92),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              distance != null ? '$course · $distance' : course,
+                                              style: TextStyle(
+                                                color: CgColors.white.withValues(alpha: 0.92),
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
                                               ),
-                                            ],
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
                                         ],
-                                        if (current.preferenceChips.isNotEmpty) ...[
-                                          const SizedBox(height: 14),
-                                          Wrap(
-                                            spacing: 8,
-                                            runSpacing: 8,
-                                            children: current.preferenceChips
-                                                .map(
-                                                  (c) => Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                    decoration: BoxDecoration(
-                                                      color: CgColors.gray100,
-                                                      borderRadius: BorderRadius.circular(999),
-                                                    ),
-                                                    child: Text(c, style: const TextStyle(fontSize: 12, color: CgColors.gray700)),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      CgRatingChip(
+                                        averageRating: current.rating.averageRating,
+                                        reviewCount: current.rating.reviewCount,
+                                        compact: true,
+                                      ),
+                                      if (current.preferenceChips.isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: current.preferenceChips
+                                              .map(
+                                                (c) => Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withValues(alpha: 0.18),
+                                                    borderRadius: BorderRadius.circular(999),
+                                                    border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                                                   ),
-                                                )
-                                                .toList(),
-                                          ),
-                                        ],
+                                                  child: Text(
+                                                    c,
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: CgColors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(),
+                                        ),
                                       ],
-                                    ),
+                                      if (current.bio != null && current.bio!.trim().isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          current.bio!,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: CgColors.white.withValues(alpha: 0.88),
+                                            fontSize: 13,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                               ],
@@ -694,27 +1130,28 @@ class _GhinderScreenState extends State<GhinderScreen> {
           ),
           if (_tabIndex == 0 && current != null)
           Container(
-            color: CgColors.white,
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+            color: CgColors.cream,
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _RejectCircleBtn(
                   onTap: () => _swipeUi(false),
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 28),
                 _CircleBtn(
-                  size: 80,
-                  borderColor: CgColors.green600,
-                  fill: CgColors.green600,
-                  child: const Icon(Icons.favorite, size: 40, color: CgColors.white),
+                  size: 76,
+                  borderColor: CgColors.green700,
+                  fill: CgColors.green700,
+                  child: const Icon(Icons.thumb_up_alt_rounded, size: 36, color: CgColors.white),
                   onTap: () => _swipeUi(true),
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 28),
                 _CircleBtn(
-                  size: 64,
+                  size: 56,
                   borderColor: CgColors.gray300,
-                  child: const Icon(Icons.info_outline, size: 32, color: CgColors.gray600),
+                  fill: CgColors.white,
+                  child: const Icon(Icons.info_outline, size: 26, color: CgColors.gray700),
                   onTap: () => context.push(
                     AppPaths.appProfileUser(current.userId),
                     extra: {
@@ -725,6 +1162,102 @@ class _GhinderScreenState extends State<GhinderScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PairFilterSectionLabel extends StatelessWidget {
+  const _PairFilterSectionLabel({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: CgColors.gray500,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: CgColors.green700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PairFilterChipGroup extends StatelessWidget {
+  const _PairFilterChipGroup({
+    required this.label,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final List<String> options;
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: CgColors.gray500,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: options.map((option) {
+              final isSelected = selected == option;
+              return Material(
+                color: isSelected ? CgColors.green700 : CgColors.gray100,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => onSelected(option),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Text(
+                      option,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? CgColors.white : CgColors.gray700,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -743,13 +1276,14 @@ class _FindFourthTabBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: CgColors.gray100,
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
           Expanded(
-            child: _TabChip(label: 'Swipe', selected: index == 0, onTap: () => onChanged(0)),
+            child: _TabChip(label: 'Pair Up', selected: index == 0, onTap: () => onChanged(0)),
           ),
           Expanded(
             child: _TabChip(label: 'Foursome Feed', selected: index == 1, onTap: () => onChanged(1)),
@@ -785,7 +1319,7 @@ class _TabChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: selected ? CgColors.gray900 : CgColors.gray600,
+              color: selected ? CgColors.green800 : CgColors.white.withValues(alpha: 0.85),
             ),
           ),
         ),
@@ -813,7 +1347,7 @@ class _FallingGolfIconsLayerState extends State<_FallingGolfIconsLayer> with Sin
   static const _icons = [
     Icons.sports_golf,
     Icons.flag,
-    Icons.favorite,
+    Icons.thumb_up_alt_rounded,
     Icons.golf_course,
     Icons.park_outlined,
   ];

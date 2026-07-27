@@ -27,7 +27,7 @@ class LocationDevice {
     }
     if (perm == LocationPermission.deniedForever) {
       await Geolocator.openAppSettings();
-      return 'Enable location in system settings for ConnectGHIN.';
+      return 'Enable location in system settings for Connectghin.';
     }
 
     try {

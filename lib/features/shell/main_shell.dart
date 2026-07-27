@@ -5,7 +5,7 @@ import '../../app/design_tokens.dart';
 import 'app_bottom_nav_bar.dart';
 import 'exit_app_confirm_dialog.dart';
 
-/// Bottom navigation: Home, Discover, Find 4th, Matches, Settings.
+/// Bottom navigation: Home, Discover, Pair Up, Matches, Settings.
 class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.navigationShell});
 

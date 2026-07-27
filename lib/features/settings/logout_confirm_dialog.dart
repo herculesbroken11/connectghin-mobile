@@ -58,7 +58,7 @@ class _LogoutConfirmDialogBody extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Are you sure you want to log out of your ConnectGHIN account?',
+              'Are you sure you want to log out of your Connectghin account?',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,

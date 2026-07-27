@@ -390,7 +390,7 @@ class _IntroBody extends StatelessWidget {
             icon: Icons.bolt_rounded,
             iconColor: CgColors.purple700,
             title: 'Get More Matches',
-            body: 'Verified profiles get more attention in Discover and Find Your 4th.',
+            body: 'Verified profiles get more attention in Discover and Pair Up.',
           ),
           const SizedBox(height: 28),
           _infoCard(

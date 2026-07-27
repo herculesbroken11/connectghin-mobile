@@ -9,6 +9,8 @@ import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/widgets/cg_app_logo.dart';
+import '../../core/widgets/cg_brand_header.dart';
 import '../../core/widgets/google_mark.dart';
 import '../../data/api_profile.dart';
 import '../auth/widgets/auth_multi_login_widgets.dart';
@@ -178,71 +180,82 @@ class _HomeScreenState extends State<HomeScreen> {
     final session = context.watch<AuthSession>();
     final firstName = _firstNameFromDisplay(_profileDisplayName);
     return ColoredBox(
-      color: CgColors.gray50,
+      color: CgColors.cream,
       child: RefreshIndicator(
+        color: CgColors.green700,
         onRefresh: _load,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: CgColors.white,
-                  border: Border(bottom: BorderSide(color: CgColors.gray200)),
-                ),
-                padding: const EdgeInsets.fromLTRB(20, 32, 20, 20),
+              child: CgBrandHeader(
+                padding: const EdgeInsets.fromLTRB(20, 12, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const CgAuthBrandMark(size: 44),
+                        const CgAuthBrandMark(
+                          size: 52,
+                          variant: CgAppLogoVariant.mark,
+                          plate: true,
+                        ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Welcome back',
+                                'Connectghin',
                                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      color: CgColors.white,
                                       fontWeight: FontWeight.w700,
-                                      color: CgColors.gray900,
-                                      letterSpacing: -0.2,
                                     ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Text(
                                 _loading
                                     ? 'Loading your profile…'
-                                    : 'Hi, $firstName — ready to connect with golfers?',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: CgColors.gray600,
-                                      height: 1.35,
-                                    ),
+                                    : 'Welcome back, $firstName',
+                                style: TextStyle(
+                                  color: CgColors.white.withValues(alpha: 0.9),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                              if (session.lastSignInMethod != null) ...[
-                                const SizedBox(height: 12),
-                                _SignInMethodChip(method: session.lastSignInMethod!),
-                              ],
+                              const SizedBox(height: 4),
+                              Text(
+                                'Ready for your next round?',
+                                style: TextStyle(
+                                  color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
+                                  fontSize: 13,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         IconButton(
                           onPressed: _openNotifications,
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white.withValues(alpha: 0.14),
+                            foregroundColor: CgColors.white,
+                          ),
                           icon: Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              const Icon(Icons.notifications_none_rounded, size: 26, color: CgColors.gray600),
+                              const Icon(Icons.notifications_none_rounded, size: 24),
                               if (_unreadNotifications > 0)
                                 Positioned(
-                                  right: 2,
-                                  top: 2,
+                                  right: -1,
+                                  top: -1,
                                   child: Container(
                                     width: 8,
                                     height: 8,
-                                    decoration: const BoxDecoration(color: CgColors.red500, shape: BoxShape.circle),
+                                    decoration: const BoxDecoration(
+                                      color: CgColors.premiumGold,
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
                                 ),
                             ],
@@ -250,69 +263,40 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'The premier golf network — discover verified partners, chat matches, and plan your next round.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: CgColors.gray500,
-                            height: 1.4,
-                            fontSize: 13,
-                          ),
-                    ),
-                    if (session.lastSignInMethod == 'email') ...[
+                    if (session.lastSignInMethod != null) ...[
                       const SizedBox(height: 14),
-                      Material(
-                        color: CgColors.green50,
-                        borderRadius: const BorderRadius.all(Radius.circular(12)),
-                        child: InkWell(
-                          borderRadius: const BorderRadius.all(Radius.circular(12)),
-                          onTap: () => context.push(AppPaths.appChangePassword),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            child: Row(
-                              children: [
-                                Icon(Icons.key_rounded, color: CgColors.green700, size: 22),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    'Signed in with email — update your password anytime in account security.',
-                                    style: TextStyle(fontSize: 13, color: CgColors.gray700, height: 1.35),
-                                  ),
-                                ),
-                                Icon(Icons.chevron_right, color: CgColors.gray400),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                      _SignInMethodChip(method: session.lastSignInMethod!, onDark: true),
                     ],
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     Row(
                       children: [
                         Expanded(
                           child: _StatCard(
                             value: '$_matchCount',
                             label: 'Matches',
-                            bg: CgColors.green50,
-                            fg: CgColors.green700,
+                            bg: Colors.white.withValues(alpha: 0.12),
+                            fg: CgColors.white,
+                            accent: CgColors.premiumGold,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: _StatCard(
                             value: '$_convCount',
                             label: 'Conversations',
-                            bg: CgColors.blue50,
-                            fg: CgColors.blue700,
+                            bg: Colors.white.withValues(alpha: 0.12),
+                            fg: CgColors.white,
+                            accent: CgColors.premiumGoldLight,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(
+                        const SizedBox(width: 10),
+                        Expanded(
                           child: _StatCard(
                             value: '—',
-                            label: 'Profile views',
-                            bg: CgColors.purple50,
-                            fg: CgColors.purple700,
+                            label: 'Profile Views',
+                            bg: Colors.white.withValues(alpha: 0.12),
+                            fg: CgColors.white,
+                            accent: CgColors.green100,
                           ),
                         ),
                       ],
@@ -321,58 +305,112 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+            if (session.lastSignInMethod == 'email')
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Material(
+                    color: CgColors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    elevation: 0,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => context.push(AppPaths.appChangePassword),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: CgColors.gray200),
+                          boxShadow: CgShadows.soft,
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.key_rounded, color: CgColors.green700, size: 22),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Update your password anytime in account security.',
+                                style: TextStyle(fontSize: 13, color: CgColors.gray700, height: 1.35),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, color: CgColors.gray400),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (_profileCompletionPercent != null && _profileCompletionPercent! < 100)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: CgColors.yellow50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: CgColors.yellow200),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFF8E8), Color(0xFFF7F4EC)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: CgColors.premiumGold.withValues(alpha: 0.45)),
+                      boxShadow: CgShadows.soft,
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: CgColors.premiumGold.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.golf_course, color: CgColors.premiumGoldDark, size: 22),
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Complete your profile', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: CgColors.yellow900)),
+                              const Text(
+                                'Complete your profile',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: CgColors.gray900),
+                              ),
                               const SizedBox(height: 4),
                               Text(
                                 !_isGhinVerified
-                                    ? 'Get Handicap Verified to build trust'
-                                    : 'Finish photos and profile details to reach 100%',
-                                style: const TextStyle(fontSize: 12, color: CgColors.yellow800),
+                                    ? 'Get Handicap Verified to stand out on the course'
+                                    : 'Add photos and details to hit 100%',
+                                style: const TextStyle(fontSize: 12, color: CgColors.gray600),
                               ),
                               const SizedBox(height: 12),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(999),
                                 child: LinearProgressIndicator(
                                   value: ((_profileCompletionPercent ?? 0).clamp(0, 100)) / 100.0,
-                                  minHeight: 6,
+                                  minHeight: 7,
                                   backgroundColor: CgColors.yellow100,
-                                  color: CgColors.yellow500,
+                                  color: CgColors.premiumGold,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 '${_profileCompletionPercent!.clamp(0, 100)}% complete',
-                                style: const TextStyle(fontSize: 12, color: CgColors.yellow700),
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CgColors.yellow800),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         TextButton(
                           onPressed: () => context.push(AppPaths.appCompleteProfile),
                           style: TextButton.styleFrom(
-                            backgroundColor: CgColors.yellow600,
+                            backgroundColor: CgColors.green700,
                             foregroundColor: CgColors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                           child: const Text('Complete'),
                         ),
@@ -407,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Center(
                         child: Text(
-                          _loading ? 'Loading…' : 'No matches yet — try Find Your 4th!',
+                          _loading ? 'Loading…' : 'No matches yet — try Pair Up!',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
@@ -488,7 +526,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.grid_view_rounded,
                         iconBg: CgColors.green100,
                         iconColor: CgColors.green700,
-                        label: 'Start Swiping',
+                        label: 'Pair Up',
                         onTap: () => context.go(AppPaths.appGhinder),
                       ),
                     ),
@@ -511,18 +549,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
-                    gradient: LinearGradient(
-                      colors: [CgColors.green700, CgColors.green900],
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                    gradient: const LinearGradient(
+                      colors: CgColors.headerGradient,
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
+                    boxShadow: CgShadows.card,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Upgrade to Premium', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: CgColors.white)),
+                      Row(
+                        children: [
+                          const Icon(Icons.workspace_premium_rounded, color: CgColors.premiumGold, size: 22),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Upgrade to Premium',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CgColors.white),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Message anyone directly, unlimited swipes, and more',
@@ -563,9 +611,10 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _SignInMethodChip extends StatelessWidget {
-  const _SignInMethodChip({required this.method});
+  const _SignInMethodChip({required this.method, this.onDark = false});
 
   final String method;
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
@@ -578,19 +627,19 @@ class _SignInMethodChip extends StatelessWidget {
         break;
       case 'apple':
         label = 'Signed in with Apple';
-        icon = const Icon(Icons.apple, size: 17, color: CgColors.gray900);
+        icon = Icon(Icons.apple, size: 17, color: onDark ? CgColors.white : CgColors.gray900);
         break;
       default:
         label = 'Signed in with email';
-        icon = const Icon(Icons.mail_outline, size: 17, color: CgColors.gray700);
+        icon = Icon(Icons.mail_outline, size: 17, color: onDark ? CgColors.white : CgColors.gray700);
         break;
     }
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: CgColors.gray100,
+        color: onDark ? Colors.white.withValues(alpha: 0.12) : CgColors.gray100,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: CgColors.gray300),
+        border: Border.all(color: onDark ? Colors.white.withValues(alpha: 0.25) : CgColors.gray300),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -601,7 +650,11 @@ class _SignInMethodChip extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CgColors.gray700),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: onDark ? CgColors.white : CgColors.gray700,
+              ),
             ),
           ],
         ),
@@ -611,23 +664,38 @@ class _SignInMethodChip extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.value, required this.label, required this.bg, required this.fg});
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.bg,
+    required this.fg,
+    this.accent,
+  });
 
   final String value;
   final String label;
   final Color bg;
   final Color fg;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: (accent ?? fg).withValues(alpha: 0.35)),
+      ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: fg)),
+          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: accent ?? fg)),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: fg)),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg.withValues(alpha: 0.9)),
+          ),
         ],
       ),
     );

@@ -44,7 +44,7 @@ class _ExitAppConfirmDialogBody extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const Text(
-              'Exit ConnectGHIN?',
+              'Exit Connectghin?',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,

@@ -9,9 +9,12 @@ import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/formatting/relative_time.dart';
 import '../../core/network/api_user_message.dart';
-import '../../data/api_profile.dart';
+import '../../core/widgets/cg_brand_header.dart';
 import '../../core/widgets/cg_empty_state.dart';
+import '../../core/widgets/cg_handicap_verified_badge.dart';
+import '../../core/widgets/cg_premium_badge.dart';
 import '../../core/widgets/cg_rating_chip.dart';
+import '../../data/api_profile.dart';
 import '../messages/data/inbox_realtime_tick.dart';
 import '../messages/data/messages_api.dart';
 import '../messages/widgets/inbox_avatar.dart';
@@ -41,15 +44,32 @@ class _MatchInboxRow {
   String get previewLine {
     if (lastPreview != null && lastPreview!.trim().isNotEmpty) {
       final t = lastPreview!.trim();
-      if (t.length > 42) return '${t.substring(0, 42)}…';
+      if (t.length > 72) return '${t.substring(0, 72)}…';
       return t;
     }
-    return 'New match! Start a conversation';
+    return 'New match! Send a message to connect.';
   }
 
   String get timeLabel {
     final t = lastMessageAt ?? matchedAt;
     return formatRelativeTime(t);
+  }
+
+  String get locationLine {
+    final course = card.homeCourse?.trim();
+    if (course != null && course.isNotEmpty) return course;
+    return card.cityLine;
+  }
+
+  bool matchesQuery(String q) {
+    if (q.isEmpty) return true;
+    final hay = [
+      card.displayName,
+      card.cityLine,
+      card.homeCourse ?? '',
+      lastPreview ?? '',
+    ].join(' ').toLowerCase();
+    return hay.contains(q);
   }
 
   static _MatchInboxRow? tryParse(Map<String, dynamic> m, String viewerId) {
@@ -93,6 +113,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
   String? _error;
   List<_MatchInboxRow> _all = [];
   int _filterIndex = 0; // 0 All, 1 Unread
+  String _query = '';
+  final _search = TextEditingController();
   InboxRealtimeTick? _inboxTick;
 
   @override
@@ -110,23 +132,26 @@ class _MatchesScreenState extends State<MatchesScreen> {
   @override
   void dispose() {
     _inboxTick?.removeListener(_onInboxPing);
+    _search.dispose();
     super.dispose();
   }
 
   void _onInboxPing() {
     if (!mounted) return;
-    unawaited(_load());
+    unawaited(_load(silent: true));
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool silent = false}) async {
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     final uid = session.userId;
     if (t == null || uid == null) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final raw = await MatchesApi(session.apiClient).list(t);
       final rows = <_MatchInboxRow>[];
@@ -136,17 +161,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
       }
       if (mounted) setState(() => _all = rows);
     } catch (e) {
-      if (mounted) setState(() => _error = messageFromApiError(e));
+      if (mounted && !silent) setState(() => _error = messageFromApiError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   List<_MatchInboxRow> get _visible {
+    final q = _query.trim().toLowerCase();
+    Iterable<_MatchInboxRow> rows = _all;
     if (_filterIndex == 1) {
-      return _all.where((r) => r.hasUnread).toList();
+      rows = rows.where((r) => r.hasUnread);
     }
-    return _all;
+    if (q.isNotEmpty) {
+      rows = rows.where((r) => r.matchesQuery(q));
+    }
+    return rows.toList();
   }
 
   int get _unreadTotal => _all.where((r) => r.hasUnread).length;
@@ -194,7 +224,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
         await context.push<String>(
           '${AppPaths.appMessages}/${r.conversationId}?peer=${Uri.encodeComponent(peer)}&matchedAt=$matchedIso',
         );
-        if (mounted) await _load();
+        if (mounted) await _load(silent: true);
         return;
       }
       final conv = await MessagesApi(session.apiClient).startConversation(accessToken: t, otherUserId: peer);
@@ -203,26 +233,24 @@ class _MatchesScreenState extends State<MatchesScreen> {
         await context.push<String>(
           '${AppPaths.appMessages}/$id?peer=${Uri.encodeComponent(peer)}&matchedAt=$matchedIso',
         );
-        if (mounted) await _load();
+        if (mounted) await _load(silent: true);
       }
     } catch (e) {
-      if (mounted) {
-        showApiErrorSnackBar(context, e);
-      }
+      if (mounted) showApiErrorSnackBar(context, e);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    if (_loading && _all.isEmpty) {
       return const ColoredBox(
-        color: CgColors.gray50,
+        color: CgColors.cream,
         child: Center(child: CircularProgressIndicator(color: CgColors.green700)),
       );
     }
-    if (_error != null) {
+    if (_error != null && _all.isEmpty) {
       return ColoredBox(
-        color: CgColors.gray50,
+        color: CgColors.cream,
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -241,43 +269,81 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
     final list = _visible;
     final total = _all.length;
+    final unread = _unreadTotal;
 
     return ColoredBox(
-      color: CgColors.gray50,
+      color: CgColors.cream,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            color: CgColors.white,
-            padding: const EdgeInsets.fromLTRB(24, 48, 24, 12),
+          CgBrandHeader(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            bottomRadius: 0,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Connections', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+                Text(
+                  'Matches',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: CgColors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
                 const SizedBox(height: 4),
                 Text(
-                  total == 0 ? 'No playing partners yet' : '$total playing partner${total == 1 ? '' : 's'}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: CgColors.gray600),
-                ),
-                if (total > 0) ...[
-                  const SizedBox(height: 16),
-                  _FilterPills(
-                    allCount: total,
-                    unreadCount: _unreadTotal,
-                    selectedIndex: _filterIndex,
-                    onChanged: (i) => setState(() => _filterIndex = i),
+                  total == 0
+                      ? 'No golf connections yet'
+                      : '$total golf connection${total == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    color: CgColors.white.withValues(alpha: 0.85),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _search,
+                  onChanged: (v) => setState(() => _query = v),
+                  style: const TextStyle(color: CgColors.white, fontSize: 15),
+                  cursorColor: CgColors.premiumGoldLight,
+                  decoration: InputDecoration(
+                    hintText: 'Search matches...',
+                    hintStyle: TextStyle(color: CgColors.white.withValues(alpha: 0.55)),
+                    prefixIcon: Icon(Icons.search, color: CgColors.white.withValues(alpha: 0.7)),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            onPressed: () {
+                              _search.clear();
+                              setState(() => _query = '');
+                            },
+                            icon: Icon(Icons.close, color: CgColors.white.withValues(alpha: 0.7), size: 20),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _MatchesTabs(
+                  selectedIndex: _filterIndex,
+                  unreadCount: unread,
+                  onChanged: (i) => setState(() => _filterIndex = i),
+                ),
               ],
             ),
           ),
           if (list.isEmpty && total == 0)
             Expanded(
               child: CgEmptyState(
-                icon: const Icon(Icons.people_outline, size: 44, color: CgColors.gray400),
+                icon: const Icon(Icons.sports_golf, size: 44, color: CgColors.gray400),
                 title: 'No matches yet',
-                description: 'Start swiping on Find Your 4th to connect with golfers in your area.',
-                actionLabel: 'Start Swiping',
+                description: 'Start pairing up to connect with golfers in your area.',
+                actionLabel: 'Pair Up',
                 onAction: () => context.go(AppPaths.appGhinder),
               ),
             )
@@ -287,8 +353,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: Text(
-                    _filterIndex == 1 ? 'No unread messages' : 'Nothing to show',
+                    _filterIndex == 1
+                        ? 'No unread messages'
+                        : (_query.isNotEmpty ? 'No matches match your search' : 'Nothing to show'),
                     style: const TextStyle(color: CgColors.gray600),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
@@ -296,86 +365,18 @@ class _MatchesScreenState extends State<MatchesScreen> {
           else
             Expanded(
               child: RefreshIndicator(
+                color: CgColors.green700,
                 onRefresh: _load,
                 child: ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: list.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, color: CgColors.gray100),
+                  separatorBuilder: (_, __) => const Divider(height: 1, thickness: 1, color: CgColors.gray100),
                   itemBuilder: (context, i) {
                     final r = list[i];
-                    final c = r.card;
-                    final title = c.age != null ? '${c.displayName}, ${c.age}' : c.displayName;
-                    final hcp = c.handicap != null ? '${c.handicap} HCP' : null;
-                    return Material(
-                      color: CgColors.white,
-                      child: InkWell(
-                        onTap: () => _openRow(r),
-                        onLongPress: () => _confirmUnmatch(r),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          child: Row(
-                            children: [
-                              InboxAvatar(
-                                imageUrl: c.imageUrl,
-                                verified: c.verified,
-                                isPremium: c.isPremium,
-                                showUnreadDot: r.hasUnread,
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text.rich(
-                                            TextSpan(
-                                              text: title,
-                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: CgColors.gray900),
-                                              children: [
-                                                if (hcp != null)
-                                                  TextSpan(
-                                                    text: '  $hcp',
-                                                    style: const TextStyle(fontWeight: FontWeight.normal, fontSize: 13, color: CgColors.gray500),
-                                                  ),
-                                              ],
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        Text(
-                                          r.timeLabel,
-                                          style: const TextStyle(fontSize: 12, color: CgColors.gray500),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    CgRatingChip(
-                                      averageRating: c.rating.averageRating,
-                                      reviewCount: c.rating.reviewCount,
-                                      compact: true,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      r.previewLine,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: r.lastPreview != null ? CgColors.gray600 : CgColors.green700,
-                                        fontWeight: r.lastPreview != null ? FontWeight.normal : FontWeight.w500,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.chevron_right, color: CgColors.gray400),
-                            ],
-                          ),
-                        ),
-                      ),
+                    return _MatchRow(
+                      row: r,
+                      onTap: () => _openRow(r),
+                      onLongPress: () => _confirmUnmatch(r),
                     );
                   },
                 ),
@@ -387,51 +388,43 @@ class _MatchesScreenState extends State<MatchesScreen> {
   }
 }
 
-class _FilterPills extends StatelessWidget {
-  const _FilterPills({
-    required this.allCount,
-    required this.unreadCount,
+class _MatchesTabs extends StatelessWidget {
+  const _MatchesTabs({
     required this.selectedIndex,
+    required this.unreadCount,
     required this.onChanged,
   });
 
-  final int allCount;
-  final int unreadCount;
   final int selectedIndex;
+  final int unreadCount;
   final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: CgColors.gray100,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _Pill(
-              label: 'All ($allCount)',
-              selected: selectedIndex == 0,
-              onTap: () => onChanged(0),
-            ),
-          ),
-          Expanded(
-            child: _Pill(
-              label: 'Unread ($unreadCount)',
-              selected: selectedIndex == 1,
-              onTap: () => onChanged(1),
-            ),
-          ),
-        ],
-      ),
+    return Row(
+      children: [
+        _TabLabel(
+          label: 'All',
+          selected: selectedIndex == 0,
+          onTap: () => onChanged(0),
+        ),
+        const SizedBox(width: 22),
+        _TabLabel(
+          label: unreadCount > 0 ? 'Unread ($unreadCount)' : 'Unread',
+          selected: selectedIndex == 1,
+          onTap: () => onChanged(1),
+        ),
+      ],
     );
   }
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.selected, required this.onTap});
+class _TabLabel extends StatelessWidget {
+  const _TabLabel({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -439,29 +432,203 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10, top: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: selected ? CgColors.premiumGoldLight : CgColors.white.withValues(alpha: 0.65),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              height: 3,
+              width: selected ? 28 : 0,
+              decoration: BoxDecoration(
+                color: CgColors.premiumGold,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchRow extends StatelessWidget {
+  const _MatchRow({
+    required this.row,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final _MatchInboxRow row;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = row.card;
+    final nameAge = c.age != null ? '${c.displayName} ${c.age}' : c.displayName;
+    final hcp = c.handicap != null ? '${c.handicap} HCP' : null;
+    final unread = row.hasUnread;
+
     return Material(
-      color: Colors.transparent,
+      color: CgColors.white,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InboxAvatar(
+                imageUrl: c.imageUrl,
+                verified: c.verified,
+                isPremium: c.isPremium,
+                showUnreadDot: unread,
+                radius: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            nameAge,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: CgColors.gray900,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          row.timeLabel,
+                          style: const TextStyle(fontSize: 12, color: CgColors.gray500),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (c.isPremium) const CgPremiumBadge(compact: true),
+                        if (c.verified)
+                          const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
+                        if (hcp != null) _MetaChip(label: hcp),
+                        if (!c.rating.hasRating) const _MetaChip(label: 'New Player'),
+                        CgRatingChip(
+                          averageRating: c.rating.averageRating,
+                          reviewCount: c.rating.reviewCount,
+                          compact: true,
+                        ),
+                      ],
+                    ),
+                    if (row.locationLine.trim().isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.place_outlined, size: 14, color: CgColors.gray500),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              row.locationLine,
+                              style: const TextStyle(fontSize: 12, color: CgColors.gray500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            row.previewLine,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.3,
+                              color: unread ? CgColors.gray900 : CgColors.gray600,
+                              fontWeight: unread ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (row.unreadCount > 0) ...[
+                          const SizedBox(width: 10),
+                          Container(
+                            constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: CgColors.red500,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              row.unreadCount > 99 ? '99+' : '${row.unreadCount}',
+                              style: const TextStyle(
+                                color: CgColors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: CgColors.gray100,
         borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? CgColors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: selected
-                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 1))]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              fontSize: 13,
-              color: selected ? CgColors.gray900 : CgColors.gray600,
-            ),
-          ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: CgColors.gray700,
         ),
       ),
     );

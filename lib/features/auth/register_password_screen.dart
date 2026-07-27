@@ -7,6 +7,7 @@ import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/layout/cg_fit_height_body.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/widgets/cg_app_logo.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
 import '../../core/widgets/cg_text_field.dart';
@@ -100,7 +101,11 @@ class _RegisterPasswordScreenState extends State<RegisterPasswordScreen> {
                   ),
                 ),
                 SizedBox(height: gap(4)),
-                CgAuthBrandMark(size: cgAuthLogoHeight(context)),
+                CgAuthBrandMark(
+                  size: cgAuthLogoHeight(context),
+                  variant: CgAppLogoVariant.full,
+                  plate: true,
+                ),
                 SizedBox(height: gap(12)),
                 Text(
                   'Create a password',

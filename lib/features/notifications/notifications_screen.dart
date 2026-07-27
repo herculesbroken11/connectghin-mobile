@@ -127,7 +127,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final title = (row['title'] as String? ?? '').toLowerCase();
 
     if (t == 'NEW_MATCH') {
-      return const _NotifStyle(bg: _pinkBg, fg: _pinkFg, icon: Icons.favorite_border);
+      return const _NotifStyle(bg: _pinkBg, fg: _pinkFg, icon: Icons.thumb_up_alt_outlined);
     }
     if (t == 'NEW_MESSAGE') {
       return const _NotifStyle(bg: CgColors.blue50, fg: CgColors.blue600, icon: Icons.chat_bubble_outline);

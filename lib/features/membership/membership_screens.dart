@@ -150,7 +150,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
             ? ' LDPlayer/emulators need Google Play and published subscription products.'
             : '';
         err =
-            'Products not found in store: $missing. In Play Console (app com.connectghin.app), create subscriptions with these exact product IDs, activate them, and use a licensed test account.$emulatorHint';
+            'Products not found in store: $missing. In Play Console (app com.Connectghin.app), create subscriptions with these exact product IDs, activate them, and use a licensed test account.$emulatorHint';
       } else if (monthly == null && yearly == null) {
         err ??=
             'No subscription products returned. Add ${IapProductConfig.monthlyProductId} and ${IapProductConfig.yearlyProductId} in Google Play Console.';
@@ -532,7 +532,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                 if (!_isPremiumActive) ...[
                   const CgResponsiveContainer(
                     child: Text(
-                      'Unlock the full ConnectGHIN experience',
+                      'Unlock the full Connectghin experience',
                       style: TextStyle(fontSize: 15, color: CgColors.gray600),
                     ),
                   ),
@@ -838,7 +838,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'After purchase, ConnectGHIN syncs your membership from the receipt your device shares with our servers.',
+                              'After purchase, Connectghin syncs your membership from the receipt your device shares with our servers.',
                               style: TextStyle(fontSize: 12, color: CgColors.blue700, height: 1.35),
                             ),
                           ),
@@ -1087,7 +1087,7 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 const Text('What You\'re Missing', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
                 const SizedBox(height: 12),
-                _missingRow('Unlimited swipes on Find Your 4th'),
+                _missingRow('Unlimited swipes on Pair Up'),
                 _missingRow('Message anyone without matching first'),
                 _missingRow('Advanced filters'),
                 _missingRow('Priority customer support'),

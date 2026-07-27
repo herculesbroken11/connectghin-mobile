@@ -2,7 +2,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../app/config/app_secrets.dart';
 
-/// Google Sign-In for ConnectGHIN (Android/iOS release + debug).
+/// Google Sign-In for Connectghin (Android/iOS release + debug).
 abstract final class GoogleSignInHelper {
   static Future<void>? _init;
   static String? _initClientId;

@@ -1,35 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../design_tokens.dart';
 
 class AppTheme {
   static ThemeData light() {
+    final baseText = GoogleFonts.dmSansTextTheme();
+    final display = GoogleFonts.fraunces();
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: CgColors.gray50,
+      scaffoldBackgroundColor: CgColors.cream,
       colorScheme: const ColorScheme.light(
         primary: CgColors.green700,
         onPrimary: CgColors.white,
-        secondary: CgColors.green100,
-        onSecondary: CgColors.green800,
+        secondary: CgColors.premiumGold,
+        onSecondary: CgColors.charcoal,
         surface: CgColors.white,
         onSurface: CgColors.gray900,
         error: CgColors.destructive,
         onError: CgColors.white,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: CgColors.white,
+        backgroundColor: CgColors.cream,
         foregroundColor: CgColors.gray900,
         centerTitle: true,
+        titleTextStyle: display.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: CgColors.gray900,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: CgColors.inputBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(CgRadii.md),
+          borderRadius: BorderRadius.circular(CgRadii.lg),
           borderSide: BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -39,26 +48,29 @@ class AppTheme {
           backgroundColor: CgColors.green700,
           foregroundColor: CgColors.white,
           elevation: 0,
-          // Keep a consistent min height without forcing infinite width in Row.
           minimumSize: const Size(0, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(CgRadii.md)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(CgRadii.lg)),
+          textStyle: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: CgColors.gray900,
-          // Keep a consistent min height without forcing infinite width in Row.
           minimumSize: const Size(0, 48),
           side: const BorderSide(color: CgColors.gray300),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(CgRadii.md)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(CgRadii.lg)),
+          textStyle: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600),
         ),
+      ),
+      cardTheme: CardThemeData(
+        color: CgColors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(CgRadii.card)),
+        shadowColor: CgColors.charcoal.withValues(alpha: 0.12),
       ),
       switchTheme: SwitchThemeData(
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return CgColors.white;
           return CgColors.white;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -67,54 +79,61 @@ class AppTheme {
         }),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
       ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
+      textTheme: baseText.copyWith(
+        headlineLarge: display.copyWith(
           fontSize: 30,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
+          color: CgColors.gray900,
+          height: 1.2,
+          decoration: TextDecoration.none,
+        ),
+        headlineMedium: display.copyWith(
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
           color: CgColors.gray900,
           height: 1.25,
           decoration: TextDecoration.none,
         ),
-        headlineMedium: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w500,
+        headlineSmall: display.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
           color: CgColors.gray900,
           height: 1.3,
           decoration: TextDecoration.none,
         ),
-        titleLarge: TextStyle(
+        titleLarge: GoogleFonts.dmSans(
           fontSize: 18,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: CgColors.gray900,
           decoration: TextDecoration.none,
         ),
-        titleMedium: TextStyle(
+        titleMedium: GoogleFonts.dmSans(
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           color: CgColors.gray900,
           decoration: TextDecoration.none,
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: GoogleFonts.dmSans(
           fontSize: 16,
           color: CgColors.gray900,
           height: 1.5,
           decoration: TextDecoration.none,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: GoogleFonts.dmSans(
           fontSize: 14,
           color: CgColors.gray600,
           height: 1.5,
           decoration: TextDecoration.none,
         ),
-        bodySmall: TextStyle(
+        bodySmall: GoogleFonts.dmSans(
           fontSize: 12,
           color: CgColors.gray600,
           height: 1.5,
           decoration: TextDecoration.none,
         ),
-        labelLarge: TextStyle(
+        labelLarge: GoogleFonts.dmSans(
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           color: CgColors.gray900,
           decoration: TextDecoration.none,
         ),

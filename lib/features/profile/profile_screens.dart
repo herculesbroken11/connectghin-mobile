@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -18,9 +21,11 @@ import '../../core/widgets/cg_handicap_verified_badge.dart';
 import '../../core/widgets/cg_player_ratings_profile_section.dart';
 import '../../core/widgets/cg_premium_badge.dart';
 import '../../core/widgets/cg_premium_locked_cta.dart';
+import '../../core/widgets/cg_profile_post_card.dart';
 import '../../core/widgets/cg_rating_chip.dart';
 import '../player_ratings/data/player_ratings_api.dart';
 import '../profiles/data/profiles_api.dart';
+import 'data/profile_posts_api.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -35,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _userJson;
   int _matchCount = 0;
   GolferRatingSummary _ratingSummary = const GolferRatingSummary();
+  List<ProfilePostItem> _posts = [];
   bool _loading = true;
   String? _error;
   int _lastProfileTick = -1;
@@ -107,18 +113,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final api = ProfilesApi(session.apiClient);
       final matchesApi = MatchesApi(session.apiClient);
       final ratingsApi = PlayerRatingsApi(session.apiClient);
+      final postsApi = ProfilePostsApi(session.apiClient);
       final uid = session.userId;
       GolferRatingSummary ratingSummary = const GolferRatingSummary();
+      List<ProfilePostItem> posts = [];
       final results = await Future.wait<Object>([
         api.getMe(t),
         matchesApi.list(t),
         if (uid != null) ratingsApi.listForUser(t, uid, status: 'approved', pageSize: 1) else Future.value(<String, dynamic>{}),
+        if (uid != null) postsApi.listForUser(t, uid) else Future.value(<String, dynamic>{}),
       ]);
       final profileJson = results[0] as Map<String, dynamic>;
       final matches = results[1] as List<dynamic>;
       if (results.length > 2) {
         final ratingsJson = results[2] as Map<String, dynamic>;
         ratingSummary = GolferRatingSummary.fromJson(ratingsJson['profileSummary'] as Map<String, dynamic>?);
+      }
+      if (results.length > 3) {
+        final postsJson = results[3] as Map<String, dynamic>;
+        posts = (postsJson['items'] as List<dynamic>? ?? [])
+            .map((e) => ProfilePostItem.fromJson(e as Map<String, dynamic>))
+            .whereType<ProfilePostItem>()
+            .toList();
       }
       final user = profileJson['user'] as Map<String, dynamic>?;
       final parsed = ApiGolferCard.fromDiscoveryProfile(profileJson);
@@ -134,8 +150,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               distanceMiles: parsed.distanceMiles,
               imageUrl: preferredImage ?? parsed.imageUrl,
               verified: parsed.verified,
+              isPremium: parsed.isPremium,
+              rating: parsed.rating,
               bio: parsed.bio,
               homeCourse: parsed.homeCourse,
+              skillLevel: parsed.skillLevel,
+              playFrequency: parsed.playFrequency,
+              smokingPreference: parsed.smokingPreference,
+              musicPreference: parsed.musicPreference,
+              drinkingPreference: parsed.drinkingPreference,
             );
       if (!mounted) return;
       setState(() {
@@ -144,6 +167,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _card = card;
         _matchCount = matches.length;
         _ratingSummary = ratingSummary;
+        _posts = posts;
         _loading = false;
       });
     } catch (e) {
@@ -153,6 +177,164 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _deletePost(ProfilePostItem post) async {
+    final session = context.read<AuthSession>();
+    final t = session.accessToken;
+    if (t == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete post?'),
+        content: const Text('This removes the post from your profile.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ProfilePostsApi(session.apiClient).deletePost(accessToken: t, postId: post.id);
+      if (!mounted) return;
+      setState(() => _posts = _posts.where((p) => p.id != post.id).toList());
+      showUserMessageSnackBar(context, 'Post deleted');
+    } catch (e) {
+      if (mounted) showApiErrorSnackBar(context, e);
+    }
+  }
+
+  void _openCreatePostSheet() {
+    final captionCtrl = TextEditingController();
+    String? pickedPath;
+    var saving = false;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: CgColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModal) {
+            final bottom = MediaQuery.viewInsetsOf(context).bottom;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 12, 20, bottom + 20),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: CgColors.gray300,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Share a moment',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Course, group pic, landscape — or just a caption.',
+                      style: TextStyle(fontSize: 13, color: CgColors.gray500),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: captionCtrl,
+                      maxLines: 4,
+                      maxLength: 2000,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: 'Great pace today at Harding Park…',
+                        filled: true,
+                        fillColor: CgColors.inputBg,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              final file = await ImagePicker().pickImage(
+                                source: ImageSource.gallery,
+                                imageQuality: 85,
+                                maxWidth: 1600,
+                              );
+                              if (file != null) setModal(() => pickedPath = file.path);
+                            },
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: Text(pickedPath == null ? 'Add photo' : 'Photo selected'),
+                    ),
+                    if (pickedPath != null) ...[
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(pickedPath!),
+                          height: 160,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    CgPrimaryButton(
+                      label: saving ? 'Posting…' : 'Post to profile',
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              final caption = captionCtrl.text.trim();
+                              if (caption.isEmpty && pickedPath == null) {
+                                showUserMessageSnackBar(context, 'Add a caption or a photo');
+                                return;
+                              }
+                              setModal(() => saving = true);
+                              final session = context.read<AuthSession>();
+                              final t = session.accessToken;
+                              if (t == null) return;
+                              try {
+                                final api = ProfilePostsApi(session.apiClient);
+                                if (pickedPath != null) {
+                                  await api.createWithImage(
+                                    accessToken: t,
+                                    filePath: pickedPath!,
+                                    body: caption.isEmpty ? null : caption,
+                                  );
+                                } else {
+                                  await api.createText(accessToken: t, body: caption);
+                                }
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                await _load();
+                                if (mounted) {
+                                  showUserMessageSnackBar(context, 'Posted — nice shot!');
+                                }
+                              } catch (e) {
+                                setModal(() => saving = false);
+                                if (mounted) showApiErrorSnackBar(context, e);
+                              }
+                            },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   ApiGolferCard? _fallbackCardFromProfile() {
@@ -346,7 +528,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Builder(
                     builder: (context) {
                       final topPad = MediaQuery.paddingOf(context).top;
-                      const greenContentH = 112.0;
+                      const greenContentH = 132.0;
                       return SizedBox(
                         height: topPad + greenContentH,
                         child: Stack(
@@ -356,10 +538,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [
-                                      CgColors.green700,
-                                      CgColors.green900
-                                    ],
+                                    colors: CgColors.headerGradient,
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -397,19 +576,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             : () => _showProfilePhotoGallery(
                                                 context, photoUrls),
                                         child: Container(
-                                          width: 88,
-                                          height: 88,
+                                          width: 112,
+                                          height: 112,
                                           decoration: BoxDecoration(
                                             color: CgColors.gray200,
                                             borderRadius:
-                                                BorderRadius.circular(14),
+                                                BorderRadius.circular(20),
                                             border: Border.all(
-                                                color: CgColors.white,
+                                                color: CgColors.premiumGold,
                                                 width: 3),
                                             boxShadow: const [
                                               BoxShadow(
-                                                  color: Colors.black12,
-                                                  blurRadius: 6)
+                                                  color: Colors.black26,
+                                                  blurRadius: 10)
                                             ],
                                           ),
                                           clipBehavior: Clip.antiAlias,
@@ -419,7 +598,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   fit: BoxFit.cover)
                                               : const Center(
                                                   child: Icon(Icons.person,
-                                                      size: 40,
+                                                      size: 48,
                                                       color: CgColors.gray500),
                                                 ),
                                         ),
@@ -428,13 +607,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         Positioned(
                                           right: -2,
                                           bottom: -2,
-                                          child: CgHandicapVerifiedAvatarBadge(size: 28),
+                                          child: CgHandicapVerifiedAvatarBadge(size: 30),
                                         )
                                       else if (_premium)
                                         Positioned(
                                           right: -2,
                                           bottom: -2,
-                                          child: CgPremiumAvatarBadge(size: 28),
+                                          child: CgPremiumAvatarBadge(size: 30),
                                         ),
                                     ],
                                   ),
@@ -503,7 +682,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       child: const Text('Free member', style: TextStyle(fontSize: 12, color: CgColors.gray600)),
                                     )
                                   else
-                                    const Align(alignment: Alignment.centerLeft, child: CgPremiumBadge(compact: true)),
+                                    const Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: CgPremiumBadge(compact: false),
+                                    ),
                                 ],
                               ),
                             ),
@@ -583,6 +765,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _whiteCard(
                           title: 'Playing Preferences',
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _KeyValueRow(
                                   'Pace',
@@ -599,8 +782,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               _KeyValueRow('Smoking', smoke),
                               const SizedBox(height: 12),
                               _KeyValueRow('Music', music),
+                              const SizedBox(height: 14),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _prefChip(drink != '—' ? 'Drink: $drink' : 'Drink TBD'),
+                                  _prefChip(smoke != '—' ? 'Smoke: $smoke' : 'Smoke TBD'),
+                                  _prefChip(music != '—' ? 'Music: $music' : 'Music TBD'),
+                                  _prefChip('420 Friendly'),
+                                  if ((_profileJson?['skillLevel'] as String?)?.isNotEmpty == true)
+                                    _prefChip(_profileJson!['skillLevel'] as String),
+                                ],
+                              ),
                             ],
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        _whiteCard(
+                          title: 'Profile Posts',
+                          trailing: TextButton.icon(
+                            onPressed: _openCreatePostSheet,
+                            icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                            label: const Text('Post'),
+                          ),
+                          child: _posts.isEmpty
+                              ? Column(
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(18),
+                                      decoration: BoxDecoration(
+                                        color: CgColors.cream,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: CgColors.gray200),
+                                      ),
+                                      child: const Column(
+                                        children: [
+                                          Icon(Icons.sports_golf, size: 36, color: CgColors.green700),
+                                          SizedBox(height: 10),
+                                          Text(
+                                            'Share the fun',
+                                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                                          ),
+                                          SizedBox(height: 6),
+                                          Text(
+                                            'Post course shots, group pics, or a quick note from the round.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(fontSize: 13, color: CgColors.gray600, height: 1.35),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    CgPrimaryButton(
+                                      label: 'Create your first post',
+                                      onPressed: _openCreatePostSheet,
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    for (var i = 0; i < _posts.length; i++) ...[
+                                      if (i > 0) const SizedBox(height: 10),
+                                      CgProfilePostCard(
+                                        post: _posts[i],
+                                        onDelete: () => _deletePost(_posts[i]),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                         ),
                         const SizedBox(height: 16),
                         if (!_verified)
@@ -737,9 +988,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: CgColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: CgColors.gray200),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
+        boxShadow: CgShadows.soft,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -765,6 +1016,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           child,
         ],
+      ),
+    );
+  }
+
+  static Widget _prefChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: CgColors.green50,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: CgColors.green100),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CgColors.green800),
       ),
     );
   }
@@ -1254,6 +1520,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
   OtherUserProfileDetail? _detail;
   GolferRatingSummary _ratingsSummary = const GolferRatingSummary();
   List<Map<String, dynamic>> _recentReviews = [];
+  List<ProfilePostItem> _posts = [];
   int _totalReviewCount = 0;
   bool _viewerPremium = false;
   bool _isMatched = false;
@@ -1287,16 +1554,19 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
       final api = ProfilesApi(session.apiClient);
       final ratingsApi = PlayerRatingsApi(session.apiClient);
       final matchesApi = MatchesApi(session.apiClient);
+      final postsApi = ProfilePostsApi(session.apiClient);
       final results = await Future.wait<Object>([
         api.getPublic(accessToken: t, userId: widget.userId),
         ratingsApi.listForUser(t, widget.userId, status: 'approved', pageSize: 3),
         api.getMe(t),
         matchesApi.list(t),
+        postsApi.listForUser(t, widget.userId),
       ]);
       final j = results[0] as Map<String, dynamic>;
       final ratingsJson = results[1] as Map<String, dynamic>;
       final meJson = results[2] as Map<String, dynamic>;
       final matches = results[3] as List<dynamic>;
+      final postsJson = results[4] as Map<String, dynamic>;
       final detail = OtherUserProfileDetail.fromPublicProfileJson(
         j,
         distanceMilesHint: widget.distanceMilesHint,
@@ -1308,6 +1578,10 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           .whereType<Map<String, dynamic>>()
           .toList();
       final totalReviews = (ratingsJson['total'] as num?)?.toInt() ?? summary.reviewCount;
+      final posts = (postsJson['items'] as List<dynamic>? ?? [])
+          .map((e) => ProfilePostItem.fromJson(e as Map<String, dynamic>))
+          .whereType<ProfilePostItem>()
+          .toList();
       final meUser = meJson['user'] as Map<String, dynamic>?;
       final viewerPremium = meUser?['membershipType'] == 'PREMIUM';
       final viewerId = session.userId;
@@ -1331,6 +1605,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           _detail = detail;
           _ratingsSummary = summary;
           _recentReviews = reviews;
+          _posts = posts;
           _totalReviewCount = totalReviews;
           _viewerPremium = viewerPremium;
           _isMatched = matched;
@@ -1369,7 +1644,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     final d = _detail;
     if (d == null) return;
     await SharePlus.instance
-        .share(ShareParams(text: '${d.displayName} — ConnectGHIN golfer'));
+        .share(ShareParams(text: '${d.displayName} — Connectghin golfer'));
   }
 
   static String _memberSinceLabel(DateTime? d) {
@@ -1408,6 +1683,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
 
     add('Pace', d.playFrequency);
     add('Competition', d.skillLevel);
+    add('Drinking', d.drinkingPreference);
     add('Smoking', d.smokingPreference);
     add('Music', d.musicPreference);
     return rows;
@@ -1520,7 +1796,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                                   icon: Icons.share_rounded, onTap: _share),
                               if (d.isPremium) ...[
                                 const SizedBox(height: 10),
-                                const CgPremiumBadge(compact: true),
+                                const CgPremiumBadge(compact: false),
                               ],
                               if (d.verified) ...[
                                 const SizedBox(height: 10),
@@ -1647,7 +1923,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      if (d.isPremium) const CgPremiumBadge(compact: true),
+                      if (d.isPremium) const CgPremiumBadge(compact: false),
                       if (d.verified) const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
                       CgRatingChip(
                         averageRating: _ratingsSummary.averageRating ?? d.rating.averageRating,
@@ -1751,7 +2027,73 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                             fontSize: 17, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
                     _PreferenceCard(rows: prefs),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final row in prefs)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: CgColors.green50,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: CgColors.green100),
+                            ),
+                            child: Text(
+                              '${row.key}: ${row.value}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: CgColors.green800,
+                              ),
+                            ),
+                          ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: CgColors.yellow50,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: CgColors.yellow200),
+                          ),
+                          child: const Text(
+                            '420 Friendly',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: CgColors.yellow800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
+                  const SizedBox(height: 28),
+                  const Text('Recent Posts',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 12),
+                  if (_posts.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: CgColors.cream,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: CgColors.gray200),
+                      ),
+                      child: const Text(
+                        'No posts yet — check back after their next round.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: CgColors.gray600, fontSize: 13),
+                      ),
+                    )
+                  else
+                    ...[
+                      for (var i = 0; i < _posts.length; i++) ...[
+                        if (i > 0) const SizedBox(height: 10),
+                        CgProfilePostCard(post: _posts[i]),
+                      ],
+                    ],
                   const SizedBox(height: 28),
                   CgPlayerRatingsProfileSection(
                     summary: _ratingsSummary.hasRating ? _ratingsSummary : d.rating,

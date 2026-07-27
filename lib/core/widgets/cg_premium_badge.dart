@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/design_tokens.dart';
 
-/// Gold/amber premium badge with crown icon.
+/// Gold premium badge with crown icon — high visibility.
 class CgPremiumBadge extends StatelessWidget {
   const CgPremiumBadge({
     super.key,
@@ -15,21 +15,26 @@ class CgPremiumBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = compact ? 11.0 : 13.0;
-    final fontSize = compact ? 10.0 : 11.0;
-    final hPad = compact ? 6.0 : 8.0;
-    final vPad = compact ? 3.0 : 5.0;
+    final iconSize = compact ? 13.0 : 16.0;
+    final fontSize = compact ? 11.0 : 13.0;
+    final hPad = compact ? 8.0 : 12.0;
+    final vPad = compact ? 4.0 : 7.0;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
       decoration: BoxDecoration(
-        color: CgColors.premiumGold,
+        gradient: const LinearGradient(
+          colors: [CgColors.premiumGoldLight, CgColors.premiumGold, CgColors.premiumGoldDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: CgColors.white.withValues(alpha: 0.55), width: 1),
         boxShadow: [
           BoxShadow(
-            color: CgColors.premiumGold.withValues(alpha: 0.35),
-            blurRadius: compact ? 0 : 4,
-            offset: const Offset(0, 1),
+            color: CgColors.premiumGold.withValues(alpha: 0.45),
+            blurRadius: compact ? 6 : 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -38,14 +43,14 @@ class CgPremiumBadge extends StatelessWidget {
         children: [
           Icon(Icons.workspace_premium_rounded, size: iconSize, color: CgColors.white),
           if (showLabel) ...[
-            const SizedBox(width: 4),
+            const SizedBox(width: 5),
             Text(
               'Premium',
               style: TextStyle(
                 color: CgColors.white,
                 fontSize: fontSize,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
               ),
             ),
           ],
