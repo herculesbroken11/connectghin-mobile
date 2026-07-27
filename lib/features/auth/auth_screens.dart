@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
         context.go(AppPaths.login);
         return;
       }
-      context.go(AppPaths.app);
+      context.go(session.postAuthLocation);
     } catch (e) {
       if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {
@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
         signInMethod: 'google',
       );
       if (!mounted) return;
-      context.go(AppPaths.app);
+      context.go(session.postAuthLocation);
     } catch (e) {
       if (!mounted || isSignInCancelledError(e)) return;
       setState(() => _googleError = messageFromGoogleSignInError(e));
@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
         signInMethod: 'apple',
       );
       if (!mounted) return;
-      context.go(AppPaths.app);
+      context.go(session.postAuthLocation);
     } catch (e) {
       if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {
@@ -438,7 +438,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         signInMethod: 'google',
       );
       if (!mounted) return;
-      context.go(AppPaths.onboardingBasic);
+      context.go(session.postAuthLocation);
     } catch (e) {
       if (!mounted || isSignInCancelledError(e)) return;
       setState(() => _googleError = messageFromGoogleSignInError(e));
@@ -473,7 +473,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         signInMethod: 'apple',
       );
       if (!mounted) return;
-      context.go(AppPaths.onboardingBasic);
+      context.go(session.postAuthLocation);
     } catch (e) {
       if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
     } finally {

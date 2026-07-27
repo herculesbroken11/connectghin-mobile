@@ -737,14 +737,17 @@ class _OnboardingPhotosScreenState extends State<OnboardingPhotosScreen> {
   void _completeSetup() {
     if (_photos.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least 2 photos to complete setup, or skip for now.')),
+        const SnackBar(content: Text('Add at least 2 photos to complete setup.')),
       );
       return;
     }
-    context.go(AppPaths.app);
+    unawaited(_finishOnboarding());
   }
 
-  void _skip() {
+  Future<void> _finishOnboarding() async {
+    final session = context.read<AuthSession>();
+    await session.refreshProfileSetupStatus();
+    if (!mounted) return;
     context.go(AppPaths.app);
   }
 
@@ -757,15 +760,7 @@ class _OnboardingPhotosScreenState extends State<OnboardingPhotosScreen> {
       isBusy: _uploading,
       nextLabel: 'Complete Setup',
       onNext: _completeSetup,
-      primaryEnabled: !_uploading && !_loading,
-      footerBelowButton: TextButton(
-        style: TextButton.styleFrom(
-          foregroundColor: CgColors.gray700,
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        onPressed: _loading || _uploading ? null : _skip,
-        child: const Text('Skip for now'),
-      ),
+      primaryEnabled: !_uploading && !_loading && _photos.length >= 2,
       child: _loading
           ? const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: CgColors.green700)))
           : Column(
@@ -1082,7 +1077,6 @@ class _OnboardingScaffold extends StatelessWidget {
     this.nextLabel = 'Continue',
     this.isBusy = false,
     this.primaryEnabled = true,
-    this.footerBelowButton,
   });
 
   final int stepIndex;
@@ -1093,7 +1087,6 @@ class _OnboardingScaffold extends StatelessWidget {
   final String nextLabel;
   final bool isBusy;
   final bool primaryEnabled;
-  final Widget? footerBelowButton;
 
   @override
   Widget build(BuildContext context) {
@@ -1163,10 +1156,6 @@ class _OnboardingScaffold extends StatelessWidget {
                       borderRadius: 12,
                       minHeight: 52,
                     ),
-                    if (footerBelowButton != null) ...[
-                      const SizedBox(height: 12),
-                      Center(child: footerBelowButton!),
-                    ],
                   ],
                 ),
               ),

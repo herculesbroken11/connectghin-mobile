@@ -102,7 +102,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (data is Map<String, dynamic>) {
       final cid = data['conversationId'] as String?;
       if (cid != null && cid.isNotEmpty && mounted) {
-        context.push('${AppPaths.appMessages}/$cid');
+        final peer = data['senderId'] as String? ?? data['peerUserId'] as String?;
+        final name = data['senderName'] as String? ?? data['peerName'] as String?;
+        final q = <String>[];
+        if (peer != null && peer.isNotEmpty) q.add('peer=${Uri.encodeComponent(peer)}');
+        if (name != null && name.isNotEmpty) q.add('name=${Uri.encodeComponent(name)}');
+        final suffix = q.isEmpty ? '' : '?${q.join('&')}';
+        context.push('${AppPaths.appMessages}/$cid$suffix');
         return;
       }
     }

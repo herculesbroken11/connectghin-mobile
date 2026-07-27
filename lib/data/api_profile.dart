@@ -17,8 +17,8 @@ List<Map<String, dynamic>> _sortProfilePhotos(List<dynamic> photos) {
     final aPrimary = a['isPrimary'] == true ? 1 : 0;
     final bPrimary = b['isPrimary'] == true ? 1 : 0;
     if (aPrimary != bPrimary) return bPrimary.compareTo(aPrimary);
-    final aOrder = a['sortOrder'] as int? ?? 0;
-    final bOrder = b['sortOrder'] as int? ?? 0;
+    final aOrder = (a['sortOrder'] is num) ? (a['sortOrder'] as num).toInt() : int.tryParse('${a['sortOrder']}') ?? 0;
+    final bOrder = (b['sortOrder'] is num) ? (b['sortOrder'] as num).toInt() : int.tryParse('${b['sortOrder']}') ?? 0;
     return aOrder.compareTo(bOrder);
   });
   return maps;
@@ -200,9 +200,24 @@ class ApiGolferCard {
     }
     final u = json['user'] as Map<String, dynamic>?;
     if (u != null) {
-      return fromUserJson(u);
+      final fromUser = fromUserJson(u);
+      if (fromUser != null) return fromUser;
     }
-    return null;
+    // Public profile without nested user.profile (GET /profiles/:id).
+    final userId = json['userId'] as String? ?? u?['id'] as String?;
+    if (userId == null) return null;
+    final name = (json['displayName'] as String?)?.trim();
+    if (name == null || name.isEmpty) return null;
+    final photos = (u?['profilePhotos'] as List<dynamic>?) ?? (json['profilePhotos'] as List<dynamic>?);
+    return ApiGolferCard(
+      userId: userId,
+      displayName: name,
+      age: json['age'] is int ? json['age'] as int : int.tryParse('${json['age'] ?? ''}'),
+      cityLine: 'Nearby',
+      handicap: _parseDecimal(json['handicap']),
+      imageUrl: _firstProfilePhotoUrl(photos),
+      verified: json['isGHINVerified'] as bool? ?? false,
+    );
   }
 
   /// Nested `user` from conversation participants (`profile` + `profilePhotos` on user).

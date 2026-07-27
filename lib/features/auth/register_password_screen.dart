@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/design_tokens.dart';
-import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/layout/cg_fit_height_body.dart';
 import '../../core/network/api_user_message.dart';
@@ -69,7 +68,7 @@ class _RegisterPasswordScreenState extends State<RegisterPasswordScreen> {
         refresh: res['refreshToken'] as String,
         signInMethod: 'email',
       );
-      if (mounted) context.push(AppPaths.onboardingBasic);
+      if (mounted) context.go(session.postAuthLocation);
     } catch (e) {
       if (mounted) showApiErrorSnackBar(context, e);
     } finally {

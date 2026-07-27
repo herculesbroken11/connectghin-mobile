@@ -121,7 +121,9 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
       final convId = conv?['id'] as String?;
       if (convId != null && mounted) {
         context.push(
-          '${AppPaths.appMessages}/$convId?peer=${Uri.encodeComponent(post.posterId)}',
+          '${AppPaths.appMessages}/$convId'
+          '?peer=${Uri.encodeComponent(post.posterId)}'
+          '&name=${Uri.encodeComponent(post.posterName)}',
         );
       }
     } catch (e) {

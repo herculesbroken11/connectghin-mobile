@@ -423,7 +423,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       final hasHandicap = me['handicap'] != null;
       if (!mounted) return;
       setState(() {
-        _hasPhoto = photos.isNotEmpty;
+        _hasPhoto = photos.length >= 2;
         _hasBio = bio.isNotEmpty;
         _hasGolfPrefs = hasHandicap || looking.isNotEmpty || drink.isNotEmpty || smoke.isNotEmpty || music.isNotEmpty;
         _hasHomeCourse = home.isNotEmpty;
@@ -452,7 +452,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           : ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                _checkRow('Profile photo', _hasPhoto, () => context.push(AppPaths.appManagePhotos)),
+                _checkRow('At least 2 profile photos', _hasPhoto, () => context.push(AppPaths.appManagePhotos)),
                 _checkRow('Bio & about you', _hasBio, () => context.push(AppPaths.appProfileEdit)),
                 _checkRow('Golf preferences', _hasGolfPrefs, () => context.push(AppPaths.appProfileEdit)),
                 _checkRow('Home course', _hasHomeCourse, () => context.push(AppPaths.appProfileEdit)),

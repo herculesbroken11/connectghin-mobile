@@ -1633,7 +1633,10 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
       final id = conv['id'] as String;
       if (mounted) {
         context.push(
-            '${AppPaths.appMessages}/$id?peer=${Uri.encodeComponent(_detail!.userId)}');
+          '${AppPaths.appMessages}/$id'
+          '?peer=${Uri.encodeComponent(_detail!.userId)}'
+          '&name=${Uri.encodeComponent(_detail!.displayName)}',
+        );
       }
     } catch (e) {
       if (mounted) showApiErrorSnackBar(context, e);

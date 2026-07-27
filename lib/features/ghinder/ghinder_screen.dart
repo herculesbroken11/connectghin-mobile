@@ -268,7 +268,9 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                     final id = conv['id'] as String;
                                     if (!mounted) return;
                                     context.push(
-                                      '${AppPaths.appMessages}/$id?peer=${Uri.encodeComponent(peer.userId)}',
+                                      '${AppPaths.appMessages}/$id'
+                                      '?peer=${Uri.encodeComponent(peer.userId)}'
+                                      '&name=${Uri.encodeComponent(peer.displayName)}',
                                     );
                                   } catch (e) {
                                     if (!mounted) return;

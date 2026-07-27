@@ -164,7 +164,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final id = conv['id'] as String;
       if (mounted) {
         await context.push<String>(
-          '${AppPaths.appMessages}/$id?peer=${Uri.encodeComponent(g.userId)}',
+          '${AppPaths.appMessages}/$id'
+          '?peer=${Uri.encodeComponent(g.userId)}'
+          '&name=${Uri.encodeComponent(g.displayName)}',
         );
         if (mounted) await _load();
       }
@@ -197,8 +199,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const CgAuthBrandMark(
-                          size: 52,
-                          variant: CgAppLogoVariant.mark,
+                          size: 56,
+                          variant: CgAppLogoVariant.full,
                           plate: true,
                         ),
                         const SizedBox(width: 14),

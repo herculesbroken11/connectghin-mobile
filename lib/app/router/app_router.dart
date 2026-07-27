@@ -48,9 +48,42 @@ GoRouter createAppRouter(AuthSession auth) {
       final needsAuth = path.startsWith('/app/') || path == '/app';
       final isAuthPage =
           path == AppPaths.login || path == AppPaths.register || path == AppPaths.registerPassword;
+      final isOnboarding = path.startsWith('/onboarding');
+      final isSetupExempt = isOnboarding ||
+          path == AppPaths.support ||
+          path == AppPaths.legalTerms ||
+          path == AppPaths.legalPrivacy ||
+          path == AppPaths.appManagePhotos ||
+          path == AppPaths.appProfileEdit ||
+          path == AppPaths.appCompleteProfile ||
+          path == AppPaths.appLogoutConfirm ||
+          path == AppPaths.appDeleteAccount ||
+          path == AppPaths.appChangePassword ||
+          path == AppPaths.appChangeEmail ||
+          path == AppPaths.appChangeUsername ||
+          path == AppPaths.appEnableLocation ||
+          path == AppPaths.appManualLocation ||
+          path == AppPaths.appLocationPermission ||
+          path == AppPaths.appNotificationPermission ||
+          path == AppPaths.appNoConnection ||
+          path == AppPaths.appError ||
+          path == AppPaths.appAccountSuspended;
+
       if (needsAuth && !authed) return AppPaths.login;
-      if (authed && isAuthPage) return AppPaths.app;
-      if (authed && path == AppPaths.welcome) return AppPaths.app;
+      if (authed && isAuthPage) {
+        return auth.postAuthLocation;
+      }
+      if (authed && path == AppPaths.welcome) {
+        return auth.postAuthLocation;
+      }
+      // Incomplete profiles cannot use the main shell (Home included), even after Google sign-in.
+      if (authed && auth.profileSetupComplete != true && needsAuth && !isSetupExempt) {
+        return auth.onboardingResumePath;
+      }
+      // Already complete — never force onboarding again on later sign-ins.
+      if (authed && auth.profileSetupComplete == true && isOnboarding) {
+        return AppPaths.app;
+      }
 
       return null;
     },
@@ -185,6 +218,7 @@ GoRouter createAppRouter(AuthSession auth) {
           builder: (context, state) => ChatThreadScreen(
             conversationId: state.pathParameters['id']!,
             peerUserId: state.uri.queryParameters['peer'],
+            initialPeerName: state.uri.queryParameters['name'],
             matchedAtIso: state.uri.queryParameters['matchedAt'],
           ),
         ),

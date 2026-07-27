@@ -222,7 +222,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
       if (r.conversationId != null && r.conversationId!.isNotEmpty) {
         if (!mounted) return;
         await context.push<String>(
-          '${AppPaths.appMessages}/${r.conversationId}?peer=${Uri.encodeComponent(peer)}&matchedAt=$matchedIso',
+          '${AppPaths.appMessages}/${r.conversationId}'
+          '?peer=${Uri.encodeComponent(peer)}'
+          '&name=${Uri.encodeComponent(r.card.displayName)}'
+          '&matchedAt=$matchedIso',
         );
         if (mounted) await _load(silent: true);
         return;
@@ -231,7 +234,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
       final id = conv['id'] as String;
       if (mounted) {
         await context.push<String>(
-          '${AppPaths.appMessages}/$id?peer=${Uri.encodeComponent(peer)}&matchedAt=$matchedIso',
+          '${AppPaths.appMessages}/$id'
+          '?peer=${Uri.encodeComponent(peer)}'
+          '&name=${Uri.encodeComponent(r.card.displayName)}'
+          '&matchedAt=$matchedIso',
         );
         if (mounted) await _load(silent: true);
       }

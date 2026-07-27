@@ -161,7 +161,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                   child: InkWell(
                                     onTap: () async {
                                       await context.push<String>(
-                                        '${AppPaths.appMessages}/${c.conversationId}?peer=${Uri.encodeComponent(c.other.userId)}',
+                                        '${AppPaths.appMessages}/${c.conversationId}'
+                                        '?peer=${Uri.encodeComponent(c.other.userId)}'
+                                        '&name=${Uri.encodeComponent(c.other.displayName)}',
                                       );
                                       if (mounted) await _load();
                                     },
@@ -432,11 +434,14 @@ class ChatThreadScreen extends StatefulWidget {
     super.key,
     required this.conversationId,
     this.peerUserId,
+    this.initialPeerName,
     this.matchedAtIso,
   });
 
   final String conversationId;
   final String? peerUserId;
+  /// Passed from Matches / inbox so the header shows the real name immediately.
+  final String? initialPeerName;
   /// From Matches flow — shows "You matched on …" banner when set.
   final String? matchedAtIso;
 
@@ -449,7 +454,8 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   final _scroll = ScrollController();
 
   bool _loading = true;
-  String? _titleName = 'Chat';
+  String _titleName = 'Golfer';
+  String? _resolvedPeerUserId;
   String? _titleAgeSuffix;
   String? _subtitleHcp;
   String? _avatarUrl;
@@ -458,9 +464,15 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   final Set<String> _messageIds = {};
   ChatRealtimeConnection? _realtime;
 
+  String? get _peerId => widget.peerUserId ?? _resolvedPeerUserId;
+
   @override
   void initState() {
     super.initState();
+    final initial = widget.initialPeerName?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      _titleName = initial;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
@@ -476,23 +488,63 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) return;
-    if (widget.peerUserId != null) {
+    await _resolvePeerHeader(session, t);
+    await _loadMessages();
+    _startRealtime();
+  }
+
+  Future<void> _resolvePeerHeader(AuthSession session, String t) async {
+    var peerId = widget.peerUserId;
+
+    if (peerId == null || peerId.isEmpty) {
       try {
-        final prof = await ProfilesApi(session.apiClient).getPublic(accessToken: t, userId: widget.peerUserId!);
-        final card = ApiGolferCard.fromAnyProfileJson(prof);
-        if (card != null && mounted) {
+        final raw = await MessagesApi(session.apiClient).listConversations(t);
+        final myId = session.userId;
+        for (final row in raw) {
+          if (row is! Map<String, dynamic>) continue;
+          final parsed = _ConvRow.tryParse(row, myId ?? '');
+          if (parsed == null) continue;
+          if (parsed.conversationId != widget.conversationId) continue;
+          peerId = parsed.other.userId;
+          if (!mounted) return;
           setState(() {
-            _titleName = card.displayName;
-            _titleAgeSuffix = card.age != null ? ', ${card.age}' : null;
-            _subtitleHcp = card.handicap != null ? '${card.handicap} HCP' : null;
-            _avatarUrl = card.imageUrl;
-            _peerVerified = card.verified;
+            _resolvedPeerUserId = peerId;
+            _applyPeerCard(parsed.other);
           });
+          break;
         }
       } catch (_) {}
     }
-    await _loadMessages();
-    _startRealtime();
+
+    if (peerId == null || peerId.isEmpty) return;
+
+    try {
+      final prof = await ProfilesApi(session.apiClient).getPublic(accessToken: t, userId: peerId);
+      final detail = OtherUserProfileDetail.fromPublicProfileJson(prof);
+      final card = ApiGolferCard.fromAnyProfileJson(prof);
+      if (!mounted) return;
+      setState(() {
+        _resolvedPeerUserId = peerId;
+        if (detail != null) {
+          _titleName = detail.displayName.trim().isNotEmpty ? detail.displayName : _titleName;
+          _titleAgeSuffix = detail.age != null ? ', ${detail.age}' : null;
+          _subtitleHcp = detail.handicap != null ? '${detail.handicap} HCP' : null;
+          _avatarUrl = detail.photoUrls.isNotEmpty ? detail.photoUrls.first : _avatarUrl;
+          _peerVerified = detail.verified;
+        } else if (card != null) {
+          _applyPeerCard(card);
+        }
+      });
+    } catch (_) {}
+  }
+
+  void _applyPeerCard(ApiGolferCard card) {
+    final name = card.displayName.trim();
+    if (name.isNotEmpty) _titleName = name;
+    _titleAgeSuffix = card.age != null ? ', ${card.age}' : null;
+    _subtitleHcp = card.handicap != null ? '${card.handicap} HCP' : null;
+    _avatarUrl = card.imageUrl;
+    _peerVerified = card.verified;
   }
 
   void _startRealtime() {
@@ -636,7 +688,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     const months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final local = d.toLocal();
     final label = '${months[local.month - 1]} ${local.day}, ${local.year}';
-    final name = _titleName ?? 'your match';
+    final name = _titleName;
     return 'You matched with $name on $label';
   }
 
@@ -674,12 +726,12 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
-          if (widget.peerUserId != null)
+          if (_peerId != null)
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (v) {
                 if (v == 'profile') {
-                  context.push(AppPaths.appProfileUser(widget.peerUserId!));
+                  context.push(AppPaths.appProfileUser(_peerId!));
                 }
               },
               itemBuilder: (context) => const [
@@ -723,7 +775,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${_titleName ?? 'Chat'}${_titleAgeSuffix ?? ''}',
+                    '$_titleName${_titleAgeSuffix ?? ''}',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

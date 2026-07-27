@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import '../router/app_paths.dart';
 import '../../core/network/api_client.dart';
+import '../../core/profile/profile_setup.dart';
 import '../../features/auth/data/auth_api.dart';
+import '../../features/profiles/data/profiles_api.dart';
 
 /// Persists access/refresh tokens and cached user id from `GET /auth/me`.
 class AuthSession extends ChangeNotifier {
@@ -39,7 +44,20 @@ class AuthSession extends ChangeNotifier {
   /// Incremented after profile edits so the profile tab can reload.
   int profileRefreshTick = 0;
 
+  /// `null` until first successful `/profiles/me` check; `false` blocks Home until onboarding finishes.
+  bool? profileSetupComplete;
+
+  /// Resume path when [profileSetupComplete] is false.
+  String onboardingResumePath = AppPaths.onboardingBasic;
+
   bool get isLoggedIn => accessToken != null && accessToken!.isNotEmpty;
+
+  /// Where to send the user after sign-in / sign-up (Google included).
+  /// Incomplete or unknown → onboarding; completed → Home.
+  String get postAuthLocation {
+    if (profileSetupComplete == true) return AppPaths.app;
+    return onboardingResumePath;
+  }
 
   void consumeAuthNotice() {
     if (_authNotice == null) return;
@@ -53,6 +71,28 @@ class AuthSession extends ChangeNotifier {
 
   void bumpProfileRefresh() {
     profileRefreshTick++;
+    unawaited(refreshProfileSetupStatus());
+    notifyListeners();
+  }
+
+  /// Loads `/profiles/me` and updates [profileSetupComplete] / [onboardingResumePath].
+  Future<void> refreshProfileSetupStatus() async {
+    final t = accessToken;
+    if (t == null || t.isEmpty) {
+      profileSetupComplete = null;
+      onboardingResumePath = AppPaths.onboardingBasic;
+      notifyListeners();
+      return;
+    }
+    try {
+      final me = await ProfilesApi(_apiClient).getMe(t);
+      profileSetupComplete = isProfileSetupComplete(me);
+      onboardingResumePath = suggestedOnboardingPath(me);
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kProfileSetupComplete, profileSetupComplete!);
+    } catch (_) {
+      /* keep previous / cached flags when offline */
+    }
     notifyListeners();
   }
 
@@ -62,11 +102,15 @@ class AuthSession extends ChangeNotifier {
     refreshToken = p.getString(_kRefresh);
     userId = p.getString(_kUserId);
     lastSignInMethod = p.getString(_kLastSignIn);
+    if (p.containsKey(_kProfileSetupComplete)) {
+      profileSetupComplete = p.getBool(_kProfileSetupComplete);
+    }
     _meIsSuspended = null;
     _lifecycleStatus = null;
     notifyListeners();
     if (accessToken != null && accessToken!.isNotEmpty) {
       await _refreshAccountFromMe();
+      if (isLoggedIn) await refreshProfileSetupStatus();
     }
   }
 
@@ -154,7 +198,17 @@ class AuthSession extends ChangeNotifier {
       _lifecycleStatus = null;
       await p.remove(_kUserId);
     }
-    notifyListeners();
+    if (isLoggedIn) {
+      await refreshProfileSetupStatus();
+      // New Google / email accounts often have almost no profile yet — never leave status unknown after auth.
+      if (profileSetupComplete == null) {
+        profileSetupComplete = false;
+        onboardingResumePath = AppPaths.onboardingBasic;
+        notifyListeners();
+      }
+    } else {
+      notifyListeners();
+    }
   }
 
   Future<void> _persistRefreshedTokens(String access, String refresh) async {
@@ -203,6 +257,8 @@ class AuthSession extends ChangeNotifier {
     userId = null;
     _meIsSuspended = null;
     _lifecycleStatus = null;
+    profileSetupComplete = null;
+    onboardingResumePath = AppPaths.onboardingBasic;
     if (!keepAuthNotice) {
       _authNotice = null;
     }
@@ -211,6 +267,7 @@ class AuthSession extends ChangeNotifier {
     await p.remove(_kRefresh);
     await p.remove(_kUserId);
     await p.remove(_kLastSignIn);
+    await p.remove(_kProfileSetupComplete);
     lastSignInMethod = null;
     notifyListeners();
   }
@@ -219,6 +276,7 @@ class AuthSession extends ChangeNotifier {
   static const _kRefresh = 'cg_refresh_token';
   static const _kUserId = 'cg_user_id';
   static const _kLastSignIn = 'cg_last_sign_in_method';
+  static const _kProfileSetupComplete = 'cg_profile_setup_complete';
 }
 
 bool _isAllowedSignInMethod(String v) {
