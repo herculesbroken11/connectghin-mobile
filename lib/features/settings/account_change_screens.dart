@@ -66,11 +66,23 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (t == null) return;
     setState(() => _saving = true);
     try {
-      await AccountApi(session.apiClient).changePassword(
+      final res = await AccountApi(session.apiClient).changePassword(
         accessToken: t,
         currentPassword: _current.text,
         newPassword: _newPw.text,
       );
+      final access = res['accessToken'] as String?;
+      final refresh = res['refreshToken'] as String?;
+      if (access != null &&
+          access.isNotEmpty &&
+          refresh != null &&
+          refresh.isNotEmpty) {
+        await session.setTokens(access: access, refresh: refresh);
+      } else {
+        await session.forceSignOut(
+          notice: 'Password updated. Please sign in with your new password.',
+        );
+      }
       if (!mounted) return;
       setState(() {
         _success = true;

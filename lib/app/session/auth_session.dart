@@ -19,6 +19,7 @@ class AuthSession extends ChangeNotifier {
           getAccessToken: () => accessToken,
           getRefreshToken: () => refreshToken,
           onTokensRefreshed: _persistRefreshedTokens,
+          onAuthFailure: _onAuthFailure,
         );
     _authApi = AuthApi(_apiClient);
   }
@@ -53,10 +54,10 @@ class AuthSession extends ChangeNotifier {
   bool get isLoggedIn => accessToken != null && accessToken!.isNotEmpty;
 
   /// Where to send the user after sign-in / sign-up (Google included).
-  /// Incomplete or unknown → onboarding; completed → Home.
+  /// Completed → Home. Known-incomplete → onboarding. Unknown → Home until status loads.
   String get postAuthLocation {
-    if (profileSetupComplete == true) return AppPaths.app;
-    return onboardingResumePath;
+    if (profileSetupComplete == false) return onboardingResumePath;
+    return AppPaths.app;
   }
 
   void consumeAuthNotice() {
@@ -217,25 +218,28 @@ class AuthSession extends ChangeNotifier {
     final p = await SharedPreferences.getInstance();
     await p.setString(_kAccess, access);
     await p.setString(_kRefresh, refresh);
-    try {
-      final me = await _authApi.me(access);
-      userId = me['id'] as String?;
-      _applyMe(me);
-      await _syncSignInMethodFromMe(me);
-      if (userId != null) {
-        await p.setString(_kUserId, userId!);
-      }
-      if (_restrictedFromAppliedMe()) {
-        await _logoutIfRestrictedAfterMe();
-        return;
-      }
-    } catch (_) {
-      userId = null;
-      _meIsSuspended = null;
-      _lifecycleStatus = null;
-      await p.remove(_kUserId);
-    }
     notifyListeners();
+    // Defer /auth/me until after the in-flight refresh Future completes (avoids nested refresh deadlock).
+    Future<void>.delayed(Duration.zero, () {
+      if (accessToken == access) {
+        unawaited(_refreshAccountFromMe());
+      }
+    });
+  }
+
+  /// Session refresh failed or JWT was invalidated — clear local auth so the user can sign in again.
+  Future<void> _onAuthFailure(String reason) async {
+    if (!isLoggedIn) return;
+    await forceSignOut(
+      notice: reason == 'session_invalidated'
+          ? 'Your session ended. Please sign in again.'
+          : 'Your session expired. Please sign in again.',
+    );
+  }
+
+  Future<void> forceSignOut({required String notice}) async {
+    _authNotice = notice;
+    await clear(keepAuthNotice: true);
   }
 
   /// Clears local session and invalidates refresh token on the server when possible.

@@ -88,6 +88,9 @@ String messageFromApiError(
     if (bl.contains('unavailable') || bl.contains('suspended') || bl.contains('inactive')) {
       return 'This account is suspended or unavailable. You cannot sign in. Contact support if you believe this is a mistake.';
     }
+    if (bl.contains('session') || bl.contains('refresh token')) {
+      return 'Your session expired. Please sign in again.';
+    }
     if (bl.contains('google')) {
       return 'Google sign-in failed. Please try again.';
     }

@@ -14,6 +14,7 @@ class ApiHttpException implements Exception {
 }
 
 typedef OnTokensRefreshed = Future<void> Function(String accessToken, String refreshToken);
+typedef OnAuthFailure = Future<void> Function(String reason);
 
 class ApiClient {
   ApiClient({
@@ -22,25 +23,36 @@ class ApiClient {
     this.getAccessToken,
     this.getRefreshToken,
     this.onTokensRefreshed,
+    this.onAuthFailure,
   }) : _client = client ?? http.Client();
 
   final String baseUrl;
   final http.Client _client;
 
-  /// When set, authenticated requests use this if [bearerToken] is null. Retries after refresh use the latest value.
+  /// Always prefer the live session token so retries after refresh do not reuse a stale capture.
   final String? Function()? getAccessToken;
 
   final String? Function()? getRefreshToken;
   final OnTokensRefreshed? onTokensRefreshed;
 
+  /// Invoked when refresh fails (or session is invalidated) so the app can sign the user out.
+  final OnAuthFailure? onAuthFailure;
+
   Future<bool>? _refreshFuture;
+  bool _authFailureInFlight = false;
 
   Uri _uri(String path, [Map<String, String>? query]) {
     final base = path.startsWith('/') ? path : '/$path';
     return Uri.parse('$baseUrl$base').replace(queryParameters: query);
   }
 
-  String? _effectiveBearer(String? explicit) => explicit ?? getAccessToken?.call();
+  /// Prefer the latest session access token over any explicitly captured bearer.
+  String? _effectiveBearer(String? explicit) {
+    final latest = getAccessToken?.call();
+    if (latest != null && latest.isNotEmpty) return latest;
+    if (explicit != null && explicit.isNotEmpty) return explicit;
+    return null;
+  }
 
   bool _shouldTryRefresh(String path) {
     if (getRefreshToken == null || onTokensRefreshed == null) return false;
@@ -91,15 +103,53 @@ class ApiClient {
     }
   }
 
-  Future<http.Response> _getWithRetry(String path, {Map<String, String>? query, String? bearerToken}) async {
-    String? b() => _effectiveBearer(bearerToken);
-    var response = await _client.get(_uri(path, query), headers: _headers(b()));
-    if (response.statusCode == 401 && _shouldTryRefresh(path)) {
-      final ok = await _tryRefreshTokens();
-      if (ok) {
-        response = await _client.get(_uri(path, query), headers: _headers(b()));
-      }
+  Future<void> _notifyAuthFailure(String reason) async {
+    if (_authFailureInFlight) return;
+    final cb = onAuthFailure;
+    if (cb == null) return;
+    _authFailureInFlight = true;
+    try {
+      await cb(reason);
+    } catch (_) {
+      /* ignore */
+    } finally {
+      _authFailureInFlight = false;
     }
+  }
+
+  bool _looksLikeInvalidSession(String body) {
+    final b = body.toLowerCase();
+    return b.contains('session invalidated') ||
+        b.contains('refresh token invalidated') ||
+        b.contains('invalid or inactive') ||
+        b.contains('account unavailable') ||
+        b.contains('unauthorized');
+  }
+
+  Future<http.Response> _handleUnauthorizedRetry({
+    required String path,
+    required Future<http.Response> Function() send,
+    required http.Response first,
+  }) async {
+    if (first.statusCode != 401 || !_shouldTryRefresh(path)) {
+      return first;
+    }
+    final ok = await _tryRefreshTokens();
+    if (!ok) {
+      await _notifyAuthFailure('refresh_failed');
+      return first;
+    }
+    final second = await send();
+    if (second.statusCode == 401 && _looksLikeInvalidSession(second.body)) {
+      await _notifyAuthFailure('session_invalidated');
+    }
+    return second;
+  }
+
+  Future<http.Response> _getWithRetry(String path, {Map<String, String>? query, String? bearerToken}) async {
+    Future<http.Response> send() => _client.get(_uri(path, query), headers: _headers(_effectiveBearer(bearerToken)));
+    final first = await send();
+    final response = await _handleUnauthorizedRetry(path: path, send: send, first: first);
     _throwIfNotOk(response);
     return response;
   }
@@ -109,22 +159,13 @@ class ApiClient {
     Map<String, dynamic>? body,
     String? bearerToken,
   }) async {
-    String? b() => _effectiveBearer(bearerToken);
-    var response = await _client.post(
-      _uri(path),
-      headers: _headers(b()),
-      body: jsonEncode(body ?? <String, dynamic>{}),
-    );
-    if (response.statusCode == 401 && _shouldTryRefresh(path)) {
-      final ok = await _tryRefreshTokens();
-      if (ok) {
-        response = await _client.post(
+    Future<http.Response> send() => _client.post(
           _uri(path),
-          headers: _headers(b()),
+          headers: _headers(_effectiveBearer(bearerToken)),
           body: jsonEncode(body ?? <String, dynamic>{}),
         );
-      }
-    }
+    final first = await send();
+    final response = await _handleUnauthorizedRetry(path: path, send: send, first: first);
     _throwIfNotOk(response);
     return response;
   }
@@ -134,22 +175,13 @@ class ApiClient {
     Map<String, dynamic>? body,
     String? bearerToken,
   }) async {
-    String? b() => _effectiveBearer(bearerToken);
-    var response = await _client.patch(
-      _uri(path),
-      headers: _headers(b()),
-      body: jsonEncode(body ?? <String, dynamic>{}),
-    );
-    if (response.statusCode == 401 && _shouldTryRefresh(path)) {
-      final ok = await _tryRefreshTokens();
-      if (ok) {
-        response = await _client.patch(
+    Future<http.Response> send() => _client.patch(
           _uri(path),
-          headers: _headers(b()),
+          headers: _headers(_effectiveBearer(bearerToken)),
           body: jsonEncode(body ?? <String, dynamic>{}),
         );
-      }
-    }
+    final first = await send();
+    final response = await _handleUnauthorizedRetry(path: path, send: send, first: first);
     _throwIfNotOk(response);
     return response;
   }
@@ -159,22 +191,13 @@ class ApiClient {
     Map<String, dynamic>? body,
     String? bearerToken,
   }) async {
-    String? b() => _effectiveBearer(bearerToken);
-    var response = await _client.delete(
-      _uri(path),
-      headers: _headers(b()),
-      body: body != null ? jsonEncode(body) : null,
-    );
-    if (response.statusCode == 401 && _shouldTryRefresh(path)) {
-      final ok = await _tryRefreshTokens();
-      if (ok) {
-        response = await _client.delete(
+    Future<http.Response> send() => _client.delete(
           _uri(path),
-          headers: _headers(b()),
+          headers: _headers(_effectiveBearer(bearerToken)),
           body: body != null ? jsonEncode(body) : null,
         );
-      }
-    }
+    final first = await send();
+    final response = await _handleUnauthorizedRetry(path: path, send: send, first: first);
     _throwIfNotOk(response);
     return response;
   }
@@ -276,10 +299,9 @@ class ApiClient {
     Map<String, String>? fields,
     String? bearerToken,
   }) async {
-    String? b() => _effectiveBearer(bearerToken);
-
-    Future<http.Response> sendOnce(String? token) async {
+    Future<http.Response> sendOnce() async {
       final request = http.MultipartRequest('POST', _uri(path));
+      final token = _effectiveBearer(bearerToken);
       if (token != null && token.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $token';
       }
@@ -289,13 +311,8 @@ class ApiClient {
       return http.Response.fromStream(streamed);
     }
 
-    var response = await sendOnce(b());
-    if (response.statusCode == 401 && _shouldTryRefresh(path)) {
-      final ok = await _tryRefreshTokens();
-      if (ok) {
-        response = await sendOnce(b());
-      }
-    }
+    final first = await sendOnce();
+    final response = await _handleUnauthorizedRetry(path: path, send: sendOnce, first: first);
     _throwIfNotOk(response);
     final decoded = _decodeJsonBody(response.body);
     if (decoded == null) {

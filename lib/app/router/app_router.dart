@@ -45,45 +45,51 @@ GoRouter createAppRouter(AuthSession auth) {
       if (state.uri.path == '/app/home') return AppPaths.app;
       final path = state.matchedLocation;
       final authed = auth.isLoggedIn;
-      final needsAuth = path.startsWith('/app/') || path == '/app';
+      final isOnboarding = path.startsWith('/onboarding');
+      final needsAuth = path.startsWith('/app/') || path == '/app' || isOnboarding;
       final isAuthPage =
           path == AppPaths.login || path == AppPaths.register || path == AppPaths.registerPassword;
-      final isOnboarding = path.startsWith('/onboarding');
-      final isSetupExempt = isOnboarding ||
-          path == AppPaths.support ||
+      final isPublicAuthFlow = isAuthPage ||
+          path == AppPaths.welcome ||
+          path == AppPaths.forgotPassword ||
+          path == AppPaths.forgotPasswordSent ||
+          path == AppPaths.resetPassword ||
+          path == AppPaths.resetPasswordSuccess ||
           path == AppPaths.legalTerms ||
           path == AppPaths.legalPrivacy ||
-          path == AppPaths.appManagePhotos ||
-          path == AppPaths.appProfileEdit ||
-          path == AppPaths.appCompleteProfile ||
-          path == AppPaths.appLogoutConfirm ||
-          path == AppPaths.appDeleteAccount ||
-          path == AppPaths.appChangePassword ||
-          path == AppPaths.appChangeEmail ||
-          path == AppPaths.appChangeUsername ||
-          path == AppPaths.appEnableLocation ||
-          path == AppPaths.appManualLocation ||
-          path == AppPaths.appLocationPermission ||
-          path == AppPaths.appNotificationPermission ||
-          path == AppPaths.appNoConnection ||
-          path == AppPaths.appError ||
-          path == AppPaths.appAccountSuspended;
+          path == AppPaths.support;
 
-      if (needsAuth && !authed) return AppPaths.login;
+      // Never leave signed-out users stuck on onboarding / app — always allow login.
+      if (!authed && needsAuth) return AppPaths.login;
+      if (!authed && path == AppPaths.welcome) return null;
+
       if (authed && isAuthPage) {
         return auth.postAuthLocation;
       }
       if (authed && path == AppPaths.welcome) {
         return auth.postAuthLocation;
       }
-      // Incomplete profiles cannot use the main shell (Home included), even after Google sign-in.
-      if (authed && auth.profileSetupComplete != true && needsAuth && !isSetupExempt) {
+
+      // Only block Home when we *know* setup is incomplete (not while status is still loading).
+      if (authed &&
+          auth.profileSetupComplete == false &&
+          needsAuth &&
+          !isOnboarding &&
+          path != AppPaths.appLogoutConfirm &&
+          path != AppPaths.appDeleteAccount &&
+          path != AppPaths.appAccountSuspended &&
+          path != AppPaths.appNoConnection &&
+          path != AppPaths.appError) {
         return auth.onboardingResumePath;
       }
-      // Already complete — never force onboarding again on later sign-ins.
+
+      // Completed profiles should never be trapped in onboarding.
       if (authed && auth.profileSetupComplete == true && isOnboarding) {
         return AppPaths.app;
       }
+
+      // Signed-out users on public pages stay put.
+      if (!authed && isPublicAuthFlow) return null;
 
       return null;
     },

@@ -1088,6 +1088,30 @@ class _OnboardingScaffold extends StatelessWidget {
   final bool isBusy;
   final bool primaryEnabled;
 
+  Future<void> _onBack(BuildContext context) async {
+    if (stepIndex <= 1) {
+      await _signOutToLogin(context);
+      return;
+    }
+    final prev = switch (stepIndex) {
+      2 => AppPaths.onboardingBasic,
+      3 => AppPaths.onboardingGolf,
+      4 => AppPaths.onboardingPreferences,
+      _ => AppPaths.onboardingBasic,
+    };
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(prev);
+    }
+  }
+
+  Future<void> _signOutToLogin(BuildContext context) async {
+    final session = context.read<AuthSession>();
+    await session.forceSignOut(notice: 'Signed out. Sign in to continue.');
+    if (context.mounted) context.go(AppPaths.login);
+  }
+
   @override
   Widget build(BuildContext context) {
     final busy = isBusy;
@@ -1099,15 +1123,22 @@ class _OnboardingScaffold extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
-          onPressed: () => context.pop(),
+          onPressed: busy ? null : () => _onBack(context),
         ),
         actions: [
+          TextButton(
+            onPressed: busy ? null : () => _signOutToLogin(context),
+            child: const Text(
+              'Sign out',
+              style: TextStyle(fontWeight: FontWeight.w600, color: CgColors.gray700),
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.only(right: 20),
+            padding: const EdgeInsets.only(right: 12),
             child: Center(
               child: Text(
                 'Step $stepIndex of 4',
-                style: const TextStyle(fontSize: 14, color: CgColors.gray600, fontWeight: FontWeight.w500),
+                style: const TextStyle(fontSize: 13, color: CgColors.gray600, fontWeight: FontWeight.w500),
               ),
             ),
           ),
