@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const CgAuthBrandMark(
-                          size: 56,
+                          size: 92,
                           variant: CgAppLogoVariant.full,
                           plate: true,
                         ),

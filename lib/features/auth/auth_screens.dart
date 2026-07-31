@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -9,9 +10,7 @@ import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/layout/cg_fit_height_body.dart';
 import '../../core/network/api_user_message.dart';
-import '../../core/widgets/cg_app_logo.dart';
 import '../../core/widgets/cg_primary_button.dart';
-import '../../core/widgets/cg_responsive_container.dart';
 import '../../core/widgets/cg_text_field.dart';
 import '../../core/widgets/google_mark.dart';
 import 'google_sign_in_helper.dart';
@@ -143,230 +142,203 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 700;
     final short = cgIsShortScreen(context);
     final gap = (double v) => cgCompactGap(context, v);
-    final socialH = short ? 44.0 : 48.0;
-    final titleSize = wide ? 28.0 : (short ? 22.0 : 24.0);
+    final socialH = short ? 46.0 : 50.0;
+
     return Scaffold(
       backgroundColor: CgColors.cream,
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: CgColors.headerGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, short ? 4 : 8, 16, short ? 20 : 28),
-                child: Column(
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                        onPressed: () => context.go(AppPaths.welcome),
-                        icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.white),
-                      ),
-                    ),
-                    CgAuthBrandMark(
-                      size: cgAuthLogoHeight(context),
-                      variant: CgAppLogoVariant.full,
-                      plate: true,
-                    ),
-                    SizedBox(height: gap(10)),
-                    Text(
-                      'Connectghin',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: CgColors.white,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.4,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Find your foursome',
-                      style: TextStyle(
-                        color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          CgAuthGreenHero(
+            compact: short,
+            onBack: () => context.go(AppPaths.welcome),
           ),
           Expanded(
-            child: SafeArea(
-              top: false,
-              child: CgFitHeightBody(
-                child: CgResponsiveContainer(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(height: gap(18)),
-                      Text(
-                        'Welcome back',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontSize: titleSize,
-                              fontWeight: FontWeight.w700,
-                              color: CgColors.gray900,
-                              letterSpacing: -0.3,
-                            ),
-                      ),
-                      SizedBox(height: gap(6)),
-                      Text(
-                        'Sign in to your Connectghin account',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: CgColors.gray600,
-                              height: 1.25,
-                              fontSize: short ? 13 : 14,
-                            ),
-                      ),
-                      if (kDebugMode) ...[
-                        SizedBox(height: gap(6)),
-                        Text(
-                          'Demo: john@demo.connectghin.com / Password123!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11, color: CgColors.gray500.withValues(alpha: 0.95)),
-                        ),
-                      ],
-                      SizedBox(height: gap(16)),
-                      if (_canUseAppleSignIn) ...[
-                        CgSocialSignInButton(
-                          label: 'Continue with Apple',
-                          busy: _appleBusy,
-                          minHeight: socialH,
-                          leading: const Icon(Icons.apple, size: 22, color: CgColors.gray900),
-                          onPressed: _loginWithApple,
-                        ),
-                        SizedBox(height: gap(8)),
-                      ],
-                      CgSocialSignInButton(
-                        label: 'Continue with Google',
-                        busy: _googleBusy,
-                        minHeight: socialH,
-                        leading: const GoogleMark(),
-                        onPressed: _loginWithGoogle,
-                      ),
-                      if (_googleError != null) ...[
-                        SizedBox(height: gap(10)),
-                        CgAuthInlineError(
-                          message: _googleError!,
-                          onDismiss: () => setState(() => _googleError = null),
-                        ),
-                      ],
-                      SizedBox(height: gap(14)),
-                      const CgOrDivider(),
-                      SizedBox(height: gap(14)),
-                      Consumer<AuthSession>(
-                        builder: (context, session, _) {
-                          final n = session.authNotice;
-                          if (n == null) return const SizedBox.shrink();
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: gap(8)),
-                            child: Material(
-                              color: CgColors.red50,
-                              borderRadius: BorderRadius.circular(10),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(Icons.info_outline, color: CgColors.red700, size: 20),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        n,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          height: 1.35,
-                                          color: CgColors.gray900,
+            child: Transform.translate(
+              offset: const Offset(0, -22),
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: CgColors.cream,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(24, short ? 18 : 24, 24, 16 + MediaQuery.viewInsetsOf(context).bottom),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight - 8),
+                          child: IntrinsicHeight(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Welcome back',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.fraunces(
+                                    fontSize: short ? 26 : 30,
+                                    fontWeight: FontWeight.w600,
+                                    color: CgColors.green900,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                SizedBox(height: gap(6)),
+                                Text(
+                                  'Sign in to your Connectghin account',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: CgColors.gray600,
+                                    height: 1.25,
+                                    fontSize: short ? 13 : 14,
+                                  ),
+                                ),
+                                if (kDebugMode) ...[
+                                  SizedBox(height: gap(6)),
+                                  Text(
+                                    'Demo: john@demo.connectghin.com / Password123!',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 11, color: CgColors.gray500.withValues(alpha: 0.95)),
+                                  ),
+                                ],
+                                SizedBox(height: gap(18)),
+                                if (_canUseAppleSignIn) ...[
+                                  CgSocialSignInButton(
+                                    label: 'Continue with Apple',
+                                    busy: _appleBusy,
+                                    minHeight: socialH,
+                                    leading: const Icon(Icons.apple, size: 22, color: CgColors.gray900),
+                                    onPressed: _loginWithApple,
+                                  ),
+                                  SizedBox(height: gap(10)),
+                                ],
+                                CgSocialSignInButton(
+                                  label: 'Continue with Google',
+                                  busy: _googleBusy,
+                                  minHeight: socialH,
+                                  leading: const GoogleMark(),
+                                  onPressed: _loginWithGoogle,
+                                ),
+                                if (_googleError != null) ...[
+                                  SizedBox(height: gap(10)),
+                                  CgAuthInlineError(
+                                    message: _googleError!,
+                                    onDismiss: () => setState(() => _googleError = null),
+                                  ),
+                                ],
+                                SizedBox(height: gap(16)),
+                                const CgOrDivider(),
+                                SizedBox(height: gap(16)),
+                                Consumer<AuthSession>(
+                                  builder: (context, session, _) {
+                                    final n = session.authNotice;
+                                    if (n == null) return const SizedBox.shrink();
+                                    return Padding(
+                                      padding: EdgeInsets.only(bottom: gap(10)),
+                                      child: Material(
+                                        color: CgColors.red50,
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Icon(Icons.info_outline, color: CgColors.red700, size: 20),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  n,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    height: 1.35,
+                                                    color: CgColors.gray900,
+                                                  ),
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.close, size: 18, color: CgColors.gray500),
+                                                onPressed: session.consumeAuthNotice,
+                                                visualDensity: VisualDensity.compact,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
+                                    );
+                                  },
+                                ),
+                                CgLabeledField(
+                                  label: 'Email',
+                                  child: CgTextField(
+                                    controller: _email,
+                                    hint: 'your.email@example.com',
+                                    keyboardType: TextInputType.emailAddress,
+                                    prefixIcon: Icons.mail_outline_rounded,
+                                  ),
+                                ),
+                                SizedBox(height: gap(14)),
+                                CgLabeledField(
+                                  label: 'Password',
+                                  trailing: TextButton(
+                                    onPressed: () => context.push(AppPaths.forgotPassword),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.close, size: 18, color: CgColors.gray500),
-                                      onPressed: session.consumeAuthNotice,
-                                      visualDensity: VisualDensity.compact,
+                                    child: const Text(
+                                      'Forgot password?',
+                                      style: TextStyle(color: CgColors.green700, fontSize: 13, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                  child: CgTextField(
+                                    controller: _password,
+                                    hint: 'Enter your password',
+                                    obscure: true,
+                                    showVisibilityToggle: true,
+                                    prefixIcon: Icons.lock_outline_rounded,
+                                  ),
+                                ),
+                                SizedBox(height: gap(18)),
+                                CgPrimaryButton(
+                                  label: _busy ? 'Signing in…' : 'Sign In',
+                                  onPressed: _busy ? null : _submit,
+                                  borderRadius: 14,
+                                  minHeight: short ? 48 : 52,
+                                  showTrailingArrow: !_busy,
+                                ),
+                                SizedBox(height: gap(14)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'New to Connectghin? ',
+                                      style: TextStyle(color: CgColors.gray600, fontSize: short ? 13 : 14),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => context.push(AppPaths.register),
+                                      child: const Text(
+                                        'Create an account',
+                                        style: TextStyle(color: CgColors.green700, fontWeight: FontWeight.w700, fontSize: 14),
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      CgLabeledField(
-                        label: 'Email',
-                        child: CgTextField(
-                          controller: _email,
-                          hint: 'your.email@example.com',
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                      ),
-                      SizedBox(height: gap(12)),
-                      CgLabeledField(
-                        label: 'Password',
-                        trailing: TextButton(
-                          onPressed: () => context.push(AppPaths.forgotPassword),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: const Text(
-                            'Forgot password?',
-                            style: TextStyle(color: CgColors.green700, fontSize: 13, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        child: CgTextField(
-                          controller: _password,
-                          hint: 'Enter your password',
-                          obscure: true,
-                          showVisibilityToggle: true,
-                        ),
-                      ),
-                      SizedBox(height: gap(14)),
-                      CgPrimaryButton(
-                        label: _busy ? 'Signing in…' : 'Sign In',
-                        onPressed: _busy ? null : _submit,
-                        borderRadius: 14,
-                        minHeight: short ? 46 : 50,
-                      ),
-                      SizedBox(height: gap(12)),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'New to Connectghin? ',
-                            style: TextStyle(color: CgColors.gray600, fontSize: short ? 13 : 14),
-                          ),
-                          GestureDetector(
-                            onTap: () => context.push(AppPaths.register),
-                            child: const Text(
-                              'Create an account',
-                              style: TextStyle(color: CgColors.green700, fontWeight: FontWeight.w700, fontSize: 14),
+                                const Spacer(),
+                                SizedBox(height: gap(12)),
+                                const CgAuthTrustFooter(
+                                  secureLabel: 'Secure Login',
+                                  privateLabel: 'Privacy Protected',
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: gap(10)),
-                      const CgAuthTrustFooter(secureLabel: 'Secure Login', privateLabel: 'Privacy Protected'),
-                    ],
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -483,215 +455,239 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 700;
     final short = cgIsShortScreen(context);
     final gap = (double v) => cgCompactGap(context, v);
-    final socialH = short ? 42.0 : 46.0;
-    final titleSize = wide ? 28.0 : (short ? 21.0 : 23.0);
-    final finePrint = short ? 12.0 : 13.0;
+    final socialH = short ? 46.0 : 50.0;
+    final finePrint = short ? 12.5 : 13.5;
+
     return Scaffold(
       backgroundColor: CgColors.cream,
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: CgFitHeightBody(
-          child: CgResponsiveContainer(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                    onPressed: () => context.go(AppPaths.welcome),
-                    icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray600),
-                  ),
+      body: Column(
+        children: [
+          CgAuthGreenHero(
+            compact: short,
+            onBack: () => context.go(AppPaths.welcome),
+          ),
+          Expanded(
+            child: Transform.translate(
+              offset: const Offset(0, -22),
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: CgColors.cream,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                SizedBox(height: gap(2)),
-                CgAuthBrandMark(
-                  size: cgAuthLogoHeight(context),
-                  variant: CgAppLogoVariant.full,
-                  plate: true,
-                ),
-                SizedBox(height: gap(8)),
-                Text(
-                  'Create Account',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontSize: titleSize,
-                        fontWeight: FontWeight.w700,
-                        color: CgColors.gray900,
-                        letterSpacing: -0.3,
-                      ),
-                ),
-                SizedBox(height: gap(4)),
-                Text(
-                  'Join Connectghin — the premier golf network',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: CgColors.gray600,
-                        height: 1.2,
-                        fontSize: short ? 12 : 13,
-                      ),
-                ),
-                SizedBox(height: gap(10)),
-                if (_canUseAppleSignIn) ...[
-                  CgSocialSignInButton(
-                    label: 'Sign up with Apple',
-                    busy: _appleBusy,
-                    minHeight: socialH,
-                    leading: const Icon(Icons.apple, size: 22, color: CgColors.gray900),
-                    onPressed: _continueWithApple,
-                  ),
-                  SizedBox(height: gap(6)),
-                ],
-                CgSocialSignInButton(
-                  label: 'Sign up with Google',
-                  busy: _googleBusy,
-                  minHeight: socialH,
-                  leading: const GoogleMark(),
-                  onPressed: _continueWithGoogle,
-                ),
-                if (_googleError != null) ...[
-                  SizedBox(height: gap(8)),
-                  CgAuthInlineError(
-                    message: _googleError!,
-                    onDismiss: () => setState(() => _googleError = null),
-                  ),
-                ],
-                SizedBox(height: gap(10)),
-                const CgOrDivider(label: 'or email'),
-                SizedBox(height: gap(10)),
-                CgLabeledField(
-                  label: 'Full Name',
-                  child: CgTextField(
-                    controller: _fullName,
-                    hint: 'John Smith',
-                    textCapitalization: TextCapitalization.words,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-                SizedBox(height: gap(8)),
-                CgLabeledField(
-                  label: 'Email',
-                  child: CgTextField(
-                    controller: _email,
-                    hint: 'your.email@example.com',
-                    keyboardType: TextInputType.emailAddress,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-                SizedBox(height: gap(8)),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: Checkbox(
-                        value: _agreedTerms,
-                        activeColor: CgColors.green700,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                        onChanged: (v) => setState(() => _agreedTerms = v ?? false),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text('I agree to the ', style: TextStyle(fontSize: finePrint, color: CgColors.gray600, height: 1.3)),
-                          GestureDetector(
-                            onTap: () => context.push(AppPaths.legalTerms),
-                            child: Text(
-                              'Terms',
-                              style: TextStyle(
-                                fontSize: finePrint,
-                                color: CgColors.green700,
-                                fontWeight: FontWeight.w600,
-                                height: 1.3,
-                                decoration: TextDecoration.underline,
-                                decorationColor: CgColors.green700,
-                              ),
+                child: SafeArea(
+                  top: false,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(24, short ? 18 : 24, 24, 16 + MediaQuery.viewInsetsOf(context).bottom),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight - 8),
+                          child: IntrinsicHeight(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Create Account',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.fraunces(
+                                    fontSize: short ? 26 : 30,
+                                    fontWeight: FontWeight.w600,
+                                    color: CgColors.green900,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                SizedBox(height: gap(6)),
+                                Text(
+                                  'Join Connectghin — the premier golf network',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: CgColors.gray600,
+                                    height: 1.25,
+                                    fontSize: short ? 13 : 14,
+                                  ),
+                                ),
+                                SizedBox(height: gap(18)),
+                                if (_canUseAppleSignIn) ...[
+                                  CgSocialSignInButton(
+                                    label: 'Sign up with Apple',
+                                    busy: _appleBusy,
+                                    minHeight: socialH,
+                                    leading: const Icon(Icons.apple, size: 22, color: CgColors.gray900),
+                                    onPressed: _continueWithApple,
+                                  ),
+                                  SizedBox(height: gap(10)),
+                                ],
+                                CgSocialSignInButton(
+                                  label: 'Sign up with Google',
+                                  busy: _googleBusy,
+                                  minHeight: socialH,
+                                  leading: const GoogleMark(),
+                                  onPressed: _continueWithGoogle,
+                                ),
+                                if (_googleError != null) ...[
+                                  SizedBox(height: gap(10)),
+                                  CgAuthInlineError(
+                                    message: _googleError!,
+                                    onDismiss: () => setState(() => _googleError = null),
+                                  ),
+                                ],
+                                SizedBox(height: gap(16)),
+                                const CgOrDivider(label: 'or email'),
+                                SizedBox(height: gap(16)),
+                                CgLabeledField(
+                                  label: 'Full Name',
+                                  child: CgTextField(
+                                    controller: _fullName,
+                                    hint: 'John Smith',
+                                    textCapitalization: TextCapitalization.words,
+                                    prefixIcon: Icons.person_outline_rounded,
+                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                ),
+                                SizedBox(height: gap(12)),
+                                CgLabeledField(
+                                  label: 'Email',
+                                  child: CgTextField(
+                                    controller: _email,
+                                    hint: 'your.email@example.com',
+                                    keyboardType: TextInputType.emailAddress,
+                                    prefixIcon: Icons.mail_outline_rounded,
+                                    onChanged: (_) => setState(() {}),
+                                  ),
+                                ),
+                                SizedBox(height: gap(14)),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: Checkbox(
+                                        value: _agreedTerms,
+                                        activeColor: CgColors.green700,
+                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        visualDensity: VisualDensity.compact,
+                                        onChanged: (v) => setState(() => _agreedTerms = v ?? false),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Wrap(
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          Text(
+                                            'I agree to the ',
+                                            style: TextStyle(fontSize: finePrint, color: CgColors.gray600, height: 1.3),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => context.push(AppPaths.legalTerms),
+                                            child: Text(
+                                              'Terms',
+                                              style: TextStyle(
+                                                fontSize: finePrint,
+                                                color: CgColors.green700,
+                                                fontWeight: FontWeight.w600,
+                                                height: 1.3,
+                                                decoration: TextDecoration.underline,
+                                                decorationColor: CgColors.green700,
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            ' and ',
+                                            style: TextStyle(fontSize: finePrint, color: CgColors.gray600, height: 1.3),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => context.push(AppPaths.legalPrivacy),
+                                            child: Text(
+                                              'Privacy Policy',
+                                              style: TextStyle(
+                                                fontSize: finePrint,
+                                                color: CgColors.green700,
+                                                fontWeight: FontWeight.w600,
+                                                height: 1.3,
+                                                decoration: TextDecoration.underline,
+                                                decorationColor: CgColors.green700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: gap(8)),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: Checkbox(
+                                        value: _over18,
+                                        activeColor: CgColors.green700,
+                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        visualDensity: VisualDensity.compact,
+                                        onChanged: (v) => setState(() => _over18 = v ?? false),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'I am 18 years or older',
+                                        style: TextStyle(fontSize: finePrint, color: CgColors.gray600, height: 1.3),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: gap(18)),
+                                CgPrimaryButton(
+                                  label: 'Continue',
+                                  onPressed: _canContinue ? _continueToPassword : null,
+                                  borderRadius: 14,
+                                  minHeight: short ? 48 : 52,
+                                  showTrailingArrow: _canContinue,
+                                ),
+                                SizedBox(height: gap(14)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Already have an account? ',
+                                      style: TextStyle(color: CgColors.gray600, fontSize: finePrint),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => context.push(AppPaths.login),
+                                      child: Text(
+                                        'Sign in',
+                                        style: TextStyle(
+                                          color: CgColors.green700,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: finePrint,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                SizedBox(height: gap(12)),
+                                const CgAuthTrustFooter(),
+                              ],
                             ),
                           ),
-                          Text(' and ', style: TextStyle(fontSize: finePrint, color: CgColors.gray600, height: 1.3)),
-                          GestureDetector(
-                            onTap: () => context.push(AppPaths.legalPrivacy),
-                            child: Text(
-                              'Privacy Policy',
-                              style: TextStyle(
-                                fontSize: finePrint,
-                                color: CgColors.green700,
-                                fontWeight: FontWeight.w600,
-                                height: 1.3,
-                                decoration: TextDecoration.underline,
-                                decorationColor: CgColors.green700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: gap(6)),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: Checkbox(
-                        value: _over18,
-                        activeColor: CgColors.green700,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                        onChanged: (v) => setState(() => _over18 = v ?? false),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'I am 18 years or older',
-                        style: TextStyle(fontSize: finePrint, color: CgColors.gray600, height: 1.3),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: gap(10)),
-                CgPrimaryButton(
-                  label: 'Continue',
-                  onPressed: _canContinue ? _continueToPassword : null,
-                  borderRadius: 12,
-                  minHeight: short ? 44 : 48,
-                ),
-                SizedBox(height: gap(8)),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Already have an account? ', style: TextStyle(color: CgColors.gray600, fontSize: finePrint)),
-                    GestureDetector(
-                      onTap: () => context.push(AppPaths.login),
-                      child: Text(
-                        'Sign in',
-                        style: TextStyle(
-                          color: CgColors.green700,
-                          fontWeight: FontWeight.w600,
-                          fontSize: finePrint,
                         ),
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
-                SizedBox(height: gap(6)),
-                const CgAuthTrustFooter(),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

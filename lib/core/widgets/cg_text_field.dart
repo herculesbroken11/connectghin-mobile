@@ -53,6 +53,7 @@ class CgTextField extends StatefulWidget {
     this.maxLines = 1,
     this.maxLength,
     this.textCapitalization = TextCapitalization.none,
+    this.prefixIcon,
   });
 
   final TextEditingController? controller;
@@ -64,6 +65,7 @@ class CgTextField extends StatefulWidget {
   final int? maxLines;
   final int? maxLength;
   final TextCapitalization textCapitalization;
+  final IconData? prefixIcon;
 
   @override
   State<CgTextField> createState() => _CgTextFieldState();
@@ -104,10 +106,21 @@ class _CgTextFieldState extends State<CgTextField> {
         filled: true,
         fillColor: CgColors.inputBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: CgColors.gray200),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: CgColors.gray200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: CgColors.green700, width: 1.4),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        prefixIcon: widget.prefixIcon == null
+            ? null
+            : Icon(widget.prefixIcon, color: CgColors.green700, size: 20),
         suffixIcon: widget.obscure && widget.showVisibilityToggle
             ? IconButton(
                 tooltip: _obscured ? 'Show password' : 'Hide password',

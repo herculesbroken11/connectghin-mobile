@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/widgets/cg_brand_header.dart';
 import 'data/notifications_api.dart';
 
 class _NotifStyle {
@@ -16,7 +18,7 @@ class _NotifStyle {
   final IconData icon;
 }
 
-/// Inbox-style notifications (GHINder mock: unread tint, type icons, blue dot).
+/// Inbox-style notifications with Connectghin green header + warm cream cards.
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -31,7 +33,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   static const _pinkBg = Color(0xFFFCE7F3);
   static const _pinkFg = Color(0xFFDB2777);
-  static const _headingBlue = Color(0xFF001F3F);
 
   @override
   void initState() {
@@ -147,7 +148,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (title.contains('like')) {
       return const _NotifStyle(bg: CgColors.green50, fg: CgColors.green700, icon: Icons.thumb_up_outlined);
     }
-    return const _NotifStyle(bg: CgColors.gray100, fg: CgColors.gray600, icon: Icons.notifications_none_outlined);
+    return const _NotifStyle(bg: CgColors.creamDark, fg: CgColors.gray600, icon: Icons.notifications_none_outlined);
   }
 
   static String _relTime(String? iso) {
@@ -179,179 +180,299 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   int get _unreadCount => _items.where((m) => m['isRead'] != true).length;
 
+  String get _statusLabel {
+    if (_unreadCount == 0) return 'No unread notifications';
+    if (_unreadCount == 1) return '1 unread notification';
+    return '$_unreadCount unread notifications';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final hasUnread = _items.any((m) => m['isRead'] != true);
+    final hasUnread = _unreadCount > 0;
 
     return Scaffold(
-      backgroundColor: CgColors.gray50,
-      appBar: AppBar(
-        backgroundColor: CgColors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
-          onPressed: () => context.pop(),
-        ),
-        title: const SizedBox.shrink(),
-        actions: [
-          if (hasUnread)
-            TextButton(
-              onPressed: _markAllRead,
-              child: const Text(
-                'Mark all read',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: CgColors.green700,
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: CgColors.green700))
-          : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        OutlinedButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+      backgroundColor: CgColors.cream,
+      body: Column(
+        children: [
+          CgBrandHeader(
+            bottomRadius: 28,
+            padding: const EdgeInsets.fromLTRB(8, 4, 12, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Notifications',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: _headingBlue,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _unreadCount == 0
-                                ? 'No unread notifications'
-                                : _unreadCount == 1
-                                    ? '1 unread'
-                                    : '$_unreadCount unread',
-                            style: const TextStyle(fontSize: 15, color: CgColors.gray500, height: 1.2),
-                          ),
-                        ],
-                      ),
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: CgColors.white),
                     ),
-                    Expanded(
-                      child: _items.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No notifications yet',
-                                style: TextStyle(fontSize: 15, color: CgColors.gray600),
+                    const Spacer(),
+                    if (hasUnread)
+                      TextButton(
+                        onPressed: _markAllRead,
+                        child: Text(
+                          'Mark all read',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 2, 8, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Notifications',
+                        style: GoogleFonts.fraunces(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w600,
+                          color: CgColors.white,
+                          height: 1.1,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Stay updated with your golf activity',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: CgColors.white.withValues(alpha: 0.82),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.notifications_none_rounded,
+                              size: 16,
+                              color: hasUnread
+                                  ? CgColors.premiumGoldLight
+                                  : CgColors.white.withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _statusLabel,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: hasUnread
+                                    ? CgColors.premiumGoldLight
+                                    : CgColors.white.withValues(alpha: 0.72),
                               ),
-                            )
-                          : RefreshIndicator(
-                              color: CgColors.green700,
-                              onRefresh: _load,
-                              child: ListView.separated(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                itemCount: _items.length,
-                                separatorBuilder: (_, __) => const Divider(height: 1, thickness: 1, color: CgColors.gray200),
-                                itemBuilder: (context, i) {
-                                  final row = _items[i];
-                                  final title = row['title'] as String? ?? 'Notification';
-                                  final body = row['body'] as String? ?? '';
-                                  final unread = row['isRead'] != true;
-                                  final time = _relTime(row['createdAt'] as String?);
-                                  final style = _styleFor(row);
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: CgColors.green700))
+                : _error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(_error!, textAlign: TextAlign.center),
+                              const SizedBox(height: 16),
+                              OutlinedButton(onPressed: _load, child: const Text('Retry')),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _items.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: const BoxDecoration(
+                                      color: CgColors.green50,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.notifications_none_rounded,
+                                      size: 34,
+                                      color: CgColors.green700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No notifications yet',
+                                    style: GoogleFonts.fraunces(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      color: CgColors.gray900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Matches, messages, and golf updates will show up here.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 14, color: CgColors.gray500, height: 1.35),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : RefreshIndicator(
+                            color: CgColors.green700,
+                            backgroundColor: CgColors.white,
+                            onRefresh: _load,
+                            child: ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                              itemCount: _items.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              itemBuilder: (context, i) {
+                                final row = _items[i];
+                                final title = row['title'] as String? ?? 'Notification';
+                                final body = row['body'] as String? ?? '';
+                                final unread = row['isRead'] != true;
+                                final time = _relTime(row['createdAt'] as String?);
+                                final style = _styleFor(row);
 
-                                  return Material(
-                                    color: unread ? CgColors.blue50 : CgColors.white,
-                                    child: InkWell(
-                                      onTap: () => _onTap(row),
-                                      child: Padding(
-                                        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-                                        child: Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 24,
-                                              backgroundColor: style.bg,
-                                              child: Icon(style.icon, color: style.fg, size: 24),
-                                            ),
-                                            const SizedBox(width: 14),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    title,
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight: unread ? FontWeight.w700 : FontWeight.w600,
-                                                      color: CgColors.gray900,
-                                                      height: 1.25,
-                                                    ),
-                                                  ),
-                                                  if (body.isNotEmpty) ...[
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      body,
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
-                                                        height: 1.4,
-                                                        color: CgColors.gray600,
+                                return Material(
+                                  color: CgColors.white,
+                                  elevation: 0,
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: InkWell(
+                                    onTap: () => _onTap(row),
+                                    borderRadius: BorderRadius.circular(18),
+                                    child: Container(
+                                      padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(18),
+                                        border: Border.all(
+                                          color: unread
+                                              ? CgColors.green700.withValues(alpha: 0.22)
+                                              : CgColors.gray200,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: CgColors.charcoal.withValues(alpha: 0.05),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 24,
+                                            backgroundColor: style.bg,
+                                            child: Icon(style.icon, color: style.fg, size: 22),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        title,
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight: unread ? FontWeight.w700 : FontWeight.w600,
+                                                          color: CgColors.gray900,
+                                                          height: 1.25,
+                                                        ),
                                                       ),
                                                     ),
+                                                    if (unread)
+                                                      Container(
+                                                        width: 8,
+                                                        height: 8,
+                                                        margin: const EdgeInsets.only(left: 6, top: 4),
+                                                        decoration: const BoxDecoration(
+                                                          color: CgColors.green700,
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                      ),
                                                   ],
-                                                  const SizedBox(height: 6),
+                                                ),
+                                                if (body.isNotEmpty) ...[
+                                                  const SizedBox(height: 4),
                                                   Text(
-                                                    time,
+                                                    body,
                                                     style: const TextStyle(
-                                                      fontSize: 12,
-                                                      color: CgColors.gray400,
+                                                      fontSize: 14,
+                                                      height: 1.4,
+                                                      color: CgColors.gray600,
                                                     ),
                                                   ),
                                                 ],
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            if (unread)
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 6),
-                                                child: Container(
-                                                  width: 8,
-                                                  height: 8,
-                                                  decoration: const BoxDecoration(
-                                                    color: CgColors.blue600,
-                                                    shape: BoxShape.circle,
+                                                if (time.isNotEmpty) ...[
+                                                  const SizedBox(height: 8),
+                                                  Row(
+                                                    children: [
+                                                      const Icon(
+                                                        Icons.schedule_rounded,
+                                                        size: 14,
+                                                        color: CgColors.gray400,
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                      Text(
+                                                        time,
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w500,
+                                                          color: CgColors.gray400,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ),
-                                              )
-                                            else
-                                              const SizedBox(width: 8),
-                                          ],
-                                        ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          const Padding(
+                                            padding: EdgeInsets.only(top: 10),
+                                            child: Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: CgColors.gray300,
+                                              size: 22,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                );
+                              },
                             ),
-                    ),
-                  ],
-                ),
+                          ),
+          ),
+        ],
+      ),
     );
   }
 }

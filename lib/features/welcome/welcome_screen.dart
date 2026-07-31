@@ -14,7 +14,7 @@ import '../../core/widgets/cg_responsive_container.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
-  static const _heroAsset = 'assets/images/welcome_hero.png';
+  static const _heroAsset = 'assets/images/welcome_hero.jpg';
 
   @override
   Widget build(BuildContext context) {

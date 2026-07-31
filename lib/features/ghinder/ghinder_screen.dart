@@ -1146,7 +1146,7 @@ class _PairUpHeader extends StatelessWidget {
                 child: Opacity(
                   opacity: 0.55,
                   child: Image.asset(
-                    'assets/images/pair_up_header.png',
+                    'assets/images/pair_up_header.jpg',
                     fit: BoxFit.cover,
                     alignment: const Alignment(0.35, 0.1),
                   ),

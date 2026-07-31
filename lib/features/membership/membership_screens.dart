@@ -819,9 +819,17 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       decoration: BoxDecoration(color: CgColors.green50, borderRadius: BorderRadius.circular(14)),
                       child: const Column(
                         children: [
-                          Text('7-day free trial for eligible new subscribers', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: CgColors.green900)),
+                          Text(
+                            'Launch pricing — no free trial',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: CgColors.green900),
+                          ),
                           SizedBox(height: 6),
-                          Text('Offer depends on App Store / Play policies for this product.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: CgColors.green800, height: 1.35)),
+                          Text(
+                            '$kPremiumMonthlyDisplay/month or $kPremiumYearlyDisplay/year. Cancel anytime in Google Play. A short trial may be offered later as the community grows.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: CgColors.green800, height: 1.35),
+                          ),
                         ],
                       ),
                     ),

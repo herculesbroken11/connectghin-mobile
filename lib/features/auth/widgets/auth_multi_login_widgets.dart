@@ -1,7 +1,177 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/design_tokens.dart';
 import '../../../core/widgets/cg_app_logo.dart';
+
+/// Dark green branded header used on Sign In / Create Account.
+class CgAuthGreenHero extends StatelessWidget {
+  const CgAuthGreenHero({
+    super.key,
+    required this.onBack,
+    this.compact = false,
+  });
+
+  final VoidCallback onBack;
+  final bool compact;
+
+  static const _bgAsset = 'assets/images/pair_up_header.jpg';
+
+  @override
+  Widget build(BuildContext context) {
+    final logoH = compact ? 72.0 : 88.0;
+    return Stack(
+      children: [
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0F3A28),
+                  CgColors.green900,
+                  CgColors.fairway,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: Opacity(
+            opacity: 0.38,
+            child: Image.asset(
+              _bgAsset,
+              fit: BoxFit.cover,
+              alignment: const Alignment(0.45, 0.15),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.18),
+                  Colors.transparent,
+                  const Color(0xFF0F3A28).withValues(alpha: 0.72),
+                ],
+                stops: const [0.0, 0.45, 1.0],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: -20,
+          right: -30,
+          child: IgnorePointer(
+            child: CustomPaint(
+              size: const Size(160, 160),
+              painter: _DotBurstPainter(),
+            ),
+          ),
+        ),
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(8, compact ? 0 : 4, 16, compact ? 28 : 36),
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: onBack,
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: CgColors.white),
+                  ),
+                ),
+                CgAuthBrandMark(
+                  size: logoH,
+                  variant: CgAppLogoVariant.full,
+                  plate: true,
+                ),
+                SizedBox(height: compact ? 10 : 14),
+                Text(
+                  'Connectghin',
+                  style: GoogleFonts.fraunces(
+                    color: CgColors.white,
+                    fontSize: compact ? 28 : 32,
+                    fontWeight: FontWeight.w600,
+                    height: 1.05,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                SizedBox(height: compact ? 8 : 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 1,
+                      color: CgColors.premiumGoldLight.withValues(alpha: 0.7),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          color: CgColors.premiumGoldLight,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 36,
+                      height: 1,
+                      color: CgColors.premiumGoldLight.withValues(alpha: 0.7),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Find your foursome',
+                  style: TextStyle(
+                    color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DotBurstPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.12)
+      ..style = PaintingStyle.fill;
+    final c = Offset(size.width * 0.55, size.height * 0.45);
+    for (var ring = 1; ring <= 5; ring++) {
+      final r = ring * 16.0;
+      final count = 10 + ring * 4;
+      for (var i = 0; i < count; i++) {
+        final a = (i / count) * math.pi * 2;
+        final x = c.dx + r * math.cos(a);
+        final y = c.dy + r * math.sin(a);
+        canvas.drawCircle(Offset(x, y), ring == 5 ? 1.4 : 1.8, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
 
 /// Brand logo on auth screens (full art on a light plate for dark headers).
 class CgAuthBrandMark extends StatelessWidget {
@@ -42,33 +212,45 @@ class CgSocialSignInButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: busy ? null : onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: CgColors.gray900,
-        backgroundColor: CgColors.white,
-        side: const BorderSide(color: CgColors.gray300),
-        minimumSize: Size(double.infinity, minHeight),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (busy)
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2, color: CgColors.green700),
-            )
-          else
-            leading,
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: TextStyle(fontSize: minHeight < 46 ? 14 : 15, fontWeight: FontWeight.w600),
+    return Material(
+      color: CgColors.white,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: busy ? null : onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: minHeight,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: CgColors.gray200),
           ),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (busy)
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: CgColors.green700),
+                )
+              else
+                leading,
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: minHeight < 46 ? 14 : 15,
+                  fontWeight: FontWeight.w600,
+                  color: CgColors.gray900,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -96,7 +278,7 @@ class CgAuthInlineError extends StatelessWidget {
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(color: CgColors.red700, fontSize: 13, height: 1.35),
+                style: const TextStyle(color: CgColors.red700, fontSize: 13, height: 1.35),
               ),
             ),
             if (onDismiss != null)
@@ -152,11 +334,16 @@ class CgAuthTrustFooter extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.shield_outlined, size: 17, color: CgColors.green700),
+        const Icon(Icons.verified_user_outlined, size: 16, color: CgColors.green700),
         const SizedBox(width: 5),
         Text(secureLabel, style: const TextStyle(fontSize: 12, color: CgColors.gray600, fontWeight: FontWeight.w500)),
-        const SizedBox(width: 22),
-        const Icon(Icons.lock_outline, size: 17, color: CgColors.green700),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 14),
+          width: 1,
+          height: 14,
+          color: CgColors.gray300,
+        ),
+        const Icon(Icons.lock_outline, size: 16, color: CgColors.green700),
         const SizedBox(width: 5),
         Text(privateLabel, style: const TextStyle(fontSize: 12, color: CgColors.gray600, fontWeight: FontWeight.w500)),
       ],

@@ -28,15 +28,23 @@ class CgAppLogo extends StatelessWidget {
   /// White rounded plate — use on dark green headers so the logo stays crisp.
   final bool plate;
 
+  /// Full brand PNG aspect after whitespace trim (~420×311).
+  static const double _fullAspect = 420 / 311;
+
   @override
   Widget build(BuildContext context) {
-    final child = variant == CgAppLogoVariant.mark
+    final isMark = variant == CgAppLogoVariant.mark;
+    final logoH = height;
+    final logoW = isMark ? height : height * _fullAspect;
+
+    final child = isMark
         ? _BrandMarkIcon(size: height)
         : Image.memory(
             kBrandLogoPngBytes,
-            height: height,
-            width: height,
+            height: logoH,
+            width: logoW,
             fit: BoxFit.contain,
+            alignment: Alignment.center,
             filterQuality: FilterQuality.high,
             isAntiAlias: true,
             gaplessPlayback: true,
@@ -45,12 +53,14 @@ class CgAppLogo extends StatelessWidget {
 
     if (!plate) return child;
 
-    final pad = height < 72 ? 6.0 : 10.0;
+    // Keep the white plate tight so the art fills nearly all of it.
+    final pad = height < 64 ? 3.0 : 4.0;
+    final radius = height < 64 ? 12.0 : 16.0;
     return Container(
       padding: EdgeInsets.all(pad),
       decoration: BoxDecoration(
         color: CgColors.white,
-        borderRadius: BorderRadius.circular(height < 72 ? 14 : 18),
+        borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
