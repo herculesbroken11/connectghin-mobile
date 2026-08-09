@@ -779,116 +779,124 @@ class _GhinderScreenState extends State<GhinderScreen> {
             )
           else
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Column(
-                  children: [
-                    Row(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final short = constraints.maxHeight < 520;
+                  final metaGap = short ? 6.0 : 8.0;
+                  final actionGap = short ? 8.0 : 12.0;
+                  final actionSize = short ? 48.0 : 54.0;
+                  final pairSize = short ? 58.0 : 66.0;
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(14, short ? 8 : 10, 14, short ? 4 : 6),
+                    child: Column(
                       children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 16,
-                          color: filtersActive ? CgColors.green700 : CgColors.gray500,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 15,
+                              color: filtersActive ? CgColors.green700 : CgColors.gray500,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                filtersActive ? 'Filtered · $distanceLabel' : distanceLabel,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: filtersActive ? CgColors.green700 : CgColors.gray600,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${_index + 1} of ${_profiles.length}',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: CgColors.gray500,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(height: metaGap),
                         Expanded(
-                          child: Text(
-                            filtersActive ? 'Filtered · $distanceLabel' : distanceLabel,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: filtersActive ? CgColors.green700 : CgColors.gray600,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '${_index + 1} of ${_profiles.length}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: CgColors.gray500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: GestureDetector(
-                        onHorizontalDragUpdate: (d) => setState(() => _drag += d.delta),
-                        onHorizontalDragEnd: (d) {
-                          final vx = d.velocity.pixelsPerSecond.dx;
-                          final p = _current;
-                          if (p == null) return;
-                          if (_drag.dx < -80 || vx < -300) {
-                            setState(() => _drag = const Offset(-300, 0));
-                            _advance(p, right: false);
-                          } else if (_drag.dx > 80 || vx > 300) {
-                            setState(() => _drag = const Offset(300, 0));
-                            _advance(p, right: true);
-                          } else {
-                            setState(() => _drag = Offset.zero);
-                          }
-                        },
-                        child: Transform.translate(
-                          offset: _drag,
-                          child: Transform.rotate(
-                            angle: _drag.dx * 0.0007,
-                            child: _PairUpProfileCard(
-                              golfer: current,
-                              dragDx: _drag.dx,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _LabeledActionBtn(
-                          size: 56,
-                          label: 'Pass',
-                          labelColor: CgColors.red500,
-                          background: CgColors.white,
-                          borderColor: CgColors.red500,
-                          icon: Icons.close_rounded,
-                          iconColor: CgColors.red500,
-                          onTap: () => _swipeUi(false),
-                        ),
-                        const SizedBox(width: 22),
-                        _LabeledActionBtn(
-                          size: 68,
-                          label: 'Pair Up',
-                          labelColor: CgColors.green700,
-                          background: CgColors.green700,
-                          icon: Icons.thumb_up_alt_rounded,
-                          iconColor: CgColors.white,
-                          elevated: true,
-                          onTap: () => _swipeUi(true),
-                        ),
-                        const SizedBox(width: 22),
-                        _LabeledActionBtn(
-                          size: 56,
-                          label: 'Details',
-                          labelColor: CgColors.gray600,
-                          background: CgColors.white,
-                          borderColor: CgColors.gray300,
-                          icon: Icons.info_outline_rounded,
-                          iconColor: CgColors.gray700,
-                          onTap: () => context.push(
-                            AppPaths.appProfileUser(current.userId),
-                            extra: {
-                              if (current.distanceMiles != null)
-                                'distanceMilesHint': current.distanceMiles!.toStringAsFixed(1),
+                          child: GestureDetector(
+                            onHorizontalDragUpdate: (d) => setState(() => _drag += d.delta),
+                            onHorizontalDragEnd: (d) {
+                              final vx = d.velocity.pixelsPerSecond.dx;
+                              final p = _current;
+                              if (p == null) return;
+                              if (_drag.dx < -80 || vx < -300) {
+                                setState(() => _drag = const Offset(-300, 0));
+                                _advance(p, right: false);
+                              } else if (_drag.dx > 80 || vx > 300) {
+                                setState(() => _drag = const Offset(300, 0));
+                                _advance(p, right: true);
+                              } else {
+                                setState(() => _drag = Offset.zero);
+                              }
                             },
+                            child: Transform.translate(
+                              offset: _drag,
+                              child: Transform.rotate(
+                                angle: _drag.dx * 0.0007,
+                                child: _PairUpProfileCard(
+                                  golfer: current,
+                                  dragDx: _drag.dx,
+                                ),
+                              ),
+                            ),
                           ),
+                        ),
+                        SizedBox(height: actionGap),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _LabeledActionBtn(
+                              size: actionSize,
+                              label: 'Pass',
+                              labelColor: CgColors.red500,
+                              background: CgColors.white,
+                              borderColor: CgColors.red500,
+                              icon: Icons.close_rounded,
+                              iconColor: CgColors.red500,
+                              onTap: () => _swipeUi(false),
+                            ),
+                            SizedBox(width: short ? 16 : 20),
+                            _LabeledActionBtn(
+                              size: pairSize,
+                              label: 'Pair Up',
+                              labelColor: CgColors.green700,
+                              background: CgColors.green700,
+                              icon: Icons.thumb_up_alt_rounded,
+                              iconColor: CgColors.white,
+                              elevated: true,
+                              onTap: () => _swipeUi(true),
+                            ),
+                            SizedBox(width: short ? 16 : 20),
+                            _LabeledActionBtn(
+                              size: actionSize,
+                              label: 'Details',
+                              labelColor: CgColors.gray600,
+                              background: CgColors.white,
+                              borderColor: CgColors.gray300,
+                              icon: Icons.info_outline_rounded,
+                              iconColor: CgColors.gray700,
+                              onTap: () => context.push(
+                                AppPaths.appProfileUser(current.userId),
+                                extra: {
+                                  if (current.distanceMiles != null)
+                                    'distanceMilesHint': current.distanceMiles!.toStringAsFixed(1),
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
         ],
@@ -1002,10 +1010,10 @@ class _FindFourthTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
@@ -1048,25 +1056,25 @@ class _TabChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected ? CgColors.white : Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(11),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(11),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 11),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 16,
+                size: 15,
                 color: selected ? CgColors.green800 : CgColors.white.withValues(alpha: 0.85),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: selected ? CgColors.green800 : CgColors.white.withValues(alpha: 0.88),
                 ),
@@ -1100,6 +1108,10 @@ class _PairUpHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenH = MediaQuery.sizeOf(context).height;
+    final compact = screenH < 760;
+    final titleSize = compact ? 24.0 : 26.0;
+
     return ClipRect(
       child: Stack(
         children: [
@@ -1121,12 +1133,11 @@ class _PairUpHeader extends StatelessWidget {
           const Positioned.fill(
             child: CustomPaint(painter: _TopoPatternPainter()),
           ),
-          // Decorative golf-course photo — right side only, fades into green.
           Positioned(
             top: 0,
             right: 0,
             bottom: 0,
-            width: MediaQuery.sizeOf(context).width * 0.58,
+            width: MediaQuery.sizeOf(context).width * 0.5,
             child: IgnorePointer(
               child: ShaderMask(
                 blendMode: BlendMode.dstIn,
@@ -1136,30 +1147,29 @@ class _PairUpHeader extends StatelessWidget {
                     end: Alignment.centerRight,
                     colors: [
                       Color(0x00000000),
-                      Color(0x66000000),
-                      Color(0xCC000000),
+                      Color(0x55000000),
+                      Color(0xBB000000),
                       Color(0xFF000000),
                     ],
-                    stops: [0.0, 0.28, 0.55, 1.0],
+                    stops: [0.0, 0.25, 0.55, 1.0],
                   ).createShader(bounds);
                 },
                 child: Opacity(
-                  opacity: 0.55,
+                  opacity: 0.42,
                   child: Image.asset(
                     'assets/images/pair_up_header.jpg',
                     fit: BoxFit.cover,
-                    alignment: const Alignment(0.35, 0.1),
+                    alignment: const Alignment(0.4, 0.05),
                   ),
                 ),
               ),
             ),
           ),
-          // Soft vertical fade so the photo doesn't fight the tab bar.
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            height: 56,
+            height: 36,
             child: IgnorePointer(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -1168,7 +1178,7 @@ class _PairUpHeader extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      const Color(0xFF0F3A28).withValues(alpha: 0.55),
+                      const Color(0xFF0F3A28).withValues(alpha: 0.45),
                     ],
                   ),
                 ),
@@ -1178,9 +1188,10 @@ class _PairUpHeader extends StatelessWidget {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              padding: EdgeInsets.fromLTRB(14, compact ? 2 : 4, 14, compact ? 8 : 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -1191,74 +1202,61 @@ class _PairUpHeader extends StatelessWidget {
                           outlined: true,
                           active: filtersActive,
                           onTap: onFilters,
+                          compact: true,
                         )
                       else
                         const SizedBox(width: 1),
                       const Spacer(),
+                      if (likesLeft != null) ...[
+                        Icon(
+                          Icons.groups_outlined,
+                          size: 14,
+                          color: CgColors.premiumGoldLight.withValues(alpha: 0.9),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$likesLeft left',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       _HeaderPillBtn(
                         label: 'Premium',
                         icon: Icons.workspace_premium_rounded,
                         gold: true,
                         active: isPremium,
                         onTap: onPremium,
+                        compact: true,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Find Your 4th',
-                              style: GoogleFonts.fraunces(
-                                color: CgColors.white,
-                                fontSize: 34,
-                                fontWeight: FontWeight.w600,
-                                height: 1.05,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Pair up with golfers near you',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (likesLeft != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6, left: 8),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.groups_outlined,
-                                size: 16,
-                                color: CgColors.premiumGoldLight.withValues(alpha: 0.9),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                '$likesLeft players left',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+                  SizedBox(height: compact ? 6 : 8),
+                  Text(
+                    'Find Your 4th',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.fraunces(
+                      color: CgColors.white,
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.w600,
+                      height: 1.05,
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Pair up with golfers near you',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
+                    ),
+                  ),
+                  SizedBox(height: compact ? 8 : 10),
                   _FindFourthTabBar(index: tabIndex, onChanged: onTabChanged),
                 ],
               ),
@@ -1309,6 +1307,7 @@ class _HeaderPillBtn extends StatelessWidget {
     this.outlined = false,
     this.gold = false,
     this.active = false,
+    this.compact = false,
   });
 
   final String label;
@@ -1317,6 +1316,7 @@ class _HeaderPillBtn extends StatelessWidget {
   final bool outlined;
   final bool gold;
   final bool active;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -1331,7 +1331,10 @@ class _HeaderPillBtn extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 10 : 12,
+            vertical: compact ? 6 : 8,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: outlined
@@ -1345,12 +1348,12 @@ class _HeaderPillBtn extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: fg),
-              const SizedBox(width: 6),
+              Icon(icon, size: compact ? 14 : 16, color: fg),
+              SizedBox(width: compact ? 4 : 6),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: compact ? 12 : 13,
                   fontWeight: FontWeight.w700,
                   color: fg,
                 ),
@@ -1395,159 +1398,178 @@ class _PairUpProfileCard extends StatelessWidget {
       chips.add(_CardChipData(label: hcp, icon: Icons.sports_golf, filledGreen: true));
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: CgColors.charcoalSoft,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: CgColors.charcoal.withValues(alpha: 0.16),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (golfer.imageUrl != null && golfer.imageUrl!.isNotEmpty)
-            CachedNetworkImage(
-              imageUrl: golfer.imageUrl!,
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-            )
-          else
-            const ColoredBox(
-              color: CgColors.gray300,
-              child: Center(child: Icon(Icons.person, size: 96, color: CgColors.gray500)),
-            ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x33000000),
-                  Color(0x00000000),
-                  Color(0x00000000),
-                  Color(0xB3000000),
-                  Color(0xE6000000),
-                ],
-                stops: [0.0, 0.2, 0.45, 0.72, 1.0],
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final maxOverlay = (cardConstraints.maxHeight * 0.5).clamp(150.0, 320.0);
+        return Container(
+          decoration: BoxDecoration(
+            color: CgColors.charcoalSoft,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: CgColors.charcoal.withValues(alpha: 0.16),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
               ),
-            ),
+            ],
           ),
-          if (dragDx.abs() > 24)
-            Positioned(
-              top: 36,
-              left: dragDx > 0 ? 22 : null,
-              right: dragDx < 0 ? 22 : null,
-              child: Transform.rotate(
-                angle: dragDx > 0 ? -0.16 : 0.16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    border: Border.all(
-                      color: dragDx > 0 ? CgColors.green600 : CgColors.red500,
-                      width: 2.5,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    dragDx > 0 ? 'PAIR' : 'PASS',
-                    style: TextStyle(
-                      color: dragDx > 0 ? CgColors.green600 : CgColors.red500,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 22,
-                      letterSpacing: 1.2,
-                    ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (golfer.imageUrl != null && golfer.imageUrl!.isNotEmpty)
+                CachedNetworkImage(
+                  imageUrl: golfer.imageUrl!,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                )
+              else
+                const ColoredBox(
+                  color: CgColors.gray300,
+                  child: Center(child: Icon(Icons.person, size: 96, color: CgColors.gray500)),
+                ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x33000000),
+                      Color(0x00000000),
+                      Color(0x00000000),
+                      Color(0x99000000),
+                      Color(0xE8000000),
+                    ],
+                    stops: [0.0, 0.18, 0.42, 0.7, 1.0],
                   ),
                 ),
               ),
-            ),
-          Positioned(
-            top: 14,
-            left: 14,
-            right: 14,
-            child: Row(
-              children: [
-                if (golfer.isPremium) ...[
-                  const CgPremiumBadge(compact: true),
-                  const SizedBox(width: 6),
-                ],
-                if (golfer.verified) const CgHandicapVerifiedBadge(compact: true),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${golfer.displayName}$ageStr',
-                    style: GoogleFonts.fraunces(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: CgColors.white,
-                      height: 1.05,
+              if (dragDx.abs() > 24)
+                Positioned(
+                  top: 28,
+                  left: dragDx > 0 ? 20 : null,
+                  right: dragDx < 0 ? 20 : null,
+                  child: Transform.rotate(
+                    angle: dragDx > 0 ? -0.16 : 0.16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        border: Border.all(
+                          color: dragDx > 0 ? CgColors.green600 : CgColors.red500,
+                          width: 2.5,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        dragDx > 0 ? 'PAIR' : 'PASS',
+                        style: TextStyle(
+                          color: dragDx > 0 ? CgColors.green600 : CgColors.red500,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 20,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_rounded, size: 15, color: CgColors.white.withValues(alpha: 0.85)),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          distance,
-                          style: TextStyle(
-                            color: CgColors.white.withValues(alpha: 0.9),
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w500,
+                ),
+              Positioned(
+                top: 12,
+                left: 12,
+                right: 12,
+                child: Row(
+                  children: [
+                    if (golfer.isPremium) ...[
+                      const CgPremiumBadge(compact: true),
+                      const SizedBox(width: 6),
+                    ],
+                    if (golfer.verified) const CgHandicapVerifiedBadge(compact: true),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  constraints: BoxConstraints(maxHeight: maxOverlay),
+                  padding: const EdgeInsets.fromLTRB(16, 36, 16, 14),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x00000000),
+                        Color(0x88000000),
+                        Color(0xE8000000),
+                      ],
+                      stops: [0.0, 0.28, 1.0],
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${golfer.displayName}$ageStr',
+                          style: GoogleFonts.fraunces(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w600,
+                            color: CgColors.white,
+                            height: 1.05,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_rounded, size: 14, color: CgColors.white.withValues(alpha: 0.85)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                distance,
+                                style: TextStyle(
+                                  color: CgColors.white.withValues(alpha: 0.9),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (chips.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: chips.map((c) => _ProfileTagChip(data: c)).toList(),
+                          ),
+                        ],
+                        if (bio.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            bio,
+                            style: TextStyle(
+                              color: CgColors.white.withValues(alpha: 0.9),
+                              fontSize: 13.5,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  if (chips.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
-                      children: chips.map((c) => _ProfileTagChip(data: c)).toList(),
-                    ),
-                  ],
-                  if (bio.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      bio,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: CgColors.white.withValues(alpha: 0.88),
-                        fontSize: 13.5,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1676,11 +1698,11 @@ class _LabeledActionBtn extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: size < 52 ? 11 : 12,
             fontWeight: FontWeight.w700,
             color: labelColor,
           ),
