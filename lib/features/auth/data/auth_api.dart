@@ -36,10 +36,14 @@ class AuthApi {
   Future<Map<String, dynamic>> loginWithApple({
     required String idToken,
     String? email,
+    String? fullName,
+    String? nonce,
   }) {
     return _apiClient.postJson('/auth/apple', body: <String, dynamic>{
       'idToken': idToken,
       if (email != null && email.trim().isNotEmpty) 'email': email.trim().toLowerCase(),
+      if (fullName != null && fullName.trim().isNotEmpty) 'fullName': fullName.trim(),
+      if (nonce != null && nonce.trim().isNotEmpty) 'nonce': nonce.trim(),
     });
   }
 

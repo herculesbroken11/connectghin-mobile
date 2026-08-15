@@ -72,5 +72,7 @@
 	<string>ConnectGHIN needs camera access to take profile photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ConnectGHIN needs photo library access to choose profile pictures.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

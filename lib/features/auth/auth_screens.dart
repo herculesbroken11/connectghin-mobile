@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
@@ -13,6 +12,7 @@ import '../../core/network/api_user_message.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_text_field.dart';
 import '../../core/widgets/google_mark.dart';
+import 'apple_sign_in_helper.dart';
 import 'google_sign_in_helper.dart';
 import 'register_password_screen.dart';
 import 'widgets/auth_multi_login_widgets.dart';
@@ -34,9 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _appleBusy = false;
   String? _googleError;
 
-  bool get _canUseAppleSignIn =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS);
+  bool get _canUseAppleSignIn => AppleSignInHelper.isSupported;
 
   @override
   void initState() {
@@ -115,16 +113,12 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _appleBusy = true);
     try {
       final session = context.read<AuthSession>();
-      final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
-      );
-      final idToken = credential.identityToken;
-      if (idToken == null || idToken.isEmpty) {
-        throw Exception('Apple sign-in did not return an identity token');
-      }
+      final apple = await AppleSignInHelper.obtainCredential();
       final res = await session.authApi.loginWithApple(
-        idToken: idToken,
-        email: credential.email,
+        idToken: apple.identityToken,
+        email: apple.email,
+        fullName: apple.fullName,
+        nonce: apple.rawNonce,
       );
       await session.setTokens(
         access: res['accessToken'] as String,
@@ -134,7 +128,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       context.go(session.postAuthLocation);
     } catch (e) {
-      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
+      if (!isSignInCancelledError(e) && mounted) {
+        showUserMessageSnackBar(context, messageFromAppleSignInError(e));
+      }
     } finally {
       if (mounted) setState(() => _appleBusy = false);
     }
@@ -366,9 +362,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _fullName = TextEditingController();
   final _email = TextEditingController();
 
-  bool get _canUseAppleSignIn =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS);
+  bool get _canUseAppleSignIn => AppleSignInHelper.isSupported;
 
   @override
   void dispose() {
@@ -428,16 +422,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _appleBusy = true);
     try {
       final session = context.read<AuthSession>();
-      final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
-      );
-      final idToken = credential.identityToken;
-      if (idToken == null || idToken.isEmpty) {
-        throw Exception('Apple sign-in did not return an identity token');
-      }
+      final apple = await AppleSignInHelper.obtainCredential();
       final res = await session.authApi.loginWithApple(
-        idToken: idToken,
-        email: credential.email,
+        idToken: apple.identityToken,
+        email: apple.email,
+        fullName: apple.fullName,
+        nonce: apple.rawNonce,
       );
       await session.setTokens(
         access: res['accessToken'] as String,
@@ -447,7 +437,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       context.go(session.postAuthLocation);
     } catch (e) {
-      if (!isSignInCancelledError(e) && mounted) showApiErrorSnackBar(context, e);
+      if (!isSignInCancelledError(e) && mounted) {
+        showUserMessageSnackBar(context, messageFromAppleSignInError(e));
+      }
     } finally {
       if (mounted) setState(() => _appleBusy = false);
     }

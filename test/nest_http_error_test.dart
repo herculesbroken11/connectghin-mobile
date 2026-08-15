@@ -2,6 +2,7 @@ import 'package:connectghin_flutter/core/network/api_client.dart';
 import 'package:connectghin_flutter/core/network/api_user_message.dart';
 import 'package:connectghin_flutter/core/network/nest_http_error.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 void main() {
   test('parseNestHttpErrorBody unwraps object message from HttpExceptionFilter', () {
@@ -35,5 +36,21 @@ void main() {
         '{"statusCode":400,"message":{"message":["email must be an email"],"error":"Bad Request","statusCode":400},"path":"/api/v1/auth/login","timestamp":"2026-04-13T03:01:34.022Z"}';
     final msg = messageFromApiError(ApiHttpException(400, body));
     expect(msg, 'Email must be an email');
+  });
+
+  test('isSignInCancelledError treats Apple cancel as cancelled', () {
+    const error = SignInWithAppleAuthorizationException(
+      code: AuthorizationErrorCode.canceled,
+      message: 'The user canceled the authorization attempt',
+    );
+    expect(isSignInCancelledError(error), isTrue);
+    expect(messageFromAppleSignInError(error), 'Sign-in was cancelled.');
+  });
+
+  test('messageFromAppleSignInError maps Apple API 503', () {
+    const body =
+        '{"statusCode":503,"message":"Apple sign-in is not available right now. Please use email login.","path":"/api/v1/auth/apple","timestamp":"t"}';
+    final msg = messageFromAppleSignInError(ApiHttpException(503, body));
+    expect(msg, 'Apple sign-in is not available right now. Please use email login.');
   });
 }

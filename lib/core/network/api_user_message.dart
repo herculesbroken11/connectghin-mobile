@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../app/app_messenger.dart';
 import '../../app/design_tokens.dart';
@@ -14,8 +15,28 @@ bool isSignInCancelledError(Object error) {
     return error.code == GoogleSignInExceptionCode.canceled ||
         error.code == GoogleSignInExceptionCode.interrupted;
   }
+  if (error is SignInWithAppleAuthorizationException) {
+    return error.code == AuthorizationErrorCode.canceled;
+  }
   final s = error.toString().toLowerCase();
-  return s.contains('sign_in_canceled') || s.contains('12501');
+  return s.contains('sign_in_canceled') ||
+      s.contains('12501') ||
+      s.contains('error 1001') ||
+      s.contains('authorizationerrorcode.canceled') ||
+      s.contains('the user canceled the authorization attempt');
+}
+
+String messageFromAppleSignInError(Object error) {
+  if (isSignInCancelledError(error)) {
+    return 'Sign-in was cancelled.';
+  }
+  if (error is SignInWithAppleNotSupportedException) {
+    return 'Apple sign-in is not available on this device.';
+  }
+  if (error is SignInWithAppleAuthorizationException) {
+    return 'Apple sign-in failed. Please try again.';
+  }
+  return messageFromApiError(error, fallback: 'Apple sign-in failed. Please try again.');
 }
 
 String messageFromGoogleSignInError(Object error) {
