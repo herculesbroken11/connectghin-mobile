@@ -64,12 +64,7 @@ class _ManagePhotosScreenState extends State<ManagePhotosScreen> {
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) return;
-    final img = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 2048,
-      maxHeight: 2048,
-      imageQuality: 88,
-    );
+    final img = await pickProfilePhoto(_picker);
     if (img == null) return;
     setState(() => _uploadingFile = true);
     try {

@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/api_client.dart';
 
@@ -36,11 +40,23 @@ class ProfilesApi {
     );
   }
 
+  /// iOS Simulator / PHPicker files often have no extension or a .HEIC name.
+  /// Always send bytes with a real image filename so the API accepts the file.
   Future<Map<String, dynamic>> uploadPhotoFile({
     required String accessToken,
     required String filePath,
   }) async {
-    final file = await http.MultipartFile.fromPath('file', filePath);
+    final bytes = await File(filePath).readAsBytes();
+    if (bytes.isEmpty) {
+      throw Exception('That photo could not be read. Please try another image.');
+    }
+    final filename = _uploadFilename(filePath);
+    final file = http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: filename,
+      contentType: _contentType(filename),
+    );
     return _apiClient.postMultipartJson(
       '/profiles/me/photos/upload',
       file: file,
@@ -72,4 +88,29 @@ class ProfilesApi {
   }) {
     return _apiClient.patchJson('/profiles/me/photos/$photoId/primary', bearerToken: accessToken);
   }
+}
+
+Future<XFile?> pickProfilePhoto(ImagePicker picker) {
+  return picker.pickImage(
+    source: ImageSource.gallery,
+    maxWidth: 1600,
+    maxHeight: 1600,
+    imageQuality: 82,
+    requestFullMetadata: false,
+  );
+}
+
+String _uploadFilename(String filePath) {
+  final lower = filePath.toLowerCase();
+  if (lower.endsWith('.png')) return 'photo.png';
+  if (lower.endsWith('.webp')) return 'photo.webp';
+  if (lower.endsWith('.gif')) return 'photo.gif';
+  return 'photo.jpg';
+}
+
+MediaType _contentType(String filename) {
+  if (filename.endsWith('.png')) return MediaType('image', 'png');
+  if (filename.endsWith('.webp')) return MediaType('image', 'webp');
+  if (filename.endsWith('.gif')) return MediaType('image', 'gif');
+  return MediaType('image', 'jpeg');
 }

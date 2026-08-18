@@ -38,6 +38,11 @@ void main() {
     expect(msg, 'Email must be an email');
   });
 
+  test('messageFromApiError maps 413 photo uploads', () {
+    final msg = messageFromApiError(ApiHttpException(413, '<html>413 Request Entity Too Large</html>'));
+    expect(msg, 'That photo is too large. Please choose a smaller image.');
+  });
+
   test('isSignInCancelledError treats Apple cancel as cancelled', () {
     const error = SignInWithAppleAuthorizationException(
       code: AuthorizationErrorCode.canceled,

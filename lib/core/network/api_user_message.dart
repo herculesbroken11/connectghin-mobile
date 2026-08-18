@@ -144,8 +144,13 @@ String messageFromApiError(
       return 'You can\'t do that with your current account.';
     case 404:
       return 'That wasn\'t found.';
+    case 413:
+      return 'That photo is too large. Please choose a smaller image.';
     default:
       if (e.statusCode >= 500) return 'Server error. Please try again later.';
+      if (bl.contains('too large') || bl.contains('entity too large')) {
+        return 'That photo is too large. Please choose a smaller image.';
+      }
       return fallback;
   }
 }
