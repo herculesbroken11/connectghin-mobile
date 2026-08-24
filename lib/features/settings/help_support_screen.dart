@@ -14,8 +14,8 @@ class HelpSupportScreen extends StatelessWidget {
 
   static const _faqs = <(String, String)>[
     (
-      'How do I verify my GHIN?',
-      'Open Profile → GHIN verification and enter your GHIN number. We verify against the official database. '
+      'How do I complete handicap verification?',
+      'Open Profile → Handicap Verification and enter your handicap number. We review the submitted information. '
           'Your handicap may appear on your profile after approval.',
     ),
     (
@@ -47,7 +47,8 @@ class HelpSupportScreen extends StatelessWidget {
   static void _liveChatNote(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Live chat is available Monday–Friday, 9AM–5PM EST. Email us anytime.'),
+        content: Text(
+            'Live chat is available Monday–Friday, 9AM–5PM EST. Email us anytime.'),
       ),
     );
   }
@@ -92,7 +93,8 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               a,
-              style: const TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+              style: const TextStyle(
+                  fontSize: 15, height: 1.5, color: CgColors.gray700),
             ),
           ],
         ),
@@ -109,7 +111,8 @@ class HelpSupportScreen extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              size: 20, color: CgColors.gray900),
           onPressed: () => context.pop(),
         ),
         title: const SizedBox.shrink(),
@@ -132,7 +135,10 @@ class HelpSupportScreen extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(20, 8, 20, 20),
             child: Text(
               "We're here to help",
-              style: TextStyle(fontSize: 15, color: CgColors.blue700, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                  fontSize: 15,
+                  color: CgColors.blue700,
+                  fontWeight: FontWeight.w500),
             ),
           ),
           _sectionBar('CONTACT US'),
@@ -168,7 +174,8 @@ class HelpSupportScreen extends StatelessWidget {
                   child: InkWell(
                     onTap: () => _showFaq(context, q, a),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
                       child: Row(
                         children: [
                           Expanded(
@@ -181,7 +188,8 @@ class HelpSupportScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right, color: CgColors.gray400),
+                          const Icon(Icons.chevron_right,
+                              color: CgColors.gray400),
                         ],
                       ),
                     ),
@@ -220,19 +228,24 @@ class HelpSupportScreen extends StatelessWidget {
                         color: CgColors.green100,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.info_outline, color: CgColors.green700, size: 22),
+                      child: const Icon(Icons.info_outline,
+                          color: CgColors.green700, size: 22),
                     ),
                   ),
                   const SizedBox(height: 16),
                   const Text(
                     'Still need help?',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: CgColors.gray900),
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: CgColors.gray900),
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     'Our support team is available Monday - Friday, 9AM - 5PM EST',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, height: 1.45, color: CgColors.blue700),
+                    style: TextStyle(
+                        fontSize: 14, height: 1.45, color: CgColors.blue700),
                   ),
                   const SizedBox(height: 20),
                   CgPrimaryButton(
@@ -286,7 +299,8 @@ class HelpSupportScreen extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(color: circleColor, shape: BoxShape.circle),
+                decoration:
+                    BoxDecoration(color: circleColor, shape: BoxShape.circle),
                 child: Icon(icon, color: iconColor, size: 22),
               ),
               const SizedBox(width: 14),
@@ -305,7 +319,10 @@ class HelpSupportScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(fontSize: 14, color: subtitleColor, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: subtitleColor,
+                          fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),

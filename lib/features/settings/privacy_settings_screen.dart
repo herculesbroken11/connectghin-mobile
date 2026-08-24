@@ -48,7 +48,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         _showDistance = row['showDistance'] as bool? ?? true;
         _showOnlineStatus = row['showOnlineStatus'] as bool? ?? true;
         _showLastActive = row['showLastActive'] as bool? ?? false;
-        _allowMessagesFromMatches = row['allowMessagesFromMatches'] as bool? ?? true;
+        _allowMessagesFromMatches =
+            row['allowMessagesFromMatches'] as bool? ?? true;
         _showReadReceipts = row['showReadReceipts'] as bool? ?? true;
         _loading = false;
       });
@@ -133,13 +134,15 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              size: 20, color: CgColors.gray900),
           onPressed: () => context.pop(),
         ),
         title: const SizedBox.shrink(),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: CgColors.green700))
+          ? const Center(
+              child: CircularProgressIndicator(color: CgColors.green700))
           : ListView(
               padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
               children: [
@@ -147,19 +150,23 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     'Privacy Settings',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: CgColors.gray900),
+                    style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: CgColors.gray900),
                   ),
                 ),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(20, 8, 20, 20),
                   child: Text(
                     'Control who can see your information',
-                    style: TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.35),
+                    style: TextStyle(
+                        fontSize: 15, color: CgColors.gray600, height: 1.35),
                   ),
                 ),
                 _sectionHeader('PROFILE VISIBILITY'),
                 _toggleTile(
-                  title: 'Show me in Discovery',
+                  title: 'Show me in Connect',
                   subtitle: 'Other users can see your profile when browsing.',
                   value: _showInDiscovery,
                   busy: _patchingKey == 'showInDiscovery',
@@ -215,7 +222,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Data export is coming soon. Use Help & Support to request a copy.'),
+                        content: Text(
+                            'Data export is coming soon. Use Help & Support to request a copy.'),
                       ),
                     );
                     context.push(AppPaths.support);
@@ -242,7 +250,10 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                       children: [
                         const Text(
                           'Your privacy matters. We never sell your data to third parties. Learn more in our ',
-                          style: TextStyle(fontSize: 14, height: 1.45, color: CgColors.blue700),
+                          style: TextStyle(
+                              fontSize: 14,
+                              height: 1.45,
+                              color: CgColors.blue700),
                         ),
                         GestureDetector(
                           onTap: () => context.push(AppPaths.appPrivacyPolicy),
@@ -260,7 +271,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                         ),
                         const Text(
                           '.',
-                          style: TextStyle(fontSize: 14, color: CgColors.blue700),
+                          style:
+                              TextStyle(fontSize: 14, color: CgColors.blue700),
                         ),
                       ],
                     ),
@@ -318,7 +330,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(fontSize: 13, color: CgColors.gray600, height: 1.35),
+                      style: const TextStyle(
+                          fontSize: 13, color: CgColors.gray600, height: 1.35),
                     ),
                   ],
                 ),
@@ -329,7 +342,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   height: 28,
                   child: Padding(
                     padding: EdgeInsets.all(4),
-                    child: CircularProgressIndicator(strokeWidth: 2, color: CgColors.green700),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: CgColors.green700),
                   ),
                 )
               else
@@ -337,7 +351,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
             ],
           ),
         ),
-        if (showDividerAfter) const Divider(height: 1, thickness: 1, color: CgColors.gray100),
+        if (showDividerAfter)
+          const Divider(height: 1, thickness: 1, color: CgColors.gray100),
       ],
     );
   }
@@ -376,7 +391,10 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
-                          style: const TextStyle(fontSize: 13, color: CgColors.gray600, height: 1.35),
+                          style: const TextStyle(
+                              fontSize: 13,
+                              color: CgColors.gray600,
+                              height: 1.35),
                         ),
                       ],
                     ),
@@ -387,7 +405,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
             ),
           ),
         ),
-        if (showDividerAfter) const Divider(height: 1, thickness: 1, color: CgColors.gray100),
+        if (showDividerAfter)
+          const Divider(height: 1, thickness: 1, color: CgColors.gray100),
       ],
     );
   }

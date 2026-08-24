@@ -186,9 +186,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Unmatch?'),
-        content: Text('Remove your match with ${r.card.displayName}? This cannot be undone.'),
+        content: Text(
+            'Remove your match with ${r.card.displayName}? This cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: CgColors.destructive),
@@ -202,7 +205,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
     final t = session.accessToken;
     if (t == null) return;
     try {
-      await MatchesApi(session.apiClient).unmatch(accessToken: t, matchId: r.matchId);
+      await MatchesApi(session.apiClient)
+          .unmatch(accessToken: t, matchId: r.matchId);
       if (mounted) {
         showUserMessageSnackBar(context, 'Match removed.');
         await _load();
@@ -230,7 +234,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
         if (mounted) await _load(silent: true);
         return;
       }
-      final conv = await MessagesApi(session.apiClient).startConversation(accessToken: t, otherUserId: peer);
+      final conv = await MessagesApi(session.apiClient)
+          .startConversation(accessToken: t, otherUserId: peer);
       final id = conv['id'] as String;
       if (mounted) {
         await context.push<String>(
@@ -251,7 +256,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
     if (_loading && _all.isEmpty) {
       return const ColoredBox(
         color: CgColors.cream,
-        child: Center(child: CircularProgressIndicator(color: CgColors.green700)),
+        child:
+            Center(child: CircularProgressIndicator(color: CgColors.green700)),
       );
     }
     if (_error != null && _all.isEmpty) {
@@ -314,11 +320,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   cursorColor: CgColors.premiumGoldLight,
                   decoration: InputDecoration(
                     hintText: 'Search matches...',
-                    hintStyle: TextStyle(color: CgColors.white.withValues(alpha: 0.55)),
-                    prefixIcon: Icon(Icons.search, color: CgColors.white.withValues(alpha: 0.7)),
+                    hintStyle: TextStyle(
+                        color: CgColors.white.withValues(alpha: 0.55)),
+                    prefixIcon: Icon(Icons.search,
+                        color: CgColors.white.withValues(alpha: 0.7)),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.12),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -330,7 +339,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
                               _search.clear();
                               setState(() => _query = '');
                             },
-                            icon: Icon(Icons.close, color: CgColors.white.withValues(alpha: 0.7), size: 20),
+                            icon: Icon(Icons.close,
+                                color: CgColors.white.withValues(alpha: 0.7),
+                                size: 20),
                           ),
                   ),
                 ),
@@ -346,11 +357,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
           if (list.isEmpty && total == 0)
             Expanded(
               child: CgEmptyState(
-                icon: const Icon(Icons.sports_golf, size: 44, color: CgColors.gray400),
+                icon: const Icon(Icons.sports_golf,
+                    size: 44, color: CgColors.gray400),
                 title: 'No matches yet',
-                description: 'Start pairing up to connect with golfers in your area.',
-                actionLabel: 'Pair Up',
-                onAction: () => context.go(AppPaths.appGhinder),
+                description: 'Start connecting with golfers in your area.',
+                actionLabel: 'Connect',
+                onAction: () => context.go(AppPaths.appDiscover),
               ),
             )
           else if (list.isEmpty)
@@ -361,7 +373,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   child: Text(
                     _filterIndex == 1
                         ? 'No unread messages'
-                        : (_query.isNotEmpty ? 'No matches match your search' : 'Nothing to show'),
+                        : (_query.isNotEmpty
+                            ? 'No matches match your search'
+                            : 'Nothing to show'),
                     style: const TextStyle(color: CgColors.gray600),
                     textAlign: TextAlign.center,
                   ),
@@ -376,7 +390,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 child: ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: list.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, thickness: 1, color: CgColors.gray100),
+                  separatorBuilder: (_, __) => const Divider(
+                      height: 1, thickness: 1, color: CgColors.gray100),
                   itemBuilder: (context, i) {
                     final r = list[i];
                     return _MatchRow(
@@ -450,7 +465,9 @@ class _TabLabel extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: selected ? CgColors.premiumGoldLight : CgColors.white.withValues(alpha: 0.65),
+                color: selected
+                    ? CgColors.premiumGoldLight
+                    : CgColors.white.withValues(alpha: 0.65),
               ),
             ),
             const SizedBox(height: 6),
@@ -527,7 +544,8 @@ class _MatchRow extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           row.timeLabel,
-                          style: const TextStyle(fontSize: 12, color: CgColors.gray500),
+                          style: const TextStyle(
+                              fontSize: 12, color: CgColors.gray500),
                         ),
                       ],
                     ),
@@ -539,9 +557,11 @@ class _MatchRow extends StatelessWidget {
                       children: [
                         if (c.isPremium) const CgPremiumBadge(compact: true),
                         if (c.verified)
-                          const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
+                          const CgHandicapVerifiedBadge(
+                              compact: true, useShortLabel: true),
                         if (hcp != null) _MetaChip(label: hcp),
-                        if (!c.rating.hasRating) const _MetaChip(label: 'New Player'),
+                        if (!c.rating.hasRating)
+                          const _MetaChip(label: 'New Player'),
                         CgRatingChip(
                           averageRating: c.rating.averageRating,
                           reviewCount: c.rating.reviewCount,
@@ -553,12 +573,14 @@ class _MatchRow extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.place_outlined, size: 14, color: CgColors.gray500),
+                          const Icon(Icons.place_outlined,
+                              size: 14, color: CgColors.gray500),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               row.locationLine,
-                              style: const TextStyle(fontSize: 12, color: CgColors.gray500),
+                              style: const TextStyle(
+                                  fontSize: 12, color: CgColors.gray500),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -576,8 +598,10 @@ class _MatchRow extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               height: 1.3,
-                              color: unread ? CgColors.gray900 : CgColors.gray600,
-                              fontWeight: unread ? FontWeight.w700 : FontWeight.w500,
+                              color:
+                                  unread ? CgColors.gray900 : CgColors.gray600,
+                              fontWeight:
+                                  unread ? FontWeight.w700 : FontWeight.w500,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -586,7 +610,8 @@ class _MatchRow extends StatelessWidget {
                         if (row.unreadCount > 0) ...[
                           const SizedBox(width: 10),
                           Container(
-                            constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                            constraints: const BoxConstraints(
+                                minWidth: 22, minHeight: 22),
                             padding: const EdgeInsets.symmetric(horizontal: 6),
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
@@ -594,7 +619,9 @@ class _MatchRow extends StatelessWidget {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              row.unreadCount > 99 ? '99+' : '${row.unreadCount}',
+                              row.unreadCount > 99
+                                  ? '99+'
+                                  : '${row.unreadCount}',
                               style: const TextStyle(
                                 color: CgColors.white,
                                 fontSize: 11,

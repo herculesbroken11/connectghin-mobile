@@ -36,7 +36,8 @@ class CgPremiumLockedCta extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.lock_rounded, color: CgColors.premiumGoldDark, size: 20),
+                  const Icon(Icons.lock_rounded,
+                      color: CgColors.premiumGoldDark, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -71,13 +72,15 @@ class CgPremiumGateModal extends StatelessWidget {
   const CgPremiumGateModal({
     super.key,
     this.title = 'Premium members only',
-    this.subtitle = 'Unlock Find Your 4th features',
+    this.subtitle = 'Unlock The Feed features',
     this.onUpgrade,
+    this.secondaryLabel,
   });
 
   final String title;
   final String subtitle;
   final VoidCallback? onUpgrade;
+  final String? secondaryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -100,13 +103,17 @@ class CgPremiumGateModal extends StatelessWidget {
                     color: CgColors.yellow100,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.lock_rounded, color: CgColors.premiumGoldDark, size: 28),
+                  child: const Icon(Icons.lock_rounded,
+                      color: CgColors.premiumGoldDark, size: 28),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CgColors.gray900),
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: CgColors.gray900),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -127,14 +134,27 @@ class CgPremiumGateModal extends StatelessWidget {
                       backgroundColor: CgColors.premiumGold,
                       foregroundColor: CgColors.white,
                       minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text(
                       'Upgrade to Premium',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
+                if (secondaryLabel != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      secondaryLabel!,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

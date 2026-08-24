@@ -10,6 +10,7 @@ import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/constants/us_states.dart';
 import '../../core/formatting/relative_time.dart';
+import '../../core/network/api_client.dart';
 import '../../core/network/api_user_message.dart';
 import '../../core/widgets/cg_handicap_verified_badge.dart';
 import '../../core/widgets/cg_premium_badge.dart';
@@ -38,6 +39,11 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
   List<FoursomeFeedPost> _posts = [];
   String _gameStyle = 'CASUAL';
   bool _isPremium = false;
+
+  bool _isPremiumRequired(Object error) {
+    return error is ApiHttpException &&
+        error.body.toUpperCase().contains('PREMIUM_REQUIRED');
+  }
 
   @override
   void initState() {
@@ -93,7 +99,10 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
             child: const SizedBox.expand(),
           ),
           CgPremiumGateModal(
-            subtitle: 'Unlock Find Your 4th features',
+            title: 'Unlock The Feed',
+            subtitle:
+                'Upgrade to Premium to post rounds, reply to golfers, and access additional Feed features.',
+            secondaryLabel: 'Maybe Later',
             onUpgrade: () {
               Navigator.pop(ctx);
               context.push(AppPaths.appMembership);
@@ -127,7 +136,13 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
         );
       }
     } catch (e) {
-      if (mounted) showApiErrorSnackBar(context, e);
+      if (!mounted) return;
+      if (_isPremiumRequired(e)) {
+        setState(() => _isPremium = false);
+        _showPremiumGate();
+      } else {
+        showApiErrorSnackBar(context, e);
+      }
     }
   }
 
@@ -150,21 +165,33 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
             final session = context.read<AuthSession>();
             final t = session.accessToken;
             if (t == null) return;
-            await FoursomeFeedApi(session.apiClient).create(
-              accessToken: t,
-              courseName: fields.courseName,
-              city: fields.city,
-              state: fields.state,
-              roundDateIso: fields.roundDateIso,
-              teeTime: fields.teeTime,
-              spotsNeeded: fields.spotsNeeded,
-              gameStyle: fields.gameStyle,
-              handicapPreference: fields.handicapPreference,
-              feeLabel: fields.feeLabel,
-              notes: fields.notes,
-            );
-            if (ctx.mounted) Navigator.pop(ctx);
-            await _load();
+            try {
+              await FoursomeFeedApi(session.apiClient).create(
+                accessToken: t,
+                courseName: fields.courseName,
+                city: fields.city,
+                state: fields.state,
+                roundDateIso: fields.roundDateIso,
+                teeTime: fields.teeTime,
+                spotsNeeded: fields.spotsNeeded,
+                gameStyle: fields.gameStyle,
+                handicapPreference: fields.handicapPreference,
+                feeLabel: fields.feeLabel,
+                notes: fields.notes,
+              );
+              if (ctx.mounted) Navigator.pop(ctx);
+              await _load();
+            } catch (e) {
+              if (_isPremiumRequired(e)) {
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  setState(() => _isPremium = false);
+                  _showPremiumGate();
+                }
+                return;
+              }
+              rethrow;
+            }
           },
         ),
       ),
@@ -174,7 +201,8 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: CgColors.green700));
+      return const Center(
+          child: CircularProgressIndicator(color: CgColors.green700));
     }
     if (_error != null) {
       return Center(
@@ -248,7 +276,9 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
               onPressed: _openCreatePost,
               backgroundColor: CgColors.green700,
               icon: const Icon(Icons.add_rounded, color: CgColors.white),
-              label: const Text('Post spot', style: TextStyle(color: CgColors.white, fontWeight: FontWeight.w600)),
+              label: const Text('Post spot',
+                  style: TextStyle(
+                      color: CgColors.white, fontWeight: FontWeight.w600)),
             ),
           )
         else
@@ -259,7 +289,9 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
               onPressed: _showPremiumGate,
               backgroundColor: CgColors.premiumGold,
               icon: const Icon(Icons.lock_rounded, color: CgColors.white),
-              label: const Text('Post spot', style: TextStyle(color: CgColors.white, fontWeight: FontWeight.w700)),
+              label: const Text('Post spot',
+                  style: TextStyle(
+                      color: CgColors.white, fontWeight: FontWeight.w700)),
             ),
           ),
       ],
@@ -333,12 +365,14 @@ class _PremiumUpgradeBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.workspace_premium_rounded, color: CgColors.premiumGold, size: 22),
+          const Icon(Icons.workspace_premium_rounded,
+              color: CgColors.premiumGold, size: 22),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
               'Upgrade to post & reply. Premium members can post open spots and contact golfers directly.',
-              style: TextStyle(fontSize: 13, color: CgColors.gray700, height: 1.35),
+              style: TextStyle(
+                  fontSize: 13, color: CgColors.gray700, height: 1.35),
             ),
           ),
           const SizedBox(width: 8),
@@ -348,9 +382,11 @@ class _PremiumUpgradeBanner extends StatelessWidget {
               backgroundColor: CgColors.premiumGold,
               foregroundColor: CgColors.white,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Unlock', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text('Unlock',
+                style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -397,15 +433,19 @@ class _FoursomePostCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: CgColors.gray200,
-                    backgroundImage: p.posterImageUrl != null && p.posterImageUrl!.isNotEmpty
-                        ? CachedNetworkImageProvider(p.posterImageUrl!)
-                        : null,
+                    backgroundImage:
+                        p.posterImageUrl != null && p.posterImageUrl!.isNotEmpty
+                            ? CachedNetworkImageProvider(p.posterImageUrl!)
+                            : null,
                     child: p.posterImageUrl == null || p.posterImageUrl!.isEmpty
                         ? const Icon(Icons.person, color: CgColors.gray500)
                         : null,
                   ),
                   if (p.posterPremium)
-                    const Positioned(right: -2, bottom: -2, child: CgPremiumAvatarBadge(size: 16)),
+                    const Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: CgPremiumAvatarBadge(size: 16)),
                 ],
               ),
               const SizedBox(width: 12),
@@ -418,25 +458,31 @@ class _FoursomePostCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             p.posterName,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 16),
                           ),
                         ),
-                        Text(timeAgo, style: const TextStyle(fontSize: 12, color: CgColors.gray500)),
+                        Text(timeAgo,
+                            style: const TextStyle(
+                                fontSize: 12, color: CgColors.gray500)),
                       ],
                     ),
                     if (p.posterHandicap != null)
                       Text(
                         '${p.posterHandicap} HCP',
-                        style: const TextStyle(fontSize: 13, color: CgColors.gray600),
+                        style: const TextStyle(
+                            fontSize: 13, color: CgColors.gray600),
                       ),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: [
-                        if (p.posterPremium) const CgPremiumBadge(compact: true),
+                        if (p.posterPremium)
+                          const CgPremiumBadge(compact: true),
                         if (p.posterVerified)
-                          const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
+                          const CgHandicapVerifiedBadge(
+                              compact: true, useShortLabel: true),
                         CgRatingChip(
                           averageRating: p.posterRating.averageRating,
                           reviewCount: p.posterRating.reviewCount,
@@ -453,14 +499,19 @@ class _FoursomePostCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.place_outlined, size: 18, color: CgColors.green700),
+              const Icon(Icons.place_outlined,
+                  size: 18, color: CgColors.green700),
               const SizedBox(width: 6),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(p.courseName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                    Text(p.locationLine, style: const TextStyle(fontSize: 13, color: CgColors.gray600)),
+                    Text(p.courseName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 15)),
+                    Text(p.locationLine,
+                        style: const TextStyle(
+                            fontSize: 13, color: CgColors.gray600)),
                   ],
                 ),
               ),
@@ -469,11 +520,13 @@ class _FoursomePostCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 16, color: CgColors.gray600),
+              const Icon(Icons.calendar_today_outlined,
+                  size: 16, color: CgColors.gray600),
               const SizedBox(width: 6),
               Text(dateLabel, style: const TextStyle(fontSize: 14)),
               const SizedBox(width: 16),
-              const Icon(Icons.schedule_rounded, size: 16, color: CgColors.gray600),
+              const Icon(Icons.schedule_rounded,
+                  size: 16, color: CgColors.gray600),
               const SizedBox(width: 6),
               Text(p.teeTime, style: const TextStyle(fontSize: 14)),
             ],
@@ -484,27 +537,33 @@ class _FoursomePostCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               _styleChip(p.gameStyleLabel, _styleColor(p.gameStyle)),
-              if (p.handicapPreference != null && p.handicapPreference!.isNotEmpty)
+              if (p.handicapPreference != null &&
+                  p.handicapPreference!.isNotEmpty)
                 _neutralChip(p.handicapPreference!),
-              if (p.feeLabel != null && p.feeLabel!.isNotEmpty) _feeChip(p.feeLabel!),
+              if (p.feeLabel != null && p.feeLabel!.isNotEmpty)
+                _feeChip(p.feeLabel!),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(Icons.groups_outlined, size: 18, color: CgColors.green700),
+              const Icon(Icons.groups_outlined,
+                  size: 18, color: CgColors.green700),
               const SizedBox(width: 6),
               _spotsDots(p.spotsNeeded),
               const SizedBox(width: 8),
               Text(
                 '${p.spotsNeeded} spot${p.spotsNeeded == 1 ? '' : 's'} open',
-                style: const TextStyle(color: CgColors.green700, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                    color: CgColors.green700, fontWeight: FontWeight.w600),
               ),
             ],
           ),
           if (p.notes != null && p.notes!.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(p.notes!, style: const TextStyle(fontSize: 14, color: CgColors.gray700, height: 1.4)),
+            Text(p.notes!,
+                style: const TextStyle(
+                    fontSize: 14, color: CgColors.gray700, height: 1.4)),
           ],
           const SizedBox(height: 14),
           if (isPremium)
@@ -525,7 +584,20 @@ class _FoursomePostCard extends StatelessWidget {
 
   static String _formatDate(DateTime d) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${days[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}';
   }
 
@@ -549,7 +621,9 @@ class _FoursomePostCard extends StatelessWidget {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w600, color: color)),
     );
   }
 
@@ -560,7 +634,11 @@ class _FoursomePostCard extends StatelessWidget {
         color: CgColors.gray100,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CgColors.gray700)),
+      child: Text(label,
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: CgColors.gray700)),
     );
   }
 
@@ -571,7 +649,11 @@ class _FoursomePostCard extends StatelessWidget {
         color: CgColors.green50,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CgColors.green700)),
+      child: Text(label,
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: CgColors.green700)),
     );
   }
 
@@ -698,7 +780,8 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
         courseName: _course.text.trim(),
         city: _city.text.trim(),
         state: _stateCode,
-        roundDateIso: DateTime(_date.year, _date.month, _date.day).toIso8601String(),
+        roundDateIso:
+            DateTime(_date.year, _date.month, _date.day).toIso8601String(),
         teeTime: _teeTime.text.trim(),
         spotsNeeded: _spots,
         gameStyle: _style,
@@ -714,9 +797,29 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final dateLabel =
-        '${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][_date.weekday - 1]}, '
-        '${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][_date.month - 1]} ${_date.day}';
+    final dateLabel = '${[
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun'
+    ][_date.weekday - 1]}, '
+        '${[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ][_date.month - 1]} ${_date.day}';
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 12, 20, bottom + 20),
@@ -737,7 +840,10 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             const SizedBox(height: 16),
             const Text(
               'Post open spot',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: CgColors.gray900),
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: CgColors.gray900),
             ),
             const SizedBox(height: 4),
             const Text(
@@ -748,7 +854,8 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             TextField(
               controller: _course,
               textCapitalization: TextCapitalization.words,
-              decoration: _fieldDecoration('Course name *', hint: 'e.g. Harding Park'),
+              decoration:
+                  _fieldDecoration('Course name *', hint: 'e.g. Harding Park'),
             ),
             const SizedBox(height: 12),
             Row(
@@ -773,7 +880,9 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                         .map(
                           (s) => DropdownMenuItem(
                             value: s.code,
-                            child: Text(s.code, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            child: Text(s.code,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
                           ),
                         )
                         .toList(),
@@ -796,22 +905,29 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                 borderRadius: BorderRadius.circular(12),
                 onTap: _pickDate,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_month_outlined, color: CgColors.green700),
+                      const Icon(Icons.calendar_month_outlined,
+                          color: CgColors.green700),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Round date', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                            const Text('Round date',
+                                style: TextStyle(
+                                    fontSize: 12, color: CgColors.gray500)),
                             const SizedBox(height: 2),
-                            Text(dateLabel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                            Text(dateLabel,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700, fontSize: 15)),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded, color: CgColors.gray400),
+                      const Icon(Icons.chevron_right_rounded,
+                          color: CgColors.gray400),
                     ],
                   ),
                 ),
@@ -825,7 +941,11 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             const SizedBox(height: 12),
             const Text(
               'SPOTS NEEDED',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: CgColors.gray500),
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: CgColors.gray500),
             ),
             const SizedBox(height: 8),
             Row(
@@ -847,7 +967,8 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: selected ? CgColors.white : CgColors.gray700,
+                              color:
+                                  selected ? CgColors.white : CgColors.gray700,
                             ),
                           ),
                         ),
@@ -860,7 +981,11 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             const SizedBox(height: 16),
             const Text(
               'GAME STYLE',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: CgColors.gray500),
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: CgColors.gray500),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -879,7 +1004,8 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                     borderRadius: BorderRadius.circular(12),
                     onTap: () => setState(() => _style = entry.$1),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
                       child: Text(
                         entry.$2,
                         style: TextStyle(
@@ -895,19 +1021,22 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
             const SizedBox(height: 14),
             TextField(
               controller: _hcpPref,
-              decoration: _fieldDecoration('Handicap preference', hint: 'e.g. HCP 10–18'),
+              decoration: _fieldDecoration('Handicap preference',
+                  hint: 'e.g. HCP 10–18'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _fee,
-              decoration: _fieldDecoration('Green fee / entry (optional)', hint: '\$85 green fee'),
+              decoration: _fieldDecoration('Green fee / entry (optional)',
+                  hint: '\$85 green fee'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _notes,
               maxLines: 3,
               textCapitalization: TextCapitalization.sentences,
-              decoration: _fieldDecoration('Notes', hint: 'Pace of play, net scoring, etc.'),
+              decoration: _fieldDecoration('Notes',
+                  hint: 'Pace of play, net scoring, etc.'),
             ),
             const SizedBox(height: 22),
             CgPrimaryButton(

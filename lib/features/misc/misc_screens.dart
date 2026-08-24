@@ -71,7 +71,8 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
         details: _details.text,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Report submitted')));
       context.pop();
     } catch (e) {
       if (!mounted) return;
@@ -83,14 +84,26 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const options = ['Harassment', 'Fake profile', 'Inappropriate photos', 'Other'];
+    const options = [
+      'Harassment',
+      'Fake profile',
+      'Inappropriate photos',
+      'Other'
+    ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Report user'), leading: IconButton(icon: const Icon(Icons.close), onPressed: () => context.pop())),
+      appBar: AppBar(
+          title: const Text('Report user'),
+          leading: IconButton(
+              icon: const Icon(Icons.close), onPressed: () => context.pop())),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          if (widget.targetUserId == null || widget.targetUserId!.trim().isEmpty) ...[
-            CgLabeledField(label: 'User ID', child: CgTextField(controller: _targetUserId, hint: 'Target user id')),
+          if (widget.targetUserId == null ||
+              widget.targetUserId!.trim().isEmpty) ...[
+            CgLabeledField(
+                label: 'User ID',
+                child: CgTextField(
+                    controller: _targetUserId, hint: 'Target user id')),
             const SizedBox(height: 12),
           ],
           const Text('Why are you reporting this profile?'),
@@ -98,14 +111,21 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
           ...options.map(
             (r) => ListTile(
               title: Text(r),
-              trailing: _reason == r ? const Icon(Icons.check_circle, color: CgColors.green700) : null,
+              trailing: _reason == r
+                  ? const Icon(Icons.check_circle, color: CgColors.green700)
+                  : null,
               onTap: () => setState(() => _reason = r),
             ),
           ),
           const SizedBox(height: 16),
-          CgTextField(controller: _details, hint: 'Additional details (optional)', keyboardType: TextInputType.multiline),
+          CgTextField(
+              controller: _details,
+              hint: 'Additional details (optional)',
+              keyboardType: TextInputType.multiline),
           const SizedBox(height: 24),
-          CgPrimaryButton(label: _submitting ? 'Submitting…' : 'Submit report', onPressed: _submitting ? null : _submit),
+          CgPrimaryButton(
+              label: _submitting ? 'Submitting…' : 'Submit report',
+              onPressed: _submitting ? null : _submit),
         ],
       ),
     );
@@ -148,9 +168,11 @@ class _BlockUserScreenState extends State<BlockUserScreen> {
     if (t == null || blocked.isEmpty) return;
     setState(() => _saving = true);
     try {
-      await AccountApi(session.apiClient).blockUser(accessToken: t, blockedUserId: blocked);
+      await AccountApi(session.apiClient)
+          .blockUser(accessToken: t, blockedUserId: blocked);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User blocked')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('User blocked')));
       context.pop();
     } catch (e) {
       if (!mounted) return;
@@ -167,15 +189,20 @@ class _BlockUserScreenState extends State<BlockUserScreen> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          CgLabeledField(label: 'User ID', child: CgTextField(controller: _blockedUserId, hint: 'User to block')),
+          CgLabeledField(
+              label: 'User ID',
+              child: CgTextField(
+                  controller: _blockedUserId, hint: 'User to block')),
           const SizedBox(height: 12),
-          const Text('They will not be able to message you or see your profile in discovery.'),
+          const Text(
+              'They will not be able to message you or see your profile in discovery.'),
           SizedBox(height: MediaQuery.sizeOf(context).height * 0.32),
           CgPrimaryButton(
             label: _saving ? 'Blocking…' : 'Block',
             onPressed: _saving ? null : _block,
           ),
-          TextButton(onPressed: () => context.pop(), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => context.pop(), child: const Text('Cancel')),
         ],
       ),
     );
@@ -208,12 +235,15 @@ class _LegalScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20), onPressed: () => context.pop()),
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+            onPressed: () => context.pop()),
         title: Text(title),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Text(body, style: const TextStyle(height: 1.6, color: CgColors.gray700)),
+        child: Text(body,
+            style: const TextStyle(height: 1.6, color: CgColors.gray700)),
       ),
     );
   }
@@ -225,7 +255,8 @@ class LocationPermissionScreen extends StatefulWidget {
   const LocationPermissionScreen({super.key});
 
   @override
-  State<LocationPermissionScreen> createState() => _LocationPermissionScreenState();
+  State<LocationPermissionScreen> createState() =>
+      _LocationPermissionScreenState();
 }
 
 class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
@@ -250,7 +281,8 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
     return _StateScaffold(
       icon: Icons.location_on_outlined,
       title: 'Enable location',
-      body: 'We use your location to show golfers nearby. You can change this anytime in settings.',
+      body:
+          'We use your location to show golfers nearby. You can change this anytime in settings.',
       primary: _busy ? 'Working…' : 'Allow location',
       onPrimary: _busy ? null : _allow,
     );
@@ -265,7 +297,8 @@ class NotificationPermissionScreen extends StatefulWidget {
       _NotificationPermissionScreenState();
 }
 
-class _NotificationPermissionScreenState extends State<NotificationPermissionScreen> {
+class _NotificationPermissionScreenState
+    extends State<NotificationPermissionScreen> {
   bool _busy = false;
 
   Future<void> _allow() async {
@@ -370,9 +403,15 @@ class _StateScaffold extends StatelessWidget {
               children: [
                 Icon(icon, size: 64, color: CgColors.gray400),
                 const SizedBox(height: 24),
-                Text(title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 22)),
+                Text(title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.copyWith(fontSize: 22)),
                 const SizedBox(height: 12),
-                Text(body, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+                Text(body,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 32),
                 CgPrimaryButton(label: primary, onPressed: onPrimary),
               ],
@@ -425,7 +464,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       setState(() {
         _hasPhoto = photos.length >= 2;
         _hasBio = bio.isNotEmpty;
-        _hasGolfPrefs = hasHandicap || looking.isNotEmpty || drink.isNotEmpty || smoke.isNotEmpty || music.isNotEmpty;
+        _hasGolfPrefs = hasHandicap ||
+            looking.isNotEmpty ||
+            drink.isNotEmpty ||
+            smoke.isNotEmpty ||
+            music.isNotEmpty;
         _hasHomeCourse = home.isNotEmpty;
         _loading = false;
       });
@@ -436,7 +479,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   Widget _checkRow(String label, bool done, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(done ? Icons.check_circle : Icons.radio_button_unchecked, color: done ? CgColors.green600 : CgColors.gray400),
+      leading: Icon(done ? Icons.check_circle : Icons.radio_button_unchecked,
+          color: done ? CgColors.green600 : CgColors.gray400),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
@@ -448,14 +492,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Complete profile')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: CgColors.green700))
+          ? const Center(
+              child: CircularProgressIndicator(color: CgColors.green700))
           : ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                _checkRow('At least 2 profile photos', _hasPhoto, () => context.push(AppPaths.appManagePhotos)),
-                _checkRow('Bio & about you', _hasBio, () => context.push(AppPaths.appProfileEdit)),
-                _checkRow('Golf preferences', _hasGolfPrefs, () => context.push(AppPaths.appProfileEdit)),
-                _checkRow('Home course', _hasHomeCourse, () => context.push(AppPaths.appProfileEdit)),
+                _checkRow('At least 2 profile photos', _hasPhoto,
+                    () => context.push(AppPaths.appManagePhotos)),
+                _checkRow('Bio & about you', _hasBio,
+                    () => context.push(AppPaths.appProfileEdit)),
+                _checkRow('Golf preferences', _hasGolfPrefs,
+                    () => context.push(AppPaths.appProfileEdit)),
+                _checkRow('Home course', _hasHomeCourse,
+                    () => context.push(AppPaths.appProfileEdit)),
               ],
             ),
     );
@@ -471,9 +520,15 @@ class PremiumFeaturesDemoScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Premium features')),
       body: ListView(
         children: const [
-          ListTile(title: Text('Unlimited swipes'), subtitle: Text('Pair Up without daily limits')),
-          ListTile(title: Text('Direct messages'), subtitle: Text('Reach out before matching')),
-          ListTile(title: Text('Profile insights'), subtitle: Text('See who viewed you')),
+          ListTile(
+              title: Text('Unlimited likes'),
+              subtitle: Text('Connect without daily limits')),
+          ListTile(
+              title: Text('Direct messages'),
+              subtitle: Text('Reach out before matching')),
+          ListTile(
+              title: Text('Profile insights'),
+              subtitle: Text('See who viewed you')),
         ],
       ),
     );
@@ -541,7 +596,11 @@ class ChangeEmailScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: const [
-          CgLabeledField(label: 'Email', child: CgTextField(hint: 'you@example.com', keyboardType: TextInputType.emailAddress)),
+          CgLabeledField(
+              label: 'Email',
+              child: CgTextField(
+                  hint: 'you@example.com',
+                  keyboardType: TextInputType.emailAddress)),
           SizedBox(height: 12),
           Text(
             'Email updates are not available yet in this backend build. '
@@ -553,4 +612,3 @@ class ChangeEmailScreen extends StatelessWidget {
     );
   }
 }
-

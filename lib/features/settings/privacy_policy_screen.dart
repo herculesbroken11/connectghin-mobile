@@ -1,15 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/design_tokens.dart';
+import '../../app/session/auth_session.dart';
 
 /// In-app Privacy Policy (GHINder / Connectghin design).
-class PrivacyPolicyScreen extends StatelessWidget {
+class PrivacyPolicyScreen extends StatefulWidget {
   const PrivacyPolicyScreen({super.key});
 
+  @override
+  State<PrivacyPolicyScreen> createState() => _PrivacyPolicyScreenState();
+}
+
+class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   static const _headingBlue = Color(0xFF001F3F);
-  static const _privacyEmail = 'privacy@Connectghin.com';
+  String _privacyEmail = 'privacy@connectghin.com';
+  String _supportEmail = 'support@connectghin.com';
+  String _companyDisplayName = 'Connectghin';
+  String _businessMailingAddress = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadLegalSettings());
+  }
+
+  Future<void> _loadLegalSettings() async {
+    try {
+      final response = await context
+          .read<AuthSession>()
+          .apiClient
+          .getJson('/settings/public-legal');
+      final data = response['data'] is Map<String, dynamic>
+          ? response['data'] as Map<String, dynamic>
+          : response;
+      if (!mounted) return;
+      setState(() {
+        _privacyEmail = _nonEmpty(data['privacyEmail']) ?? _privacyEmail;
+        _supportEmail = _nonEmpty(data['supportEmail']) ?? _supportEmail;
+        _companyDisplayName =
+            _nonEmpty(data['companyDisplayName']) ?? _companyDisplayName;
+        _businessMailingAddress =
+            _nonEmpty(data['businessMailingAddress']) ?? '';
+        _nonEmpty(data['termsUrl']);
+        _nonEmpty(data['privacyUrl']);
+      });
+    } catch (_) {
+      // Keep safe defaults when legal configuration is unavailable.
+    }
+  }
+
+  static String? _nonEmpty(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
+  }
+
+  Future<void> _emailPrivacyTeam() async {
+    final uri = Uri(scheme: 'mailto', path: _privacyEmail);
+    var launched = false;
+    try {
+      launched = await launchUrl(uri);
+    } catch (_) {
+      launched = false;
+    }
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not open your email app. Contact $_privacyEmail directly.',
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +85,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              size: 20, color: CgColors.gray900),
           onPressed: () => context.pop(),
         ),
         title: const SizedBox.shrink(),
@@ -39,7 +105,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             'Last updated: April 8, 2026',
-            style: TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.35),
+            style:
+                TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.35),
           ),
           const SizedBox(height: 20),
           Container(
@@ -64,8 +131,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   'Information We Collect',
                   const Text(
                     'We collect information you provide directly to us when you create an account, '
-                    'including your name, email address, photos, golf handicap, and GHIN number for verification purposes.',
-                    style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                    'including your name, email address, photos, golf handicap, and handicap number for verification purposes.',
+                    style: TextStyle(
+                        fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),
                 ),
                 _numberedSection(
@@ -76,13 +144,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     children: [
                       const Text(
                         'We use the information we collect to:',
-                        style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                        style: TextStyle(
+                            fontSize: 15, height: 1.5, color: CgColors.gray700),
                       ),
                       const SizedBox(height: 10),
                       _bullets(const [
                         'Provide, maintain, and improve our services',
                         'Connect you with other golfers',
-                        'Verify your GHIN handicap index',
+                        'Verify your handicap information',
                         'Send you updates and promotional communications',
                         'Monitor and analyze trends and usage',
                       ]),
@@ -97,7 +166,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     children: [
                       const Text(
                         'We do not sell your personal information. We may share your information with:',
-                        style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                        style: TextStyle(
+                            fontSize: 15, height: 1.5, color: CgColors.gray700),
                       ),
                       const SizedBox(height: 10),
                       _bullets(const [
@@ -112,9 +182,10 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   '4',
                   'Handicap Verification',
                   const Text(
-                    'When you submit a GHIN number for handicap verification, we verify it against the official GHIN database. '
+                    'When you submit a handicap number for verification, we review the information as part of our handicap verification process. '
                     'Your handicap index may be displayed on your profile as part of your public profile information.',
-                    style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                    style: TextStyle(
+                        fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),
                 ),
                 _numberedSection(
@@ -123,7 +194,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   const Text(
                     'We use industry-standard security measures to protect your information. '
                     'However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.',
-                    style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                    style: TextStyle(
+                        fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),
                 ),
                 _numberedSection(
@@ -134,7 +206,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     children: [
                       const Text(
                         'Depending on where you live, you may have the right to:',
-                        style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                        style: TextStyle(
+                            fontSize: 15, height: 1.5, color: CgColors.gray700),
                       ),
                       const SizedBox(height: 10),
                       _bullets(const [
@@ -151,7 +224,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   "Children's Privacy",
                   const Text(
                     'Connectghin is not intended for users under 18. We do not knowingly collect personal information from children under 18.',
-                    style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                    style: TextStyle(
+                        fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),
                 ),
                 _numberedSection(
@@ -160,7 +234,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   const Text(
                     'We collect location data to show you golfers near you and improve discovery features. '
                     'You can control location permissions in your device settings at any time.',
-                    style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                    style: TextStyle(
+                        fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),
                 ),
                 _numberedSection(
@@ -169,7 +244,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   const Text(
                     'We may use cookies and similar technologies to improve your experience, analyze usage, '
                     'and deliver personalized content where appropriate.',
-                    style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                    style: TextStyle(
+                        fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),
                 ),
                 _numberedSection(
@@ -178,34 +254,56 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   const Text(
                     'We may update this policy from time to time. We will notify you by posting the new policy on this page '
                     'and updating the "Last updated" date.',
-                    style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                    style: TextStyle(
+                        fontSize: 15, height: 1.5, color: CgColors.gray700),
                   ),
                 ),
                 _numberedSection(
                   '11',
                   'Contact Us',
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'If you have questions about this Privacy Policy, please contact us:',
-                        style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                        style: TextStyle(
+                            fontSize: 15, height: 1.5, color: CgColors.gray700),
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
+                      Text(
+                        _companyDisplayName,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: CgColors.gray900,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       SelectableText(
                         _privacyEmail,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: CgColors.blue700,
                           height: 1.4,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        '123 Golf Lane\nSan Francisco, CA 94102',
-                        style: TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                      const SizedBox(height: 4),
+                      SelectableText(
+                        _supportEmail,
+                        style: const TextStyle(
+                            fontSize: 14, color: CgColors.blue700),
                       ),
+                      if (_businessMailingAddress.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _businessMailingAddress,
+                          style: const TextStyle(
+                              fontSize: 15,
+                              height: 1.5,
+                              color: CgColors.gray700),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -217,18 +315,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
             color: CgColors.blue50,
             borderRadius: BorderRadius.circular(CgRadii.xl),
             child: InkWell(
-              onTap: () async {
-                final uri = Uri.parse('mailto:$_privacyEmail');
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                }
-              },
+              onTap: _emailPrivacyTeam,
               borderRadius: BorderRadius.circular(CgRadii.xl),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                 child: Column(
                   children: [
-                    Text(
+                    const Text(
                       'Questions about your privacy?',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -237,11 +331,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
                         color: CgColors.gray900,
                       ),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Text(
-                      'Contact our privacy team at privacy@Connectghin.com',
+                      'Contact our privacy team at $_privacyEmail',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.gray600),
+                      style: TextStyle(
+                          fontSize: 14, height: 1.4, color: CgColors.gray600),
                     ),
                   ],
                 ),
@@ -284,11 +379,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('•  ', style: TextStyle(fontSize: 15, color: CgColors.gray700, height: 1.5)),
+              const Text('•  ',
+                  style: TextStyle(
+                      fontSize: 15, color: CgColors.gray700, height: 1.5)),
               Expanded(
                 child: Text(
                   line,
-                  style: const TextStyle(fontSize: 15, height: 1.5, color: CgColors.gray700),
+                  style: const TextStyle(
+                      fontSize: 15, height: 1.5, color: CgColors.gray700),
                 ),
               ),
             ],

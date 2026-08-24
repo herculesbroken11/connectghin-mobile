@@ -47,7 +47,8 @@ class _ResolvedPlace {
 List<Map<String, dynamic>> _sortedPhotosFromUser(Map<String, dynamic>? user) {
   final raw = user?['profilePhotos'] as List<dynamic>? ?? [];
   final list = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-  list.sort((a, b) => (a['sortOrder'] as int? ?? 0).compareTo(b['sortOrder'] as int? ?? 0));
+  list.sort((a, b) =>
+      (a['sortOrder'] as int? ?? 0).compareTo(b['sortOrder'] as int? ?? 0));
   return list;
 }
 
@@ -123,7 +124,8 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
         if (!mounted) return;
         setState(() {
           _addressSuggestions = items
-              .map((e) => _AddressSuggestion(placeId: e.placeId, description: e.description))
+              .map((e) => _AddressSuggestion(
+                  placeId: e.placeId, description: e.description))
               .toList();
           _searchingAddress = false;
         });
@@ -140,7 +142,8 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
           _addressSuggestions = const [];
           _searchingAddress = false;
         });
-        showUserMessageSnackBar(context, 'Address search failed. Try again or enter your address manually.');
+        showUserMessageSnackBar(context,
+            'Address search failed. Try again or enter your address manually.');
       }
     });
   }
@@ -153,7 +156,9 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
       final result = await places.placeDetails(s.placeId);
       final resolved = _resolvePlace(result);
       _suppressAddressSearch = true;
-      _address.text = resolved.addressLine1.isNotEmpty ? resolved.addressLine1 : s.description;
+      _address.text = resolved.addressLine1.isNotEmpty
+          ? resolved.addressLine1
+          : s.description;
       _city.text = resolved.city;
       _state.text = resolved.state;
       _postalCode.text = resolved.postalCode;
@@ -184,26 +189,34 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
     String adminArea = '';
     String postalCode = '';
     String country = '';
-    final comps = result['address_components'] as List<dynamic>? ?? const <dynamic>[];
+    final comps =
+        result['address_components'] as List<dynamic>? ?? const <dynamic>[];
     for (final raw in comps) {
       final c = raw as Map<String, dynamic>;
-      final types = (c['types'] as List<dynamic>? ?? const <dynamic>[]).cast<String>();
+      final types =
+          (c['types'] as List<dynamic>? ?? const <dynamic>[]).cast<String>();
       final longName = c['long_name'] as String? ?? '';
       final shortName = c['short_name'] as String? ?? '';
       if (types.contains('street_number')) streetNumber = longName;
       if (types.contains('route')) route = longName;
       if (types.contains('locality')) locality = longName;
-      if (types.contains('administrative_area_level_1')) adminArea = shortName.isNotEmpty ? shortName : longName;
+      if (types.contains('administrative_area_level_1'))
+        adminArea = shortName.isNotEmpty ? shortName : longName;
       if (types.contains('postal_code')) postalCode = longName;
       if (types.contains('country')) country = longName;
-      if (locality.isEmpty && types.contains('postal_town')) locality = longName;
-      if (locality.isEmpty && types.contains('administrative_area_level_2')) locality = longName;
+      if (locality.isEmpty && types.contains('postal_town'))
+        locality = longName;
+      if (locality.isEmpty && types.contains('administrative_area_level_2'))
+        locality = longName;
     }
     final geometry = result['geometry'] as Map<String, dynamic>?;
     final loc = geometry?['location'] as Map<String, dynamic>?;
     final lat = (loc?['lat'] as num?)?.toDouble();
     final lng = (loc?['lng'] as num?)?.toDouble();
-    final line1 = [streetNumber, route].where((e) => e.trim().isNotEmpty).join(' ').trim();
+    final line1 = [streetNumber, route]
+        .where((e) => e.trim().isNotEmpty)
+        .join(' ')
+        .trim();
     return _ResolvedPlace(
       addressLine1: line1,
       city: locality,
@@ -218,12 +231,14 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
   Future<void> _continue() async {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a display name')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a display name')));
       return;
     }
     final age = int.tryParse(_age.text.trim());
     if (age == null || age < 18 || age > 120) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid age (18–120)')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid age (18–120)')));
       return;
     }
     if (_address.text.trim().isEmpty ||
@@ -232,14 +247,17 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
         _postalCode.text.trim().isEmpty ||
         _country.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in address, city, state, zipcode, and country')),
+        const SnackBar(
+            content: Text(
+                'Please fill in address, city, state, zipcode, and country')),
       );
       return;
     }
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in required')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Sign in required')));
       return;
     }
     setState(() => _saving = true);
@@ -288,7 +306,8 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
         children: [
           CgLabeledField(
             label: 'Display Name',
-            child: CgTextField(controller: _name, hint: "How you'd like to be called"),
+            child: CgTextField(
+                controller: _name, hint: "How you'd like to be called"),
           ),
           const SizedBox(height: 20),
           Row(
@@ -321,7 +340,8 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
             label: 'Address',
             child: CgTextField(
               controller: _address,
-              hint: 'Street address (type manually, or use suggestions if configured)',
+              hint:
+                  'Street address (type manually, or use suggestions if configured)',
               onChanged: _onAddressChanged,
             ),
           ),
@@ -330,11 +350,13 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
             _places == null
                 ? 'Run tool/sync_env_to_asset.cmd after setting GOOGLE_PLACES_API_KEY in .env, or pass --dart-define=GOOGLE_PLACES_API_KEY=... You can still type your address manually.'
                 : 'Address suggestions use Google Places. You can still edit every field manually.',
-            style: const TextStyle(fontSize: 12, color: CgColors.gray600, height: 1.35),
+            style: const TextStyle(
+                fontSize: 12, color: CgColors.gray600, height: 1.35),
           ),
           if (_searchingAddress) ...[
             const SizedBox(height: 8),
-            const LinearProgressIndicator(minHeight: 2, color: CgColors.green700),
+            const LinearProgressIndicator(
+                minHeight: 2, color: CgColors.green700),
           ],
           if (_addressSuggestions.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -347,11 +369,15 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
               child: Column(
                 children: [
                   for (var i = 0; i < _addressSuggestions.length; i++) ...[
-                    if (i > 0) const Divider(height: 1, thickness: 1, color: CgColors.gray100),
+                    if (i > 0)
+                      const Divider(
+                          height: 1, thickness: 1, color: CgColors.gray100),
                     ListTile(
                       dense: true,
-                      leading: const Icon(Icons.location_on_outlined, color: CgColors.gray500),
-                      title: Text(_addressSuggestions[i].description, style: const TextStyle(fontSize: 14)),
+                      leading: const Icon(Icons.location_on_outlined,
+                          color: CgColors.gray500),
+                      title: Text(_addressSuggestions[i].description,
+                          style: const TextStyle(fontSize: 14)),
                       onTap: () => _selectSuggestion(_addressSuggestions[i]),
                     ),
                   ],
@@ -392,7 +418,8 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
               Expanded(
                 child: CgLabeledField(
                   label: 'Country',
-                  child: CgTextField(controller: _country, hint: 'United States'),
+                  child:
+                      CgTextField(controller: _country, hint: 'United States'),
                 ),
               ),
             ],
@@ -406,7 +433,8 @@ class _OnboardingBasicScreenState extends State<OnboardingBasicScreen> {
             ),
             child: CgTextField(
               controller: _bio,
-              hint: 'Tell us a bit about yourself and what you\'re looking for in a golf partner…',
+              hint:
+                  'Tell us a bit about yourself and what you\'re looking for in a golf partner…',
               maxLines: 4,
               maxLength: 200,
             ),
@@ -434,8 +462,19 @@ class _OnboardingGolfScreenState extends State<OnboardingGolfScreen> {
   String? _playFrequency;
   bool _saving = false;
 
-  static const _skillLevels = ['Beginner', 'Intermediate', 'Advanced', 'Professional'];
-  static const _frequencies = ['Multiple times per week', 'Weekly', 'Monthly', 'A few times a year', 'Rarely'];
+  static const _skillLevels = [
+    'Beginner',
+    'Intermediate',
+    'Advanced',
+    'Professional'
+  ];
+  static const _frequencies = [
+    'Multiple times per week',
+    'Weekly',
+    'Monthly',
+    'A few times a year',
+    'Rarely'
+  ];
 
   @override
   void dispose() {
@@ -449,7 +488,8 @@ class _OnboardingGolfScreenState extends State<OnboardingGolfScreen> {
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in required')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Sign in required')));
       return;
     }
     setState(() => _saving = true);
@@ -457,21 +497,27 @@ class _OnboardingGolfScreenState extends State<OnboardingGolfScreen> {
       final h = double.tryParse(_handicap.text.trim());
       final body = <String, dynamic>{
         if (h != null) 'handicap': h,
-        if (_homeCourse.text.trim().isNotEmpty) 'homeCourse': _homeCourse.text.trim(),
-        if (_skillLevel != null && _skillLevel!.isNotEmpty) 'skillLevel': _skillLevel,
-        if (_playFrequency != null && _playFrequency!.isNotEmpty) 'playFrequency': _playFrequency,
+        if (_homeCourse.text.trim().isNotEmpty)
+          'homeCourse': _homeCourse.text.trim(),
+        if (_skillLevel != null && _skillLevel!.isNotEmpty)
+          'skillLevel': _skillLevel,
+        if (_playFrequency != null && _playFrequency!.isNotEmpty)
+          'playFrequency': _playFrequency,
       };
       if (body.isNotEmpty) {
-        await ProfilesApi(session.apiClient).updateMe(accessToken: t, body: body);
+        await ProfilesApi(session.apiClient)
+            .updateMe(accessToken: t, body: body);
         session.bumpProfileRefresh();
       }
       final ghin = _ghin.text.trim();
       if (ghin.isNotEmpty) {
         try {
-          await VerificationApi(session.apiClient).submitRequest(accessToken: t, ghinNumber: ghin);
+          await VerificationApi(session.apiClient)
+              .submitRequest(accessToken: t, ghinNumber: ghin);
         } catch (e) {
           if (mounted) {
-            showApiErrorSnackBar(context, e, prefix: 'Couldn\'t submit GHIN verification. ');
+            showApiErrorSnackBar(context, e,
+                prefix: 'Couldn\'t submit handicap verification. ');
           }
         }
       }
@@ -501,13 +547,17 @@ class _OnboardingGolfScreenState extends State<OnboardingGolfScreen> {
             child: CgTextField(
               controller: _handicap,
               hint: 'e.g., 12.5',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
             ),
           ),
           const SizedBox(height: 20),
           CgLabeledField(
-            label: 'GHIN Number (Optional)',
-            child: CgTextField(controller: _ghin, hint: 'Enter your GHIN number', keyboardType: TextInputType.text),
+            label: 'Handicap Number (Optional)',
+            child: CgTextField(
+                controller: _ghin,
+                hint: 'Enter your handicap number',
+                keyboardType: TextInputType.text),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -517,7 +567,8 @@ class _OnboardingGolfScreenState extends State<OnboardingGolfScreen> {
           const SizedBox(height: 20),
           CgLabeledField(
             label: 'Home Course',
-            child: CgTextField(controller: _homeCourse, hint: 'e.g., Pebble Beach Golf Links'),
+            child: CgTextField(
+                controller: _homeCourse, hint: 'e.g., Pebble Beach Golf Links'),
           ),
           const SizedBox(height: 20),
           _OnboardingDropdownField(
@@ -547,10 +598,12 @@ class OnboardingPreferencesScreen extends StatefulWidget {
   const OnboardingPreferencesScreen({super.key});
 
   @override
-  State<OnboardingPreferencesScreen> createState() => _OnboardingPreferencesScreenState();
+  State<OnboardingPreferencesScreen> createState() =>
+      _OnboardingPreferencesScreenState();
 }
 
-class _OnboardingPreferencesScreenState extends State<OnboardingPreferencesScreen> {
+class _OnboardingPreferencesScreenState
+    extends State<OnboardingPreferencesScreen> {
   String? _pace;
   String? _competition;
   String? _drinking;
@@ -560,15 +613,30 @@ class _OnboardingPreferencesScreenState extends State<OnboardingPreferencesScree
 
   static const _paceOptions = ['Relaxed', 'Moderate', 'Fast'];
   static const _competitionOptions = ['Casual', 'Friendly', 'Competitive'];
-  static const _drinkingOptions = ['Yes', 'Sometimes', 'No', 'Prefer not to say'];
-  static const _smokingOptions = ['Yes', 'Sometimes', 'No', 'Prefer not to say'];
-  static const _musicOptions = ['Love it on the course', 'Sometimes', 'Prefer quiet golf'];
+  static const _drinkingOptions = [
+    'Yes',
+    'Sometimes',
+    'No',
+    'Prefer not to say'
+  ];
+  static const _smokingOptions = [
+    'Yes',
+    'Sometimes',
+    'No',
+    'Prefer not to say'
+  ];
+  static const _musicOptions = [
+    'Love it on the course',
+    'Sometimes',
+    'Prefer quiet golf'
+  ];
 
   Future<void> _continue() async {
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in required')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Sign in required')));
       return;
     }
     setState(() => _saving = true);
@@ -582,12 +650,15 @@ class _OnboardingPreferencesScreenState extends State<OnboardingPreferencesScree
       }
       final body = <String, dynamic>{
         if (parts.isNotEmpty) 'lookingFor': parts.join('; '),
-        if (_drinking != null && _drinking!.isNotEmpty) 'drinkingPreference': _drinking,
-        if (_smoking != null && _smoking!.isNotEmpty) 'smokingPreference': _smoking,
+        if (_drinking != null && _drinking!.isNotEmpty)
+          'drinkingPreference': _drinking,
+        if (_smoking != null && _smoking!.isNotEmpty)
+          'smokingPreference': _smoking,
         if (_music != null && _music!.isNotEmpty) 'musicPreference': _music,
       };
       if (body.isNotEmpty) {
-        await ProfilesApi(session.apiClient).updateMe(accessToken: t, body: body);
+        await ProfilesApi(session.apiClient)
+            .updateMe(accessToken: t, body: body);
         session.bumpProfileRefresh();
       }
       if (mounted) context.push(AppPaths.onboardingPhotos);
@@ -705,7 +776,8 @@ class _OnboardingPhotosScreenState extends State<OnboardingPhotosScreen> {
     if (img == null) return;
     setState(() => _uploading = true);
     try {
-      await ProfilesApi(session.apiClient).uploadPhotoFile(accessToken: t, filePath: img.path);
+      await ProfilesApi(session.apiClient)
+          .uploadPhotoFile(accessToken: t, filePath: img.path);
       session.bumpProfileRefresh();
       await _reload();
     } catch (e) {
@@ -724,7 +796,8 @@ class _OnboardingPhotosScreenState extends State<OnboardingPhotosScreen> {
     if (t == null) return;
     final id = _photos[index]['id'] as String?;
     if (id == null) return;
-    await ProfilesApi(session.apiClient).deletePhoto(accessToken: t, photoId: id);
+    await ProfilesApi(session.apiClient)
+        .deletePhoto(accessToken: t, photoId: id);
     session.bumpProfileRefresh();
     await _reload();
   }
@@ -732,7 +805,8 @@ class _OnboardingPhotosScreenState extends State<OnboardingPhotosScreen> {
   void _completeSetup() {
     if (_photos.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least 2 photos to complete setup.')),
+        const SnackBar(
+            content: Text('Add at least 2 photos to complete setup.')),
       );
       return;
     }
@@ -757,7 +831,10 @@ class _OnboardingPhotosScreenState extends State<OnboardingPhotosScreen> {
       onNext: _completeSetup,
       primaryEnabled: !_uploading && !_loading && _photos.length >= 2,
       child: _loading
-          ? const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(color: CgColors.green700)))
+          ? const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: CircularProgressIndicator(color: CgColors.green700)))
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -851,11 +928,29 @@ class _PhotoGrid extends StatelessWidget {
           height: smallH,
           child: Row(
             children: [
-              Expanded(child: _PhotoCell(imageUrl: at(3)?['imageUrl'] as String?, showRemove: at(3) != null, busy: uploading, onTap: onAddTap, onRemove: at(3) != null ? () => onRemove(3) : null)),
+              Expanded(
+                  child: _PhotoCell(
+                      imageUrl: at(3)?['imageUrl'] as String?,
+                      showRemove: at(3) != null,
+                      busy: uploading,
+                      onTap: onAddTap,
+                      onRemove: at(3) != null ? () => onRemove(3) : null)),
               const SizedBox(width: gap),
-              Expanded(child: _PhotoCell(imageUrl: at(4)?['imageUrl'] as String?, showRemove: at(4) != null, busy: uploading, onTap: onAddTap, onRemove: at(4) != null ? () => onRemove(4) : null)),
+              Expanded(
+                  child: _PhotoCell(
+                      imageUrl: at(4)?['imageUrl'] as String?,
+                      showRemove: at(4) != null,
+                      busy: uploading,
+                      onTap: onAddTap,
+                      onRemove: at(4) != null ? () => onRemove(4) : null)),
               const SizedBox(width: gap),
-              Expanded(child: _PhotoCell(imageUrl: at(5)?['imageUrl'] as String?, showRemove: at(5) != null, busy: uploading, onTap: onAddTap, onRemove: at(5) != null ? () => onRemove(5) : null)),
+              Expanded(
+                  child: _PhotoCell(
+                      imageUrl: at(5)?['imageUrl'] as String?,
+                      showRemove: at(5) != null,
+                      busy: uploading,
+                      onTap: onAddTap,
+                      onRemove: at(5) != null ? () => onRemove(5) : null)),
             ],
           ),
         ),
@@ -908,14 +1003,21 @@ class _PhotoCell extends StatelessWidget {
                   painter: _DashedBorderPainter(color: CgColors.gray300),
                   child: Center(
                     child: busy
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: CgColors.green700))
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: CgColors.green700))
                         : Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.add, size: 28, color: CgColors.gray400),
+                              const Icon(Icons.add,
+                                  size: 28, color: CgColors.gray400),
                               if (label.isNotEmpty) ...[
                                 const SizedBox(height: 6),
-                                Text(label, style: const TextStyle(color: CgColors.gray500, fontSize: 13)),
+                                Text(label,
+                                    style: const TextStyle(
+                                        color: CgColors.gray500, fontSize: 13)),
                               ],
                             ],
                           ),
@@ -926,12 +1028,17 @@ class _PhotoCell extends StatelessWidget {
                   left: 8,
                   bottom: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: CgColors.green700,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('Main', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                    child: const Text('Main',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
                   ),
                 ),
               if (showRemove && hasImage)
@@ -966,7 +1073,8 @@ class _DashedBorderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final r = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(12));
+    final r =
+        RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(12));
     final path = Path()..addRRect(r);
     final paint = Paint()
       ..color = color
@@ -1004,7 +1112,11 @@ class _PhotoTipsCard extends StatelessWidget {
             children: [
               Icon(Icons.info_outline, size: 20, color: CgColors.blue700),
               SizedBox(width: 8),
-              Text('Photo Tips', style: TextStyle(fontWeight: FontWeight.w600, color: CgColors.blue700, fontSize: 15)),
+              Text('Photo Tips',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: CgColors.blue700,
+                      fontSize: 15)),
             ],
           ),
           const SizedBox(height: 10),
@@ -1022,8 +1134,12 @@ class _PhotoTipsCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(color: CgColors.gray700, height: 1.35)),
-          Expanded(child: Text(text, style: const TextStyle(color: CgColors.gray700, height: 1.35, fontSize: 14))),
+          const Text('• ',
+              style: TextStyle(color: CgColors.gray700, height: 1.35)),
+          Expanded(
+              child: Text(text,
+                  style: const TextStyle(
+                      color: CgColors.gray700, height: 1.35, fontSize: 14))),
         ],
       ),
     );
@@ -1117,7 +1233,8 @@ class _OnboardingScaffold extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              size: 20, color: CgColors.gray900),
           onPressed: busy ? null : () => _onBack(context),
         ),
         actions: [
@@ -1125,7 +1242,8 @@ class _OnboardingScaffold extends StatelessWidget {
             onPressed: busy ? null : () => _signOutToLogin(context),
             child: const Text(
               'Sign out',
-              style: TextStyle(fontWeight: FontWeight.w600, color: CgColors.gray700),
+              style: TextStyle(
+                  fontWeight: FontWeight.w600, color: CgColors.gray700),
             ),
           ),
           Padding(
@@ -1133,7 +1251,10 @@ class _OnboardingScaffold extends StatelessWidget {
             child: Center(
               child: Text(
                 'Step $stepIndex of 4',
-                style: const TextStyle(fontSize: 13, color: CgColors.gray600, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: CgColors.gray600,
+                    fontWeight: FontWeight.w500),
               ),
             ),
           ),
@@ -1216,7 +1337,10 @@ class _OnboardingDropdownField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: CgColors.gray900),
+          style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: CgColors.gray900),
         ),
         const SizedBox(height: 8),
         InputDecorator(
@@ -1227,14 +1351,18 @@ class _OnboardingDropdownField extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: safeValue,
-              hint: Text(hint, style: const TextStyle(color: CgColors.gray400, fontSize: 16)),
+              hint: Text(hint,
+                  style:
+                      const TextStyle(color: CgColors.gray400, fontSize: 16)),
               isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: CgColors.gray600),
+              icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                  color: CgColors.gray600),
               borderRadius: BorderRadius.circular(12),
               dropdownColor: CgColors.white,
               style: const TextStyle(fontSize: 16, color: CgColors.gray900),

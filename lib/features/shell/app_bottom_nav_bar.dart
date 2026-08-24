@@ -13,7 +13,7 @@ class AppBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
 
-  static const labels = ['Home', 'Discover', 'Pair Up', 'Matches', 'Settings'];
+  static const labels = ['Home', 'Connect', 'The Feed', 'Matches', 'Settings'];
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,9 @@ class AppBottomNavBar extends StatelessWidget {
       child: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: CgColors.gray200.withValues(alpha: 0.9))),
+            border: Border(
+                top:
+                    BorderSide(color: CgColors.gray200.withValues(alpha: 0.9))),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           child: Row(
@@ -35,7 +37,7 @@ class AppBottomNavBar extends StatelessWidget {
                 index: i,
                 selected: currentIndex == i,
                 label: labels[i],
-                isPairUp: i == 2,
+                isFeed: i == 2,
                 onTap: () => onDestinationSelected(i),
               ),
             ),
@@ -51,14 +53,14 @@ class _NavItem extends StatelessWidget {
     required this.index,
     required this.selected,
     required this.label,
-    required this.isPairUp,
+    required this.isFeed,
     required this.onTap,
   });
 
   final int index;
   final bool selected;
   final String label;
-  final bool isPairUp;
+  final bool isFeed;
   final VoidCallback onTap;
 
   Color get _icon => selected ? CgColors.green700 : CgColors.gray400;
@@ -74,7 +76,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isPairUp)
+            if (isFeed)
               Container(
                 width: 50,
                 height: 50,
@@ -94,7 +96,8 @@ class _NavItem extends StatelessWidget {
                   ],
                   border: Border.all(color: CgColors.premiumGold, width: 2),
                 ),
-                child: const Icon(Icons.sports_golf, color: CgColors.white, size: 26),
+                child: const Icon(Icons.sports_golf,
+                    color: CgColors.white, size: 26),
               )
             else
               Icon(_iconFor(index, selected), size: 24, color: _icon),
@@ -107,7 +110,7 @@ class _NavItem extends StatelessWidget {
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
-            if (selected && !isPairUp) ...[
+            if (selected && !isFeed) ...[
               const SizedBox(height: 3),
               Container(
                 width: 5,

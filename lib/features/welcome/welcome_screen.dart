@@ -65,7 +65,7 @@ class WelcomeScreen extends StatelessWidget {
                         Expanded(
                           child: _HeroTrustChip(
                             icon: Icons.groups_outlined,
-                            label: '10,000+ Golfers',
+                            label: 'Nearby Golfers',
                             compact: short,
                           ),
                         ),

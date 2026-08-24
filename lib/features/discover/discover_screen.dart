@@ -32,6 +32,7 @@ class DiscoverScreen extends StatefulWidget {
 class _DiscoverScreenState extends State<DiscoverScreen> {
   /// 100 = Unlimited
   double _distance = 25;
+
   /// 36 = Any
   double _maxHandicap = 36;
   bool _verifiedOnly = false;
@@ -47,6 +48,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   String? _error;
   List<ApiGolferCard> _items = [];
   SwipeDailyQuota? _quota;
+  bool _liking = false;
 
   @override
   void initState() {
@@ -89,7 +91,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         friendly420: _friendly420 == 'Any' ? null : _friendly420,
       );
       final items = raw
-          .map((e) => ApiGolferCard.fromDiscoveryProfile(e as Map<String, dynamic>))
+          .map((e) =>
+              ApiGolferCard.fromDiscoveryProfile(e as Map<String, dynamic>))
           .whereType<ApiGolferCard>()
           .toList();
       SwipeDailyQuota? quota;
@@ -110,13 +113,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Future<void> _like(ApiGolferCard g) async {
+    if (_liking) return;
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) return;
+    setState(() => _liking = true);
     try {
-      await SwipesApi(session.apiClient).swipe(accessToken: t, toUserId: g.userId, action: 'LIKE');
+      await SwipesApi(session.apiClient)
+          .swipe(accessToken: t, toUserId: g.userId, action: 'LIKE');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sent like')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Sent like')));
         await _load();
       }
     } catch (e) {
@@ -126,6 +133,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       } else if (mounted) {
         showApiErrorSnackBar(context, e);
       }
+    } finally {
+      if (mounted) setState(() => _liking = false);
     }
   }
 
@@ -201,7 +210,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                               onTap: () => Navigator.pop(ctx),
                               child: const Padding(
                                 padding: EdgeInsets.all(8),
-                                child: Icon(Icons.close_rounded, color: CgColors.gray700),
+                                child: Icon(Icons.close_rounded,
+                                    color: CgColors.gray700),
                               ),
                             ),
                           ),
@@ -215,14 +225,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         children: [
                           _FilterSectionLabel(
                             label: 'DISTANCE',
-                            value: distance >= 100 ? 'Unlimited' : '${distance.round()} mi',
+                            value: distance >= 100
+                                ? 'Unlimited'
+                                : '${distance.round()} mi',
                           ),
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: CgColors.green700,
                               inactiveTrackColor: CgColors.gray200,
                               thumbColor: CgColors.green700,
-                              overlayColor: CgColors.green700.withValues(alpha: 0.12),
+                              overlayColor:
+                                  CgColors.green700.withValues(alpha: 0.12),
                               trackHeight: 4,
                             ),
                             child: Slider(
@@ -236,21 +249,28 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           const Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('5 mi', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
-                              Text('Unlimited', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                              Text('5 mi',
+                                  style: TextStyle(
+                                      fontSize: 12, color: CgColors.gray500)),
+                              Text('Unlimited',
+                                  style: TextStyle(
+                                      fontSize: 12, color: CgColors.gray500)),
                             ],
                           ),
                           const SizedBox(height: 18),
                           _FilterSectionLabel(
                             label: 'MAX HANDICAP',
-                            value: maxHandicap >= 36 ? 'Any' : maxHandicap.round().toString(),
+                            value: maxHandicap >= 36
+                                ? 'Any'
+                                : maxHandicap.round().toString(),
                           ),
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: CgColors.green700,
                               inactiveTrackColor: CgColors.gray200,
                               thumbColor: CgColors.green700,
-                              overlayColor: CgColors.green700.withValues(alpha: 0.12),
+                              overlayColor:
+                                  CgColors.green700.withValues(alpha: 0.12),
                               trackHeight: 4,
                             ),
                             child: Slider(
@@ -264,20 +284,34 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           const Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('1', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
-                              Text('Any (36+)', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                              Text('1',
+                                  style: TextStyle(
+                                      fontSize: 12, color: CgColors.gray500)),
+                              Text('Any (36+)',
+                                  style: TextStyle(
+                                      fontSize: 12, color: CgColors.gray500)),
                             ],
                           ),
                           const SizedBox(height: 20),
                           _FilterChipGroup(
                             label: 'STYLE OF PLAY',
-                            options: const ['Any', 'Casual', 'Serious', 'Tournament'],
+                            options: const [
+                              'Any',
+                              'Casual',
+                              'Serious',
+                              'Tournament'
+                            ],
                             selected: playStyle,
                             onSelected: (v) => setModal(() => playStyle = v),
                           ),
                           _FilterChipGroup(
                             label: 'AVAILABILITY',
-                            options: const ['Any', 'Weekdays', 'Weekends', 'Both'],
+                            options: const [
+                              'Any',
+                              'Weekdays',
+                              'Weekends',
+                              'Both'
+                            ],
                             selected: availability,
                             onSelected: (v) => setModal(() => availability = v),
                           ),
@@ -307,7 +341,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
                               color: CgColors.cream,
                               borderRadius: BorderRadius.circular(14),
@@ -316,7 +351,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                               children: [
                                 const Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Handicap Verified only',
@@ -329,7 +365,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                       SizedBox(height: 4),
                                       Text(
                                         'Show only players with confirmed official handicap',
-                                        style: TextStyle(fontSize: 12, color: CgColors.gray500, height: 1.35),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: CgColors.gray500,
+                                            height: 1.35),
                                       ),
                                     ],
                                   ),
@@ -337,7 +376,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                 Switch.adaptive(
                                   value: verifiedOnly,
                                   activeTrackColor: CgColors.green700,
-                                  onChanged: (v) => setModal(() => verifiedOnly = v),
+                                  onChanged: (v) =>
+                                      setModal(() => verifiedOnly = v),
                                 ),
                               ],
                             ),
@@ -429,7 +469,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         children: [
                           Text(
                             'Make a Foursome',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
                                   color: CgColors.white,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -469,11 +512,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         borderRadius: BorderRadius.circular(12),
                         onTap: _openFilters,
                         child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.tune_rounded, size: 18, color: CgColors.white),
+                              Icon(Icons.tune_rounded,
+                                  size: 18, color: CgColors.white),
                               SizedBox(width: 6),
                               Text(
                                 'Filters',
@@ -501,9 +546,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   )
                 : list.isEmpty
                     ? CgEmptyState(
-                        icon: const Icon(Icons.search, size: 48, color: CgColors.gray400),
+                        icon: const Icon(Icons.search,
+                            size: 48, color: CgColors.gray400),
                         title: 'No golfers found',
-                        description: 'Try adjusting your filters to see more results',
+                        description:
+                            'Try adjusting your filters to see more results',
                         actionLabel: 'Reset Filters',
                         onAction: () {
                           setState(_resetFilters);
@@ -527,10 +574,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                   AppPaths.appProfileUser(g.userId),
                                   extra: {
                                     if (g.distanceMiles != null)
-                                      'distanceMilesHint': g.distanceMiles!.toStringAsFixed(1),
+                                      'distanceMilesHint':
+                                          g.distanceMiles!.toStringAsFixed(1),
                                   },
                                 ),
-                                onLike: () => _like(g),
+                                onLike: _liking ? () {} : () => _like(g),
                               ),
                             );
                           },
@@ -619,7 +667,8 @@ class _FilterChipGroup extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   onTap: () => onSelected(option),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     child: Text(
                       option,
                       style: TextStyle(
@@ -640,7 +689,8 @@ class _FilterChipGroup extends StatelessWidget {
 }
 
 class _GolferCard extends StatelessWidget {
-  const _GolferCard({required this.golfer, required this.onView, required this.onLike});
+  const _GolferCard(
+      {required this.golfer, required this.onView, required this.onLike});
 
   final ApiGolferCard golfer;
   final VoidCallback onView;
@@ -651,10 +701,13 @@ class _GolferCard extends StatelessWidget {
     final ageStr = golfer.age != null ? ', ${golfer.age}' : '';
     final hcp = golfer.handicap != null ? '${golfer.handicap} HCP' : null;
     final img = golfer.imageUrl;
-    final course = (golfer.homeCourse != null && golfer.homeCourse!.trim().isNotEmpty)
-        ? golfer.homeCourse!.trim()
-        : golfer.cityLine;
-    final distance = golfer.distanceMiles != null ? '${golfer.distanceMiles!.toStringAsFixed(1)} mi' : null;
+    final course =
+        (golfer.homeCourse != null && golfer.homeCourse!.trim().isNotEmpty)
+            ? golfer.homeCourse!.trim()
+            : golfer.cityLine;
+    final distance = golfer.distanceMiles != null
+        ? '${golfer.distanceMiles!.toStringAsFixed(1)} mi'
+        : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -676,7 +729,8 @@ class _GolferCard extends StatelessWidget {
                 else
                   Container(
                     color: CgColors.gray200,
-                    child: const Icon(Icons.person, size: 80, color: CgColors.gray400),
+                    child: const Icon(Icons.person,
+                        size: 80, color: CgColors.gray400),
                   ),
                 const DecoratedBox(
                   decoration: BoxDecoration(
@@ -704,7 +758,8 @@ class _GolferCard extends StatelessWidget {
                           spacing: 6,
                           runSpacing: 6,
                           children: [
-                            if (golfer.isPremium) const CgPremiumBadge(compact: true),
+                            if (golfer.isPremium)
+                              const CgPremiumBadge(compact: true),
                             if (golfer.verified)
                               const CgHandicapVerifiedBadge(compact: true),
                           ],
@@ -712,7 +767,8 @@ class _GolferCard extends StatelessWidget {
                       ),
                       if (hcp != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: CgColors.charcoal.withValues(alpha: 0.72),
                             borderRadius: BorderRadius.circular(999),
@@ -748,7 +804,9 @@ class _GolferCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.place_outlined, size: 16, color: CgColors.white.withValues(alpha: 0.92)),
+                          Icon(Icons.place_outlined,
+                              size: 16,
+                              color: CgColors.white.withValues(alpha: 0.92)),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -785,7 +843,10 @@ class _GolferCard extends StatelessWidget {
                     const Spacer(),
                     Text(
                       golfer.cityLine,
-                      style: const TextStyle(fontSize: 12, color: CgColors.gray500, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: CgColors.gray500,
+                          fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -795,7 +856,8 @@ class _GolferCard extends StatelessWidget {
                     golfer.bio!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14, color: CgColors.gray700, height: 1.4),
+                    style: const TextStyle(
+                        fontSize: 14, color: CgColors.gray700, height: 1.4),
                   ),
                 ],
                 const SizedBox(height: 14),
@@ -809,9 +871,11 @@ class _GolferCard extends StatelessWidget {
                           backgroundColor: CgColors.cream,
                           side: BorderSide.none,
                           padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('View Profile', style: TextStyle(fontWeight: FontWeight.w700)),
+                        child: const Text('View Profile',
+                            style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -823,9 +887,11 @@ class _GolferCard extends StatelessWidget {
                           foregroundColor: CgColors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('Connect', style: TextStyle(fontWeight: FontWeight.w700)),
+                        child: const Text('Connect',
+                            style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                     ),
                   ],
@@ -862,13 +928,17 @@ class _CardSkeleton extends StatelessWidget {
                 Container(
                   height: 14,
                   width: 160,
-                  decoration: BoxDecoration(color: CgColors.gray200, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                      color: CgColors.gray200,
+                      borderRadius: BorderRadius.circular(4)),
                 ),
                 const SizedBox(height: 10),
                 Container(
                   height: 12,
                   width: double.infinity,
-                  decoration: BoxDecoration(color: CgColors.gray200, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                      color: CgColors.gray200,
+                      borderRadius: BorderRadius.circular(4)),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -876,14 +946,18 @@ class _CardSkeleton extends StatelessWidget {
                     Expanded(
                       child: Container(
                         height: 44,
-                        decoration: BoxDecoration(color: CgColors.gray100, borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(
+                            color: CgColors.gray100,
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Container(
                         height: 44,
-                        decoration: BoxDecoration(color: CgColors.gray200, borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(
+                            color: CgColors.gray200,
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ],

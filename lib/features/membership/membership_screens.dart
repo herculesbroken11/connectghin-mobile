@@ -24,12 +24,38 @@ const String kPremiumYearlyDisplay = '\$39.99';
 const String kRenewMonthlyDisplay = '\$3.99';
 
 String _formatUiDate(DateTime d) {
-  const months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
   return '${months[d.month - 1]} ${d.day}, ${d.year}';
 }
 
 String _monthYear(DateTime d) {
-  const months = <String>['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
   return '${months[d.month - 1]} ${d.year}';
 }
 
@@ -42,7 +68,7 @@ DateTime? _parseIso(dynamic v) {
 List<(String, String)> get _upgradeBenefits => const [
       ('Unlimited Swipes', 'No daily limit — swipe as much as you want'),
       ('Message Anyone', 'Send messages without matching first'),
-      ('Priority in Discovery', 'Get seen by more golfers in your area'),
+      ('Priority in Connect', 'Get seen by more golfers in your area'),
       ('Advanced Filters', 'Filter by skill level, distance, and more'),
       ('Priority Support', 'Get help faster with premium support'),
       ('Profile Boost', 'Appear first in discovery for 30 minutes daily'),
@@ -51,7 +77,7 @@ List<(String, String)> get _upgradeBenefits => const [
 List<(String, String)> get _manageBenefits => const [
       ('Unlimited Swipes', 'No daily limit — swipe as much as you want'),
       ('Message Anyone', 'Send messages without matching first'),
-      ('Priority in Discovery', 'Get seen by more golfers in your area'),
+      ('Priority in Connect', 'Get seen by more golfers in your area'),
       ('Advanced Filters', 'Filter by skill level, distance, and more'),
     ];
 
@@ -102,8 +128,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
       final billing = await SubscriptionsApi(session.apiClient).billingMe(t);
       if (!mounted) return;
       setState(() {
-        _membershipType = me['membershipType']?.toString() ?? billing['membershipType']?.toString();
-        _membershipStatus = me['membershipStatus']?.toString() ?? billing['membershipStatus']?.toString();
+        _membershipType = me['membershipType']?.toString() ??
+            billing['membershipType']?.toString();
+        _membershipStatus = me['membershipStatus']?.toString() ??
+            billing['membershipStatus']?.toString();
         _subscription = billing['subscription'] as Map<String, dynamic>?;
         _loading = false;
       });
@@ -118,9 +146,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
     return t == 'PREMIUM' && (s == 'ACTIVE' || s == 'TRIALING');
   }
 
-  String get _monthlyPriceLabel => _monthlyProduct?.price ?? kPremiumMonthlyDisplay;
+  String get _monthlyPriceLabel =>
+      _monthlyProduct?.price ?? kPremiumMonthlyDisplay;
 
-  String get _yearlyPriceLabel => _yearlyProduct?.price ?? kPremiumYearlyDisplay;
+  String get _yearlyPriceLabel =>
+      _yearlyProduct?.price ?? kPremiumYearlyDisplay;
 
   Future<void> _initStoreProducts() async {
     try {
@@ -141,6 +171,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
         }
         return null;
       }
+
       final monthly = byId(IapProductConfig.monthlyProductId);
       final yearly = byId(IapProductConfig.yearlyProductId);
       String? err = response.error?.message;
@@ -194,7 +225,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
     var verified = false;
 
     if (Platform.isIOS) {
-      final tx = purchase.purchaseID ?? purchase.verificationData.serverVerificationData;
+      final tx = purchase.purchaseID ??
+          purchase.verificationData.serverVerificationData;
       if (tx.isNotEmpty) {
         await api.verifyAppleEntitlement(token, transactionId: tx);
         verified = true;
@@ -226,21 +258,25 @@ class _MembershipScreenState extends State<MembershipScreen> {
   /// Pulls already-owned Android subscriptions and verifies each with the backend.
   Future<int> _syncAndroidOwnedPurchases() async {
     if (!Platform.isAndroid) return 0;
-    final addition = _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
+    final addition =
+        _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
     final past = await addition.queryPastPurchases();
     if (past.error != null) {
-      developer.log('queryPastPurchases error: ${past.error!.message}', name: 'IAP');
+      developer.log('queryPastPurchases error: ${past.error!.message}',
+          name: 'IAP');
     }
     var synced = 0;
     for (final purchase in past.pastPurchases) {
-      if (purchase.status != PurchaseStatus.purchased && purchase.status != PurchaseStatus.restored) {
+      if (purchase.status != PurchaseStatus.purchased &&
+          purchase.status != PurchaseStatus.restored) {
         continue;
       }
       if (!IapProductConfig.allIds.contains(purchase.productID)) continue;
       try {
         if (await _verifyAndFinishPurchase(purchase)) synced++;
       } catch (e) {
-        developer.log('Failed syncing past purchase ${purchase.productID}: $e', name: 'IAP');
+        developer.log('Failed syncing past purchase ${purchase.productID}: $e',
+            name: 'IAP');
         rethrow;
       }
     }
@@ -249,11 +285,13 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
   Future<void> _startInAppPurchase() async {
     if (_storeLoading) return;
-    final product = _yearlyIapSelected ? (_yearlyProduct ?? _monthlyProduct) : (_monthlyProduct ?? _yearlyProduct);
+    final product = _yearlyIapSelected
+        ? (_yearlyProduct ?? _monthlyProduct)
+        : (_monthlyProduct ?? _yearlyProduct);
     if (product == null) {
       final msg = _storeError ??
           'No subscription product found. Expected IDs: '
-          '${IapProductConfig.monthlyProductId}, ${IapProductConfig.yearlyProductId}';
+              '${IapProductConfig.monthlyProductId}, ${IapProductConfig.yearlyProductId}';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       return;
     }
@@ -270,7 +308,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
           if (mounted) {
             setState(() => _purchaseBusy = false);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Existing Google Play subscription synced. Premium should unlock now.')),
+              const SnackBar(
+                  content: Text(
+                      'Existing Google Play subscription synced. Premium should unlock now.')),
             );
           }
           return;
@@ -282,7 +322,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
       if (!purchased && mounted) {
         setState(() => _purchaseBusy = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to start purchase. Try Restore Purchases.')),
+          const SnackBar(
+              content:
+                  Text('Unable to start purchase. Try Restore Purchases.')),
         );
       }
     } catch (e) {
@@ -336,7 +378,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
     }
   }
 
-  Future<void> _onPurchaseUpdates(List<PurchaseDetails> purchaseDetailsList) async {
+  Future<void> _onPurchaseUpdates(
+      List<PurchaseDetails> purchaseDetailsList) async {
     final session = context.read<AuthSession>();
     final token = session.accessToken;
     if (token == null) return;
@@ -382,7 +425,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
         }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(purchase.error?.message ?? 'Purchase failed')),
+            SnackBar(
+                content: Text(purchase.error?.message ?? 'Purchase failed')),
           );
         }
       } else if (purchase.status == PurchaseStatus.canceled) {
@@ -391,7 +435,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
             const SnackBar(content: Text('Purchase canceled.')),
           );
         }
-      } else if (purchase.status == PurchaseStatus.purchased || purchase.status == PurchaseStatus.restored) {
+      } else if (purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored) {
         try {
           final verified = await _verifyAndFinishPurchase(purchase);
           if (verified) {
@@ -399,12 +444,15 @@ class _MembershipScreenState extends State<MembershipScreen> {
             await _load();
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Subscription updated successfully.')),
+                const SnackBar(
+                    content: Text('Subscription updated successfully.')),
               );
             }
           } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Purchase received but could not be verified. Try Restore Purchases.')),
+              const SnackBar(
+                  content: Text(
+                      'Purchase received but could not be verified. Try Restore Purchases.')),
             );
           }
         } catch (e) {
@@ -418,7 +466,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Manage subscriptions in Apple App Store or Google Play for your account.'),
+        content: Text(
+            'Manage subscriptions in Apple App Store or Google Play for your account.'),
       ),
     );
   }
@@ -431,10 +480,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Cancel subscription?'),
-        content: const Text('You will keep premium until the end of the billing period. You can also manage billing in Apple App Store or Google Play.'),
+        content: const Text(
+            'You will keep premium until the end of the billing period. You can also manage billing in Apple App Store or Google Play.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep Premium')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Cancel', style: TextStyle(color: CgColors.red700))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep Premium')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Cancel',
+                  style: TextStyle(color: CgColors.red700))),
         ],
       ),
     );
@@ -444,7 +499,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
       await SubscriptionsApi(session.apiClient).cancel(t);
       if (mounted) {
         session.bumpProfileRefresh();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Subscription will end after the current period.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Subscription will end after the current period.')));
         await _load();
       }
     } catch (e) {
@@ -469,7 +525,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
           Container(
             width: 36,
             height: 36,
-            decoration: const BoxDecoration(color: CgColors.green600, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+                color: CgColors.green600, shape: BoxShape.circle),
             child: const Icon(Icons.check, color: CgColors.white, size: 20),
           ),
           const SizedBox(width: 12),
@@ -477,9 +534,15 @@ class _MembershipScreenState extends State<MembershipScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: CgColors.gray900)),
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: CgColors.gray900)),
                 const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(fontSize: 13, color: CgColors.gray600, height: 1.35)),
+                Text(subtitle,
+                    style: const TextStyle(
+                        fontSize: 13, color: CgColors.gray600, height: 1.35)),
               ],
             ),
           ),
@@ -494,12 +557,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check, size: 18, color: premium ? CgColors.green700 : CgColors.gray400),
+          Icon(Icons.check,
+              size: 18, color: premium ? CgColors.green700 : CgColors.gray400),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 13, color: premium ? CgColors.gray900 : CgColors.gray600, height: 1.3),
+              style: TextStyle(
+                  fontSize: 13,
+                  color: premium ? CgColors.gray900 : CgColors.gray600,
+                  height: 1.3),
             ),
           ),
         ],
@@ -514,17 +581,21 @@ class _MembershipScreenState extends State<MembershipScreen> {
     final periodEnd = _parseIso(_subscription?['currentPeriodEnd']);
     final memberSince = _parseIso(_subscription?['createdAt']);
     final billingCycle = _subscription?['billingCycle']?.toString();
-    final activePriceLine =
-        billingCycle == 'YEARLY' ? '$_yearlyPriceLabel / year' : '$_monthlyPriceLabel / month';
+    final activePriceLine = billingCycle == 'YEARLY'
+        ? '$_yearlyPriceLabel / year'
+        : '$_monthlyPriceLabel / month';
 
     return Scaffold(
       backgroundColor: CgColors.gray50,
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20), onPressed: () => context.pop()),
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+            onPressed: () => context.pop()),
         title: Text(_isPremiumActive ? 'Membership' : 'Upgrade to Premium'),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: CgColors.green700))
+          ? const Center(
+              child: CircularProgressIndicator(color: CgColors.green700))
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -552,16 +623,31 @@ class _MembershipScreenState extends State<MembershipScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(color: CgColors.gray200, borderRadius: BorderRadius.circular(6)),
-                                  child: const Text('Current Plan', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: CgColors.gray700)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                      color: CgColors.gray200,
+                                      borderRadius: BorderRadius.circular(6)),
+                                  child: const Text('Current Plan',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: CgColors.gray700)),
                                 ),
                                 const SizedBox(height: 10),
-                                const Text('Free', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CgColors.gray900)),
+                                const Text('Free',
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: CgColors.gray900)),
                               ],
                             ),
                           ),
-                          const Text('\$0 / month', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: CgColors.gray600)),
+                          const Text('\$0 / month',
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: CgColors.gray600)),
                         ],
                       ),
                     ),
@@ -580,7 +666,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: !_yearlyIapSelected ? CgColors.green700 : CgColors.gray200,
+                              color: !_yearlyIapSelected
+                                  ? CgColors.green700
+                                  : CgColors.gray200,
                               width: !_yearlyIapSelected ? 2 : 1,
                             ),
                           ),
@@ -591,19 +679,30 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Monthly plan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: CgColors.gray900)),
+                                    const Text('Monthly plan',
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: CgColors.gray900)),
                                     const SizedBox(height: 8),
                                     Text(
                                       '$_monthlyPriceLabel / month',
-                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CgColors.gray900),
+                                      style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w800,
+                                          color: CgColors.gray900),
                                     ),
                                     const SizedBox(height: 6),
-                                    const Text('Cancel anytime', style: TextStyle(fontSize: 13, color: CgColors.gray600)),
+                                    const Text('Cancel anytime',
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            color: CgColors.gray600)),
                                   ],
                                 ),
                               ),
                               TextButton(
-                                onPressed: () => setState(() => _yearlyIapSelected = false),
+                                onPressed: () =>
+                                    setState(() => _yearlyIapSelected = false),
                                 child: const Text('Choose'),
                               ),
                             ],
@@ -624,11 +723,20 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            gradient: const LinearGradient(colors: [CgColors.green700, CgColors.green900]),
-                            border: Border.all(color: _yearlyIapSelected ? CgColors.green100 : Colors.transparent, width: 2),
+                            gradient: const LinearGradient(
+                                colors: [CgColors.green700, CgColors.green900]),
+                            border: Border.all(
+                                color: _yearlyIapSelected
+                                    ? CgColors.green100
+                                    : Colors.transparent,
+                                width: 2),
                             boxShadow: [
                               if (_yearlyIapSelected)
-                                BoxShadow(color: CgColors.green700.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 6)),
+                                BoxShadow(
+                                    color: CgColors.green700
+                                        .withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6)),
                             ],
                           ),
                           child: Stack(
@@ -637,9 +745,17 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 right: 0,
                                 top: 0,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(color: CgColors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                                  child: const Text('Best value', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: CgColors.white)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                      color:
+                                          CgColors.white.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(8)),
+                                  child: const Text('Best value',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: CgColors.white)),
                                 ),
                               ),
                               Row(
@@ -647,22 +763,38 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Annual plan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: CgColors.white)),
+                                        const Text('Annual plan',
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                                color: CgColors.white)),
                                         const SizedBox(height: 8),
                                         Text(
                                           '$_yearlyPriceLabel / year',
-                                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CgColors.white),
+                                          style: const TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w800,
+                                              color: CgColors.white),
                                         ),
                                         const SizedBox(height: 6),
-                                        Text('Billed once per year in the app store', style: TextStyle(fontSize: 13, color: CgColors.white.withValues(alpha: 0.9))),
+                                        Text(
+                                            'Billed once per year in the app store',
+                                            style: TextStyle(
+                                                fontSize: 13,
+                                                color: CgColors.white
+                                                    .withValues(alpha: 0.9))),
                                       ],
                                     ),
                                   ),
                                   TextButton(
-                                    style: TextButton.styleFrom(foregroundColor: CgColors.green900, backgroundColor: CgColors.white),
-                                    onPressed: () => setState(() => _yearlyIapSelected = true),
+                                    style: TextButton.styleFrom(
+                                        foregroundColor: CgColors.green900,
+                                        backgroundColor: CgColors.white),
+                                    onPressed: () => setState(
+                                        () => _yearlyIapSelected = true),
                                     child: const Text('Choose'),
                                   ),
                                 ],
@@ -675,24 +807,41 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   ),
                   const SizedBox(height: 22),
                   const CgResponsiveContainer(
-                    child: Text('Free vs Premium', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CgColors.gray900)),
+                    child: Text('Free vs Premium',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: CgColors.gray900)),
                   ),
                   const SizedBox(height: 10),
                   CgResponsiveContainer(
                     child: Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: CgColors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: CgColors.gray200)),
+                      decoration: BoxDecoration(
+                          color: CgColors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: CgColors.gray200)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Free', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                              const Text('Free',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16)),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: CgColors.gray200, borderRadius: BorderRadius.circular(8)),
-                                child: const Text('Current', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: CgColors.gray700)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                    color: CgColors.gray200,
+                                    borderRadius: BorderRadius.circular(8)),
+                                child: const Text('Current',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: CgColors.gray700)),
                               ),
                             ],
                           ),
@@ -719,18 +868,31 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Premium', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                              const Text('Premium',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16)),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: CgColors.green700, borderRadius: BorderRadius.circular(8)),
-                                child: const Text('Upgrade', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: CgColors.white)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                    color: CgColors.green700,
+                                    borderRadius: BorderRadius.circular(8)),
+                                child: const Text('Upgrade',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: CgColors.white)),
                               ),
                             ],
                           ),
                           const SizedBox(height: 10),
-                          _compareLine('Full discovery & advanced filters', premium: true),
-                          _compareLine('See who likes you & message anyone', premium: true),
-                          _compareLine('Handicap verification & premium badge', premium: true),
+                          _compareLine('Full discovery & advanced filters',
+                              premium: true),
+                          _compareLine('See who likes you & message anyone',
+                              premium: true),
+                          _compareLine('Handicap verification & premium badge',
+                              premium: true),
                         ],
                       ),
                     ),
@@ -740,7 +902,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     const CgResponsiveContainer(
                       child: Padding(
                         padding: EdgeInsets.only(bottom: 12),
-                        child: LinearProgressIndicator(color: CgColors.green700),
+                        child:
+                            LinearProgressIndicator(color: CgColors.green700),
                       ),
                     ),
                   if (_storeError != null)
@@ -751,17 +914,22 @@ class _MembershipScreenState extends State<MembershipScreen> {
                         decoration: BoxDecoration(
                           color: CgColors.orange600.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: CgColors.orange500.withValues(alpha: 0.4)),
+                          border: Border.all(
+                              color: CgColors.orange500.withValues(alpha: 0.4)),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.info_outline, size: 20, color: CgColors.orange700),
+                            const Icon(Icons.info_outline,
+                                size: 20, color: CgColors.orange700),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 _storeError!,
-                                style: const TextStyle(fontSize: 12, color: CgColors.orange700, height: 1.35),
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: CgColors.orange700,
+                                    height: 1.35),
                               ),
                             ),
                           ],
@@ -769,24 +937,35 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       ),
                     ),
                   const CgResponsiveContainer(
-                    child: Text('Premium Benefits', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CgColors.gray900)),
+                    child: Text('Premium Benefits',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: CgColors.gray900)),
                   ),
                   const SizedBox(height: 12),
-                  ..._upgradeBenefits.map((b) => CgResponsiveContainer(child: _benefitCard(b.$1, b.$2))),
+                  ..._upgradeBenefits.map((b) =>
+                      CgResponsiveContainer(child: _benefitCard(b.$1, b.$2))),
                   const SizedBox(height: 12),
                   CgResponsiveContainer(
                     child: Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: CgColors.blue50, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                          color: CgColors.blue50,
+                          borderRadius: BorderRadius.circular(10)),
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.shopping_bag_outlined, size: 20, color: CgColors.blue700),
+                          Icon(Icons.shopping_bag_outlined,
+                              size: 20, color: CgColors.blue700),
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               'Subscriptions are purchased and renewed through Apple App Store or Google Play. Manage or cancel anytime in your store account settings.',
-                              style: TextStyle(fontSize: 12, color: CgColors.blue700, height: 1.35),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: CgColors.blue700,
+                                  height: 1.35),
                             ),
                           ),
                         ],
@@ -801,14 +980,18 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           : Platform.isAndroid
                               ? 'Subscribe with Google Play'
                               : 'Subscribe with App Store / Google Play',
-                      onPressed: _purchaseBusy || _storeLoading ? null : _startInAppPurchase,
+                      onPressed: _purchaseBusy || _storeLoading
+                          ? null
+                          : _startInAppPurchase,
                     ),
                   ),
                   const SizedBox(height: 8),
                   CgResponsiveContainer(
                     child: CgOutlineButton(
                       label: _restoreBusy ? 'Restoring…' : 'Restore Purchases',
-                      onPressed: _storeLoading || _restoreBusy ? null : _restorePurchases,
+                      onPressed: _storeLoading || _restoreBusy
+                          ? null
+                          : _restorePurchases,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -816,19 +999,27 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: CgColors.green50, borderRadius: BorderRadius.circular(14)),
+                      decoration: BoxDecoration(
+                          color: CgColors.green50,
+                          borderRadius: BorderRadius.circular(14)),
                       child: const Column(
                         children: [
                           Text(
                             'Launch pricing — no free trial',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: CgColors.green900),
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: CgColors.green900),
                           ),
                           SizedBox(height: 6),
                           Text(
                             '$kPremiumMonthlyDisplay/month or $kPremiumYearlyDisplay/year. Cancel anytime in Google Play. A short trial may be offered later as the community grows.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: CgColors.green800, height: 1.35),
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: CgColors.green800,
+                                height: 1.35),
                           ),
                         ],
                       ),
@@ -838,16 +1029,22 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   CgResponsiveContainer(
                     child: Container(
                       padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: CgColors.blue50, borderRadius: BorderRadius.circular(14)),
+                      decoration: BoxDecoration(
+                          color: CgColors.blue50,
+                          borderRadius: BorderRadius.circular(14)),
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info_outline, size: 20, color: CgColors.blue700),
+                          Icon(Icons.info_outline,
+                              size: 20, color: CgColors.blue700),
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               'After purchase, Connectghin syncs your membership from the receipt your device shares with our servers.',
-                              style: TextStyle(fontSize: 12, color: CgColors.blue700, height: 1.35),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: CgColors.blue700,
+                                  height: 1.35),
                             ),
                           ),
                         ],
@@ -855,11 +1052,22 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const CgResponsiveContainer(
-                    child: Text(
-                      'By subscribing, you agree to our Terms of Service',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: CgColors.gray500),
+                  CgResponsiveContainer(
+                    child: InkWell(
+                      onTap: () => context.push(AppPaths.appTerms),
+                      borderRadius: BorderRadius.circular(8),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          'By subscribing, you agree to our Terms of Service',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: CgColors.blue700,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ] else ...[
@@ -868,7 +1076,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
-                        gradient: const LinearGradient(colors: [CgColors.green800, CgColors.green900]),
+                        gradient: const LinearGradient(
+                            colors: [CgColors.green800, CgColors.green900]),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -876,42 +1085,87 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(color: CgColors.green100, borderRadius: BorderRadius.circular(20)),
-                                child: const Text('Active', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: CgColors.green900)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                    color: CgColors.green100,
+                                    borderRadius: BorderRadius.circular(20)),
+                                child: const Text('Active',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: CgColors.green900)),
                               ),
                               const Spacer(),
                               Container(
                                 padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(color: CgColors.white.withValues(alpha: 0.22), shape: BoxShape.circle),
-                                child: const Icon(Icons.check, color: CgColors.white, size: 20),
+                                decoration: BoxDecoration(
+                                    color:
+                                        CgColors.white.withValues(alpha: 0.22),
+                                    shape: BoxShape.circle),
+                                child: const Icon(Icons.check,
+                                    color: CgColors.white, size: 20),
                               ),
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Text('Premium', style: TextStyle(color: CgColors.white, fontSize: 26, fontWeight: FontWeight.w800)),
-                          Text(activePriceLine, style: TextStyle(color: CgColors.white.withValues(alpha: 0.95), fontSize: 18, fontWeight: FontWeight.w600)),
+                          const Text('Premium',
+                              style: TextStyle(
+                                  color: CgColors.white,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800)),
+                          Text(activePriceLine,
+                              style: TextStyle(
+                                  color: CgColors.white.withValues(alpha: 0.95),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600)),
                           const SizedBox(height: 20),
-                          Container(height: 1, color: CgColors.white.withValues(alpha: 0.25)),
+                          Container(
+                              height: 1,
+                              color: CgColors.white.withValues(alpha: 0.25)),
                           const SizedBox(height: 14),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Member since', style: TextStyle(color: CgColors.white.withValues(alpha: 0.85), fontSize: 13)),
-                              Text(memberSince != null ? _monthYear(memberSince) : '—', style: const TextStyle(color: CgColors.white, fontWeight: FontWeight.w600)),
+                              Text('Member since',
+                                  style: TextStyle(
+                                      color: CgColors.white
+                                          .withValues(alpha: 0.85),
+                                      fontSize: 13)),
+                              Text(
+                                  memberSince != null
+                                      ? _monthYear(memberSince)
+                                      : '—',
+                                  style: const TextStyle(
+                                      color: CgColors.white,
+                                      fontWeight: FontWeight.w600)),
                             ],
                           ),
                           const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Next renewal', style: TextStyle(color: CgColors.white.withValues(alpha: 0.85), fontSize: 13)),
-                              Text(periodEnd != null ? _formatUiDate(periodEnd) : '—', style: const TextStyle(color: CgColors.white, fontWeight: FontWeight.w600)),
+                              Text('Next renewal',
+                                  style: TextStyle(
+                                      color: CgColors.white
+                                          .withValues(alpha: 0.85),
+                                      fontSize: 13)),
+                              Text(
+                                  periodEnd != null
+                                      ? _formatUiDate(periodEnd)
+                                      : '—',
+                                  style: const TextStyle(
+                                      color: CgColors.white,
+                                      fontWeight: FontWeight.w600)),
                             ],
                           ),
                           if (subStatus != null) ...[
                             const SizedBox(height: 8),
-                            Text('Status: $subStatus', style: TextStyle(color: CgColors.white.withValues(alpha: 0.75), fontSize: 12)),
+                            Text('Status: $subStatus',
+                                style: TextStyle(
+                                    color:
+                                        CgColors.white.withValues(alpha: 0.75),
+                                    fontSize: 12)),
                           ],
                         ],
                       ),
@@ -919,26 +1173,50 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   ),
                   const SizedBox(height: 8),
                   const CgResponsiveContainer(
-                    child: Text('Manage your premium subscription', style: TextStyle(fontSize: 14, color: CgColors.gray600)),
+                    child: Text('Manage your premium subscription',
+                        style:
+                            TextStyle(fontSize: 14, color: CgColors.gray600)),
                   ),
                   const SizedBox(height: 16),
                   const CgResponsiveContainer(
-                    child: Text('Subscription management', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: CgColors.gray900)),
+                    child: Text('Subscription management',
+                        style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: CgColors.gray900)),
                   ),
                   const SizedBox(height: 10),
                   if (hasManagedSubscription) ...[
-                    CgResponsiveContainer(child: _billingTile(Icons.storefront, 'Manage Subscription', 'Open Apple / Google subscription management', _openStoreManagementHelp)),
-                    CgResponsiveContainer(child: _billingTile(Icons.receipt_long, 'Purchase History', 'View purchases in your app store account', _openStoreManagementHelp)),
+                    CgResponsiveContainer(
+                        child: _billingTile(
+                            Icons.storefront,
+                            'Manage Subscription',
+                            'Open Apple / Google subscription management',
+                            _openStoreManagementHelp)),
+                    CgResponsiveContainer(
+                        child: _billingTile(
+                            Icons.receipt_long,
+                            'Purchase History',
+                            'View purchases in your app store account',
+                            _openStoreManagementHelp)),
                   ] else
                     const CgResponsiveContainer(
-                      child: Text('Complete an in-app subscription to manage billing in your app store account.', style: TextStyle(color: CgColors.gray600, fontSize: 13)),
+                      child: Text(
+                          'Complete an in-app subscription to manage billing in your app store account.',
+                          style:
+                              TextStyle(color: CgColors.gray600, fontSize: 13)),
                     ),
                   const SizedBox(height: 22),
                   const CgResponsiveContainer(
-                    child: Text('Your Premium Benefits', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: CgColors.gray900)),
+                    child: Text('Your Premium Benefits',
+                        style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: CgColors.gray900)),
                   ),
                   const SizedBox(height: 10),
-                  ..._manageBenefits.map((b) => CgResponsiveContainer(child: _benefitCard(b.$1, b.$2))),
+                  ..._manageBenefits.map((b) =>
+                      CgResponsiveContainer(child: _benefitCard(b.$1, b.$2))),
                   const SizedBox(height: 20),
                   CgResponsiveContainer(
                     child: Material(
@@ -951,7 +1229,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: CgColors.red400.withValues(alpha: 0.6)),
+                            border: Border.all(
+                                color: CgColors.red400.withValues(alpha: 0.6)),
                           ),
                           child: Row(
                             children: [
@@ -959,9 +1238,18 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Cancel Subscription', style: TextStyle(fontWeight: FontWeight.w700, color: CgColors.red700, fontSize: 15)),
+                                    const Text('Cancel Subscription',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            color: CgColors.red700,
+                                            fontSize: 15)),
                                     const SizedBox(height: 4),
-                                    Text('You will lose access to premium features after the period ends', style: TextStyle(fontSize: 12, color: CgColors.red700.withValues(alpha: 0.85))),
+                                    Text(
+                                        'You will lose access to premium features after the period ends',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: CgColors.red700
+                                                .withValues(alpha: 0.85))),
                                   ],
                                 ),
                               ),
@@ -978,7 +1266,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
     );
   }
 
-  static Widget _billingTile(IconData icon, String title, String subtitle, VoidCallback? onTap) {
+  static Widget _billingTile(
+      IconData icon, String title, String subtitle, VoidCallback? onTap) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
@@ -1001,8 +1290,12 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                      Text(subtitle, style: const TextStyle(fontSize: 12, color: CgColors.gray500)),
+                      Text(title,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
+                      Text(subtitle,
+                          style: const TextStyle(
+                              fontSize: 12, color: CgColors.gray500)),
                     ],
                   ),
                 ),
@@ -1029,7 +1322,8 @@ class SubscriptionExpiredScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final expiredOn = expiredAt ?? DateTime.now();
-    final daysSince = DateTime.now().difference(expiredOn).inDays.clamp(0, 9999);
+    final daysSince =
+        DateTime.now().difference(expiredOn).inDays.clamp(0, 9999);
 
     return Scaffold(
       backgroundColor: CgColors.gray50,
@@ -1037,9 +1331,13 @@ class SubscriptionExpiredScreen extends StatelessWidget {
         children: [
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 8, 16, 28),
+            padding: EdgeInsets.fromLTRB(
+                16, MediaQuery.paddingOf(context).top + 8, 16, 28),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [CgColors.orange500, CgColors.orange700], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: LinearGradient(
+                  colors: [CgColors.orange500, CgColors.orange700],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight),
             ),
             child: Column(
               children: [
@@ -1053,20 +1351,29 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: CgColors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                  child: const Icon(Icons.workspace_premium, color: CgColors.white, size: 36),
+                  decoration: BoxDecoration(
+                      color: CgColors.white.withValues(alpha: 0.2),
+                      shape: BoxShape.circle),
+                  child: const Icon(Icons.workspace_premium,
+                      color: CgColors.white, size: 36),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   'Your Premium Membership Has Expired',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: CgColors.white, fontSize: 22, fontWeight: FontWeight.w800, height: 1.2),
+                  style: TextStyle(
+                      color: CgColors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Renew now to continue enjoying premium features',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: CgColors.white.withValues(alpha: 0.92), fontSize: 14),
+                  style: TextStyle(
+                      color: CgColors.white.withValues(alpha: 0.92),
+                      fontSize: 14),
                 ),
               ],
             ),
@@ -1077,25 +1384,42 @@ class SubscriptionExpiredScreen extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: CgColors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: CgColors.gray200)),
+                  decoration: BoxDecoration(
+                      color: CgColors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: CgColors.gray200)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Previous plan', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                      const Text('Previous plan',
+                          style:
+                              TextStyle(fontSize: 12, color: CgColors.gray500)),
                       const SizedBox(height: 4),
-                      Text(planLabel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                      Text(planLabel,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 16)),
                       const SizedBox(height: 12),
-                      const Text('Expired on', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
-                      Text(_formatUiDate(expiredOn), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                      const Text('Expired on',
+                          style:
+                              TextStyle(fontSize: 12, color: CgColors.gray500)),
+                      Text(_formatUiDate(expiredOn),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
                       const SizedBox(height: 12),
-                      Text('Days since expiration: $daysSince days', style: const TextStyle(fontWeight: FontWeight.w600, color: CgColors.red700, fontSize: 14)),
+                      Text('Days since expiration: $daysSince days',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: CgColors.red700,
+                              fontSize: 14)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text('What You\'re Missing', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                const Text('What You\'re Missing',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
                 const SizedBox(height: 12),
-                _missingRow('Unlimited swipes on Pair Up'),
+                _missingRow('Unlimited Connect likes'),
                 _missingRow('Message anyone without matching first'),
                 _missingRow('Advanced filters'),
                 _missingRow('Priority customer support'),
@@ -1113,17 +1437,32 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Annual', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                          const Text('Annual',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800, fontSize: 17)),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: CgColors.green700, borderRadius: BorderRadius.circular(8)),
-                            child: const Text('BEST VALUE', style: TextStyle(color: CgColors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                                color: CgColors.green700,
+                                borderRadius: BorderRadius.circular(8)),
+                            child: const Text('BEST VALUE',
+                                style: TextStyle(
+                                    color: CgColors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text('$kPremiumYearlyDisplay / year', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CgColors.green900)),
-                      const Text('Save 16% • Just \$3.33/month', style: TextStyle(fontSize: 13, color: CgColors.gray700)),
+                      const Text('$kPremiumYearlyDisplay / year',
+                          style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: CgColors.green900)),
+                      const Text('Save 16% • Just \$3.33/month',
+                          style:
+                              TextStyle(fontSize: 13, color: CgColors.gray700)),
                       const SizedBox(height: 12),
                       CgPrimaryButton(
                         label: 'Renew Annual',
@@ -1135,14 +1474,23 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: CgColors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: CgColors.gray200)),
+                  decoration: BoxDecoration(
+                      color: CgColors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: CgColors.gray200)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Monthly', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                      const Text('Monthly',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 16)),
                       const SizedBox(height: 6),
-                      const Text('$kRenewMonthlyDisplay / month', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                      const Text('Cancel anytime', style: TextStyle(fontSize: 13, color: CgColors.gray600)),
+                      const Text('$kRenewMonthlyDisplay / month',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w700)),
+                      const Text('Cancel anytime',
+                          style:
+                              TextStyle(fontSize: 13, color: CgColors.gray600)),
                       const SizedBox(height: 12),
                       CgOutlineButton(
                         label: 'Renew Monthly',
@@ -1171,9 +1519,13 @@ class SubscriptionExpiredScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline, color: CgColors.gray400, size: 22),
+          const Icon(Icons.check_circle_outline,
+              color: CgColors.gray400, size: 22),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 15, color: CgColors.gray700))),
+          Expanded(
+              child: Text(text,
+                  style:
+                      const TextStyle(fontSize: 15, color: CgColors.gray700))),
         ],
       ),
     );

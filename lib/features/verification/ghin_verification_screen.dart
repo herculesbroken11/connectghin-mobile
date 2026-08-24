@@ -29,6 +29,7 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
   bool _loading = true;
   bool _saving = false;
   String? _error;
+
   /// After "Try again" from rejected, form back returns to rejected.
   bool _formReturnToRejected = false;
 
@@ -109,13 +110,17 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
           controller: noteCtrl,
           maxLines: 4,
           decoration: const InputDecoration(
-            hintText: 'Explain why your GHIN details should be approved',
+            hintText: 'Explain why your handicap details should be approved',
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Submit appeal')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Submit appeal')),
         ],
       ),
     );
@@ -131,11 +136,13 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
     }
     setState(() => _saving = true);
     try {
-      await AccountApi(session.apiClient).submitGhinAppeal(accessToken: t, appealNote: note);
+      await AccountApi(session.apiClient)
+          .submitGhinAppeal(accessToken: t, appealNote: note);
       if (!mounted) return;
       await _load();
       if (mounted) {
-        showUserMessageSnackBar(context, 'Appeal submitted. We will review it soon.');
+        showUserMessageSnackBar(
+            context, 'Appeal submitted. We will review it soon.');
       }
     } catch (e) {
       if (mounted) showApiErrorSnackBar(context, e);
@@ -152,11 +159,13 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
     final fn = _first.text.trim();
     final ln = _last.text.trim();
     if (ghin.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter your GHIN number')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter your handicap number')));
       return;
     }
     if (fn.isEmpty || ln.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter first and last name')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter first and last name')));
       return;
     }
     setState(() => _saving = true);
@@ -170,7 +179,8 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
       if (!mounted) return;
       await _load();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Submitted for verification')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Submitted for verification')));
       }
     } catch (e) {
       if (mounted) {
@@ -208,7 +218,7 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
         _formReturnToRejected = false;
       });
     } else {
-      setState(() => _Pane.intro);
+      setState(() => _pane = _Pane.intro);
     }
   }
 
@@ -231,7 +241,8 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: CgColors.gray50,
-        body: Center(child: CircularProgressIndicator(color: CgColors.green700)),
+        body:
+            Center(child: CircularProgressIndicator(color: CgColors.green700)),
       );
     }
 
@@ -256,7 +267,6 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
           _Pane.pending => _PendingBody(
               ghin: _displayGhin(),
               nameLine: _displayNameLine(),
-              isAppeal: _latest?['status']?.toString() == 'APPEAL',
               onBackToProfile: () {
                 context.read<AuthSession>().bumpProfileRefresh();
                 context.pop();
@@ -317,16 +327,23 @@ class _IntroBody extends StatelessWidget {
           ),
           const Text(
             'Get Handicap Verified',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: CgColors.gray900, height: 1.2),
+            style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: CgColors.gray900,
+                height: 1.2),
           ),
           const SizedBox(height: 8),
           const Text(
             'Stand out with the Handicap Verified badge',
-            style: TextStyle(fontSize: 16, color: CgColors.gray600, height: 1.4),
+            style:
+                TextStyle(fontSize: 16, color: CgColors.gray600, height: 1.4),
           ),
           const SizedBox(height: 24),
           if (error != null) ...[
-            Text(error!, style: const TextStyle(color: CgColors.destructive, fontSize: 14)),
+            Text(error!,
+                style:
+                    const TextStyle(color: CgColors.destructive, fontSize: 14)),
             const SizedBox(height: 16),
           ],
           Container(
@@ -340,20 +357,26 @@ class _IntroBody extends StatelessWidget {
                 Container(
                   width: 72,
                   height: 72,
-                  decoration: const BoxDecoration(color: CgColors.teal600, shape: BoxShape.circle),
-                  child: const Icon(Icons.verified_user_rounded, color: CgColors.white, size: 38),
+                  decoration: const BoxDecoration(
+                      color: CgColors.teal600, shape: BoxShape.circle),
+                  child: const Icon(Icons.verified_user_rounded,
+                      color: CgColors.white, size: 38),
                 ),
                 const SizedBox(height: 20),
                 const Text(
                   'Official Handicap Verification',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CgColors.gray900),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: CgColors.gray900),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Verify your handicap index using your official GHIN number',
+                  'Verify your handicap index using your handicap number',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.45),
+                  style: TextStyle(
+                      fontSize: 15, color: CgColors.gray600, height: 1.45),
                 ),
               ],
             ),
@@ -390,14 +413,15 @@ class _IntroBody extends StatelessWidget {
             icon: Icons.bolt_rounded,
             iconColor: CgColors.purple700,
             title: 'Get More Matches',
-            body: 'Verified profiles get more attention in Discover and Pair Up.',
+            body:
+                'Verified profiles get more attention in Connect and The Feed.',
           ),
           const SizedBox(height: 28),
           _infoCard(
             title: 'What you\'ll need',
             bullets: const [
-              'Your GHIN number',
-              'Name matching your GHIN account',
+              'Your handicap number',
+              'The name associated with your handicap record',
               'Verification typically takes 24–48 hours',
             ],
           ),
@@ -410,15 +434,18 @@ class _IntroBody extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: CgColors.teal600,
                 foregroundColor: CgColors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Start Verification', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              child: const Text('Start Verification',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: onMaybeLater,
-            child: const Text('Maybe Later', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            child: const Text('Maybe Later',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -438,7 +465,9 @@ class _IntroBody extends StatelessWidget {
         color: CgColors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: CgColors.gray200),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,9 +482,13 @@ class _IntroBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(height: 4),
-                Text(body, style: const TextStyle(fontSize: 14, color: CgColors.gray600, height: 1.4)),
+                Text(body,
+                    style: const TextStyle(
+                        fontSize: 14, color: CgColors.gray600, height: 1.4)),
               ],
             ),
           ),
@@ -464,7 +497,8 @@ class _IntroBody extends StatelessWidget {
     );
   }
 
-  static Widget _infoCard({required String title, required List<String> bullets}) {
+  static Widget _infoCard(
+      {required String title, required List<String> bullets}) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -477,9 +511,14 @@ class _IntroBody extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.info_outline_rounded, size: 20, color: CgColors.teal600),
+              const Icon(Icons.info_outline_rounded,
+                  size: 20, color: CgColors.teal600),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: CgColors.gray900)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: CgColors.gray900)),
             ],
           ),
           const SizedBox(height: 12),
@@ -489,8 +528,16 @@ class _IntroBody extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('•  ', style: TextStyle(color: CgColors.teal600, fontWeight: FontWeight.w700)),
-                  Expanded(child: Text(b, style: const TextStyle(fontSize: 14, color: CgColors.gray700, height: 1.4))),
+                  const Text('•  ',
+                      style: TextStyle(
+                          color: CgColors.teal600,
+                          fontWeight: FontWeight.w700)),
+                  Expanded(
+                      child: Text(b,
+                          style: const TextStyle(
+                              fontSize: 14,
+                              color: CgColors.gray700,
+                              height: 1.4))),
                 ],
               ),
             ),
@@ -538,7 +585,10 @@ class _FormBody extends StatelessWidget {
           ),
           const Text(
             'Verify Your Handicap',
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: CgColors.gray900),
+            style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                color: CgColors.gray900),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -557,7 +607,7 @@ class _FormBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 CgLabeledField(
-                  label: 'GHIN Number',
+                  label: 'Handicap Number',
                   child: CgTextField(
                     controller: ghin,
                     hint: 'e.g., 1234567',
@@ -566,18 +616,22 @@ class _FormBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Your GHIN number as shown on your card or app',
+                  'Your handicap number as shown on your card or app',
                   style: TextStyle(fontSize: 12, color: CgColors.gray500),
                 ),
                 const SizedBox(height: 20),
                 CgLabeledField(
                   label: 'First Name',
-                  child: CgTextField(controller: first, hint: 'As shown on GHIN'),
+                  child: CgTextField(
+                      controller: first,
+                      hint: 'As shown on your handicap record'),
                 ),
                 const SizedBox(height: 20),
                 CgLabeledField(
                   label: 'Last Name',
-                  child: CgTextField(controller: last, hint: 'As shown on GHIN'),
+                  child: CgTextField(
+                      controller: last,
+                      hint: 'As shown on your handicap record'),
                 ),
               ],
             ),
@@ -595,19 +649,24 @@ class _FormBody extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: CgColors.yellow700, size: 22),
+                    Icon(Icons.warning_amber_rounded,
+                        color: CgColors.yellow700, size: 22),
                     SizedBox(width: 8),
                     Text(
                       'Important',
-                      style: TextStyle(fontWeight: FontWeight.w700, color: CgColors.yellow800, fontSize: 15),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: CgColors.yellow800,
+                          fontSize: 15),
                     ),
                   ],
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Your name must match exactly as it appears in the GHIN database. '
+                  'Your name must match exactly as it appears on your handicap record. '
                   'Verification may be delayed or denied if the information doesn\'t match.',
-                  style: TextStyle(fontSize: 14, color: CgColors.gray700, height: 1.45),
+                  style: TextStyle(
+                      fontSize: 14, color: CgColors.gray700, height: 1.45),
                 ),
               ],
             ),
@@ -615,7 +674,8 @@ class _FormBody extends StatelessWidget {
           const SizedBox(height: 20),
           const Text(
             'By submitting, you agree to our verification process and confirm that the information provided is accurate.',
-            style: TextStyle(fontSize: 12, color: CgColors.gray500, height: 1.4),
+            style:
+                TextStyle(fontSize: 12, color: CgColors.gray500, height: 1.4),
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -627,9 +687,12 @@ class _FormBody extends StatelessWidget {
                 backgroundColor: CgColors.teal600,
                 foregroundColor: CgColors.white,
                 disabledBackgroundColor: CgColors.gray300,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(saving ? 'Submitting…' : 'Submit for Verification', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(saving ? 'Submitting…' : 'Submit for Verification',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -644,13 +707,11 @@ class _PendingBody extends StatelessWidget {
   const _PendingBody({
     required this.ghin,
     required this.nameLine,
-    required this.isAppeal,
     required this.onBackToProfile,
   });
 
   final String ghin;
   final String nameLine;
-  final bool isAppeal;
   final VoidCallback onBackToProfile;
 
   @override
@@ -662,22 +723,26 @@ class _PendingBody extends StatelessWidget {
           Container(
             width: 80,
             height: 80,
-            decoration: const BoxDecoration(color: CgColors.yellow100, shape: BoxShape.circle),
-            child: const Icon(Icons.schedule_rounded, size: 44, color: CgColors.yellow700),
+            decoration: const BoxDecoration(
+                color: CgColors.yellow100, shape: BoxShape.circle),
+            child: const Icon(Icons.schedule_rounded,
+                size: 44, color: CgColors.yellow700),
           ),
           const SizedBox(height: 20),
-          Text(
-            isAppeal ? 'Appeal received' : 'Verification Pending',
+          const Text(
+            'Verification Pending',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: CgColors.gray900),
+            style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: CgColors.gray900),
           ),
           const SizedBox(height: 10),
-          Text(
-            isAppeal
-                ? 'We\'re reviewing your appeal. This typically takes 24–48 hours.'
-                : 'We\'re reviewing your handicap verification. This typically takes 24–48 hours.',
+          const Text(
+            'We\'re reviewing your handicap verification. This typically takes 24–48 hours.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.45),
+            style:
+                TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.45),
           ),
           const SizedBox(height: 28),
           Container(
@@ -687,18 +752,23 @@ class _PendingBody extends StatelessWidget {
               color: CgColors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: CgColors.gray200),
-              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 4)
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Submitted Information', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const Text('Submitted Information',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(height: 16),
-                _kvRow('GHIN Number', ghin),
+                _kvRow('Handicap Number', ghin),
                 const SizedBox(height: 12),
                 _kvRow('Name', nameLine),
                 const SizedBox(height: 12),
-                _kvRow('Status', 'Under Review', valueColor: CgColors.yellow700),
+                _kvRow('Status', 'Under Review',
+                    valueColor: CgColors.yellow700),
               ],
             ),
           ),
@@ -713,16 +783,24 @@ class _PendingBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('What happens next?', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: CgColors.gray900)),
+                const Text('What happens next?',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: CgColors.gray900)),
                 const SizedBox(height: 12),
-                _bullet('We\'ll verify your info against the GHIN database'),
+                _bullet('We\'ll review your submitted handicap information'),
                 _bullet('You\'ll get a notification when it\'s complete'),
-                _bullet('Your Handicap Verified badge will appear automatically when approved'),
+                _bullet(
+                    'Your Handicap Verified badge will appear automatically when approved'),
               ],
             ),
           ),
           const SizedBox(height: 28),
-          TextButton(onPressed: onBackToProfile, child: const Text('Back to Profile', style: TextStyle(fontSize: 16))),
+          TextButton(
+              onPressed: onBackToProfile,
+              child: const Text('Back to Profile',
+                  style: TextStyle(fontSize: 16))),
         ],
       ),
     );
@@ -734,14 +812,18 @@ class _PendingBody extends StatelessWidget {
       children: [
         Expanded(
           flex: 2,
-          child: Text(k, style: const TextStyle(color: CgColors.gray600, fontSize: 14)),
+          child: Text(k,
+              style: const TextStyle(color: CgColors.gray600, fontSize: 14)),
         ),
         Expanded(
           flex: 3,
           child: Text(
             v,
             textAlign: TextAlign.right,
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: valueColor ?? CgColors.gray900),
+            style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: valueColor ?? CgColors.gray900),
           ),
         ),
       ],
@@ -755,7 +837,10 @@ class _PendingBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('•  ', style: TextStyle(color: CgColors.teal600)),
-          Expanded(child: Text(t, style: const TextStyle(fontSize: 14, color: CgColors.gray700, height: 1.4))),
+          Expanded(
+              child: Text(t,
+                  style: const TextStyle(
+                      fontSize: 14, color: CgColors.gray700, height: 1.4))),
         ],
       ),
     );
@@ -779,11 +864,14 @@ class _SuccessBody extends StatelessWidget {
           Container(
             width: 88,
             height: 88,
-            decoration: const BoxDecoration(color: CgColors.teal600, shape: BoxShape.circle),
-            child: const Icon(Icons.check_rounded, color: CgColors.white, size: 52),
+            decoration: const BoxDecoration(
+                color: CgColors.teal600, shape: BoxShape.circle),
+            child: const Icon(Icons.check_rounded,
+                color: CgColors.white, size: 52),
           ),
           const SizedBox(height: 24),
-          const Text('You\'re Verified!', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
+          const Text('You\'re Verified!',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           const Text(
             'Your handicap has been successfully verified',
@@ -801,24 +889,35 @@ class _SuccessBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Your Profile', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const Text('Your Profile',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: CgColors.teal600, borderRadius: BorderRadius.circular(20)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: CgColors.teal600,
+                      borderRadius: BorderRadius.circular(20)),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.verified_rounded, color: CgColors.white, size: 16),
+                      Icon(Icons.verified_rounded,
+                          color: CgColors.white, size: 16),
                       SizedBox(width: 6),
-                      Text('Handicap Verified', style: TextStyle(color: CgColors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                      Text('Handicap Verified',
+                          style: TextStyle(
+                              color: CgColors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 10),
                 const Text(
                   'Your Handicap Verified badge is now visible on your profile.',
-                  style: TextStyle(fontSize: 14, color: CgColors.gray600, height: 1.4),
+                  style: TextStyle(
+                      fontSize: 14, color: CgColors.gray600, height: 1.4),
                 ),
               ],
             ),
@@ -835,11 +934,16 @@ class _SuccessBody extends StatelessWidget {
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('🎉  Congratulations!', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: CgColors.green800)),
+                Text('🎉  Congratulations!',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: CgColors.green800)),
                 SizedBox(height: 8),
                 Text(
                   'Verified profiles get more likes and matches. Start connecting with more golfers now!',
-                  style: TextStyle(fontSize: 14, color: CgColors.green900, height: 1.45),
+                  style: TextStyle(
+                      fontSize: 14, color: CgColors.green900, height: 1.45),
                 ),
               ],
             ),
@@ -853,15 +957,18 @@ class _SuccessBody extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: CgColors.green700,
                 foregroundColor: CgColors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('View My Profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              child: const Text('View My Profile',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: onHome,
-            child: const Text('Back to Home', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            child: const Text('Back to Home',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -893,14 +1000,20 @@ class _RejectedBody extends StatelessWidget {
           Container(
             width: 80,
             height: 80,
-            decoration: BoxDecoration(color: CgColors.red500.withValues(alpha: 0.12), shape: BoxShape.circle),
-            child: const Icon(Icons.close_rounded, color: CgColors.red500, size: 44),
+            decoration: BoxDecoration(
+                color: CgColors.red500.withValues(alpha: 0.12),
+                shape: BoxShape.circle),
+            child: const Icon(Icons.close_rounded,
+                color: CgColors.red500, size: 44),
           ),
           const SizedBox(height: 20),
           const Text(
             'Verification Unsuccessful',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: CgColors.gray900),
+            style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: CgColors.gray900),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -915,15 +1028,20 @@ class _RejectedBody extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFFFF1F2),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: CgColors.red400.withValues(alpha: 0.35)),
+              border:
+                  Border.all(color: CgColors.red400.withValues(alpha: 0.35)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Common reasons:', style: TextStyle(fontWeight: FontWeight.w700, color: CgColors.red500.withValues(alpha: 0.95), fontSize: 15)),
+                Text('Common reasons:',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: CgColors.red500.withValues(alpha: 0.95),
+                        fontSize: 15)),
                 const SizedBox(height: 10),
-                _rBullet('Name doesn\'t match GHIN database'),
-                _rBullet('GHIN number is incorrect or inactive'),
+                _rBullet('Name doesn\'t match the handicap record'),
+                _rBullet('Handicap number is incorrect or inactive'),
                 _rBullet('Typos in submitted information'),
               ],
             ),
@@ -939,9 +1057,13 @@ class _RejectedBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('What you can do:', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: CgColors.gray900)),
+                const Text('What you can do:',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: CgColors.gray900)),
                 const SizedBox(height: 10),
-                _bBullet('Double-check your GHIN number'),
+                _bBullet('Double-check your handicap number'),
                 _bBullet('Verify your name spelling matches exactly'),
                 _bBullet('Contact your golf club if issues persist'),
               ],
@@ -956,9 +1078,11 @@ class _RejectedBody extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: CgColors.teal600,
                 foregroundColor: CgColors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Try Again', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              child: const Text('Try Again',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 12),
@@ -970,9 +1094,11 @@ class _RejectedBody extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: CgColors.gray900,
                 side: const BorderSide(color: CgColors.gray300),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Submit appeal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              child: const Text('Submit appeal',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 12),
@@ -984,13 +1110,18 @@ class _RejectedBody extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: CgColors.gray900,
                 side: const BorderSide(color: CgColors.gray300),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Contact Support', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              child: const Text('Contact Support',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 16),
-          TextButton(onPressed: onBackToProfile, child: const Text('Back to Profile', style: TextStyle(fontSize: 16))),
+          TextButton(
+              onPressed: onBackToProfile,
+              child: const Text('Back to Profile',
+                  style: TextStyle(fontSize: 16))),
         ],
       ),
     );
@@ -1002,8 +1133,16 @@ class _RejectedBody extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('•  ', style: TextStyle(color: CgColors.red500.withValues(alpha: 0.9), fontWeight: FontWeight.w700)),
-          Expanded(child: Text(t, style: TextStyle(fontSize: 14, color: CgColors.red500.withValues(alpha: 0.95), height: 1.4))),
+          Text('•  ',
+              style: TextStyle(
+                  color: CgColors.red500.withValues(alpha: 0.9),
+                  fontWeight: FontWeight.w700)),
+          Expanded(
+              child: Text(t,
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: CgColors.red500.withValues(alpha: 0.95),
+                      height: 1.4))),
         ],
       ),
     );
@@ -1015,8 +1154,13 @@ class _RejectedBody extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('•  ', style: TextStyle(color: CgColors.teal600, fontWeight: FontWeight.w700)),
-          Expanded(child: Text(t, style: const TextStyle(fontSize: 14, color: CgColors.gray700, height: 1.4))),
+          const Text('•  ',
+              style: TextStyle(
+                  color: CgColors.teal600, fontWeight: FontWeight.w700)),
+          Expanded(
+              child: Text(t,
+                  style: const TextStyle(
+                      fontSize: 14, color: CgColors.gray700, height: 1.4))),
         ],
       ),
     );

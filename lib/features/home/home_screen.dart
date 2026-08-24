@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _convCount = 0;
   int _unreadNotifications = 0;
   List<ApiGolferCard> _recent = [];
+
   /// From `GET /profiles/me` → `profileCompletionPercent` (see backend `computeProfileCompletionPercent`).
   int? _profileCompletionPercent;
   bool _isGhinVerified = false;
@@ -75,7 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ProfilesApi(session.apiClient).getMe(t),
         session.authApi.me(t),
       ]);
-      final notificationsRaw = await NotificationsApi(session.apiClient).listNotifications(t).catchError((_) => <dynamic>[]);
+      final notificationsRaw = await NotificationsApi(session.apiClient)
+          .listNotifications(t)
+          .catchError((_) => <dynamic>[]);
       final matchesRaw = results[0] as List<dynamic>;
       final convRaw = results[1] as List<dynamic>;
       final profileJson = results[2] as Map<String, dynamic>;
@@ -144,7 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final t = session.accessToken;
     if (t == null) return;
     try {
-      final raw = await NotificationsApi(session.apiClient).listNotifications(t);
+      final raw =
+          await NotificationsApi(session.apiClient).listNotifications(t);
       final unread = raw.where((e) {
         if (e is! Map) return false;
         return e['isRead'] != true;
@@ -160,7 +164,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final t = session.accessToken;
     if (t == null) return;
     try {
-      final conv = await MessagesApi(session.apiClient).startConversation(accessToken: t, otherUserId: g.userId);
+      final conv = await MessagesApi(session.apiClient)
+          .startConversation(accessToken: t, otherUserId: g.userId);
       final id = conv['id'] as String;
       if (mounted) {
         await context.push<String>(
@@ -210,7 +215,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 'Connectghin',
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
                                       color: CgColors.white,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -230,7 +238,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text(
                                 'Ready for your next round?',
                                 style: TextStyle(
-                                  color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
+                                  color: CgColors.premiumGoldLight
+                                      .withValues(alpha: 0.95),
                                   fontSize: 13,
                                 ),
                               ),
@@ -240,13 +249,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         IconButton(
                           onPressed: _openNotifications,
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.14),
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.14),
                             foregroundColor: CgColors.white,
                           ),
                           icon: Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              const Icon(Icons.notifications_none_rounded, size: 24),
+                              const Icon(Icons.notifications_none_rounded,
+                                  size: 24),
                               if (_unreadNotifications > 0)
                                 Positioned(
                                   right: -1,
@@ -267,7 +278,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     if (session.lastSignInMethod != null) ...[
                       const SizedBox(height: 14),
-                      _SignInMethodChip(method: session.lastSignInMethod!, onDark: true),
+                      _SignInMethodChip(
+                          method: session.lastSignInMethod!, onDark: true),
                     ],
                     const SizedBox(height: 18),
                     Row(
@@ -319,7 +331,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => context.push(AppPaths.appChangePassword),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: CgColors.gray200),
@@ -327,12 +340,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.key_rounded, color: CgColors.green700, size: 22),
+                            Icon(Icons.key_rounded,
+                                color: CgColors.green700, size: 22),
                             SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 'Update your password anytime in account security.',
-                                style: TextStyle(fontSize: 13, color: CgColors.gray700, height: 1.35),
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: CgColors.gray700,
+                                    height: 1.35),
                               ),
                             ),
                             Icon(Icons.chevron_right, color: CgColors.gray400),
@@ -343,7 +360,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-            if (_profileCompletionPercent != null && _profileCompletionPercent! < 100)
+            if (_profileCompletionPercent != null &&
+                _profileCompletionPercent! < 100)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -356,7 +374,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: CgColors.premiumGold.withValues(alpha: 0.45)),
+                      border: Border.all(
+                          color: CgColors.premiumGold.withValues(alpha: 0.45)),
                       boxShadow: CgShadows.soft,
                     ),
                     child: Row(
@@ -369,7 +388,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: CgColors.premiumGold.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.golf_course, color: CgColors.premiumGoldDark, size: 22),
+                          child: const Icon(Icons.golf_course,
+                              color: CgColors.premiumGoldDark, size: 22),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -378,20 +398,26 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               const Text(
                                 'Complete your profile',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: CgColors.gray900),
+                                style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: CgColors.gray900),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 !_isGhinVerified
                                     ? 'Get Handicap Verified to stand out on the course'
                                     : 'Add photos and details to hit 100%',
-                                style: const TextStyle(fontSize: 12, color: CgColors.gray600),
+                                style: const TextStyle(
+                                    fontSize: 12, color: CgColors.gray600),
                               ),
                               const SizedBox(height: 12),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(999),
                                 child: LinearProgressIndicator(
-                                  value: ((_profileCompletionPercent ?? 0).clamp(0, 100)) / 100.0,
+                                  value: ((_profileCompletionPercent ?? 0)
+                                          .clamp(0, 100)) /
+                                      100.0,
                                   minHeight: 7,
                                   backgroundColor: CgColors.yellow100,
                                   color: CgColors.premiumGold,
@@ -400,19 +426,25 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 '${_profileCompletionPercent!.clamp(0, 100)}% complete',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CgColors.yellow800),
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: CgColors.yellow800),
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 8),
                         TextButton(
-                          onPressed: () => context.push(AppPaths.appCompleteProfile),
+                          onPressed: () =>
+                              context.push(AppPaths.appCompleteProfile),
                           style: TextButton.styleFrom(
                             backgroundColor: CgColors.green700,
                             foregroundColor: CgColors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
                           child: const Text('Complete'),
                         ),
@@ -427,10 +459,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Recent Matches', style: Theme.of(context).textTheme.titleLarge),
+                    Text('Recent Matches',
+                        style: Theme.of(context).textTheme.titleLarge),
                     TextButton(
                       onPressed: () => context.go(AppPaths.appMatches),
-                      child: const Text('View all', style: TextStyle(color: CgColors.green700, fontSize: 14)),
+                      child: const Text('View all',
+                          style: TextStyle(
+                              color: CgColors.green700, fontSize: 14)),
                     ),
                   ],
                 ),
@@ -447,7 +482,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Center(
                         child: Text(
-                          _loading ? 'Loading…' : 'No matches yet — try Pair Up!',
+                          _loading
+                              ? 'Loading…'
+                              : 'No matches yet — try Connect!',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
@@ -477,10 +514,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      Text(m.displayName, style: const TextStyle(fontWeight: FontWeight.w500, color: CgColors.gray900)),
+                                      Text(m.displayName,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              color: CgColors.gray900)),
                                       if (ageStr.isNotEmpty) ...[
                                         const SizedBox(width: 8),
-                                        Text(ageStr, style: const TextStyle(fontSize: 14, color: CgColors.gray500)),
+                                        Text(ageStr,
+                                            style: const TextStyle(
+                                                fontSize: 14,
+                                                color: CgColors.gray500)),
                                       ],
                                     ],
                                   ),
@@ -489,21 +532,31 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       if (hcp.isNotEmpty)
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: CgColors.gray100,
-                                            borderRadius: BorderRadius.circular(6),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
                                           ),
-                                          child: Text(hcp, style: const TextStyle(fontSize: 12, color: CgColors.gray700)),
+                                          child: Text(hcp,
+                                              style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: CgColors.gray700)),
                                         ),
-                                      if (hcp.isNotEmpty) const SizedBox(width: 8),
-                                      const Text('Open chat', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                                      if (hcp.isNotEmpty)
+                                        const SizedBox(width: 8),
+                                      const Text('Open chat',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: CgColors.gray500)),
                                     ],
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.chevron_right, color: CgColors.gray400),
+                            const Icon(Icons.chevron_right,
+                                color: CgColors.gray400),
                           ],
                         ),
                       ),
@@ -515,7 +568,8 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: Text('Quick Actions', style: Theme.of(context).textTheme.titleLarge),
+                child: Text('Quick Actions',
+                    style: Theme.of(context).textTheme.titleLarge),
               ),
             ),
             SliverPadding(
@@ -528,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.grid_view_rounded,
                         iconBg: CgColors.green100,
                         iconColor: CgColors.green700,
-                        label: 'Pair Up',
+                        label: 'The Feed',
                         onTap: () => context.go(AppPaths.appGhinder),
                       ),
                     ),
@@ -538,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.search,
                         iconBg: CgColors.blue50,
                         iconColor: CgColors.blue700,
-                        label: 'Browse Golfers',
+                        label: 'Connect',
                         onTap: () => context.go(AppPaths.appDiscover),
                       ),
                     ),
@@ -565,18 +619,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.workspace_premium_rounded, color: CgColors.premiumGold, size: 22),
+                          const Icon(Icons.workspace_premium_rounded,
+                              color: CgColors.premiumGold, size: 22),
                           const SizedBox(width: 8),
                           const Text(
                             'Upgrade to Premium',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: CgColors.white),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: CgColors.white),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Message anyone directly, unlimited swipes, and more',
-                        style: TextStyle(fontSize: 14, color: CgColors.white.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: CgColors.white.withValues(alpha: 0.9)),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -587,9 +647,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             backgroundColor: CgColors.white,
                             foregroundColor: CgColors.green700,
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
                           ),
-                          child: const Text('See Premium Benefits', style: TextStyle(fontWeight: FontWeight.w500)),
+                          child: const Text('See Premium Benefits',
+                              style: TextStyle(fontWeight: FontWeight.w500)),
                         ),
                       ),
                     ],
@@ -629,11 +691,13 @@ class _SignInMethodChip extends StatelessWidget {
         break;
       case 'apple':
         label = 'Signed in with Apple';
-        icon = Icon(Icons.apple, size: 17, color: onDark ? CgColors.white : CgColors.gray900);
+        icon = Icon(Icons.apple,
+            size: 17, color: onDark ? CgColors.white : CgColors.gray900);
         break;
       default:
         label = 'Signed in with email';
-        icon = Icon(Icons.mail_outline, size: 17, color: onDark ? CgColors.white : CgColors.gray700);
+        icon = Icon(Icons.mail_outline,
+            size: 17, color: onDark ? CgColors.white : CgColors.gray700);
         break;
     }
 
@@ -641,7 +705,10 @@ class _SignInMethodChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: onDark ? Colors.white.withValues(alpha: 0.12) : CgColors.gray100,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: onDark ? Colors.white.withValues(alpha: 0.25) : CgColors.gray300),
+        border: Border.all(
+            color: onDark
+                ? Colors.white.withValues(alpha: 0.25)
+                : CgColors.gray300),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -691,12 +758,19 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: accent ?? fg)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: accent ?? fg)),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg.withValues(alpha: 0.9)),
+            style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: fg.withValues(alpha: 0.9)),
           ),
         ],
       ),
@@ -720,8 +794,13 @@ class _Avatar extends StatelessWidget {
         children: [
           ClipOval(
             child: url.isNotEmpty
-                ? CachedNetworkImage(imageUrl: url, width: 56, height: 56, fit: BoxFit.cover)
-                : Container(width: 56, height: 56, color: CgColors.gray200, child: const Icon(Icons.person)),
+                ? CachedNetworkImage(
+                    imageUrl: url, width: 56, height: 56, fit: BoxFit.cover)
+                : Container(
+                    width: 56,
+                    height: 56,
+                    color: CgColors.gray200,
+                    child: const Icon(Icons.person)),
           ),
           if (verified)
             Positioned(
@@ -730,7 +809,8 @@ class _Avatar extends StatelessWidget {
               child: Container(
                 width: 20,
                 height: 20,
-                decoration: const BoxDecoration(color: CgColors.blue600, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                    color: CgColors.blue600, shape: BoxShape.circle),
                 child: const Icon(Icons.check, size: 12, color: CgColors.white),
               ),
             ),
@@ -774,11 +854,14 @@ class _QuickTile extends StatelessWidget {
               Container(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+                decoration:
+                    BoxDecoration(color: iconBg, shape: BoxShape.circle),
                 child: Icon(icon, color: iconColor, size: 26),
               ),
               const SizedBox(height: 8),
-              Text(label, style: const TextStyle(fontSize: 14, color: CgColors.gray900)),
+              Text(label,
+                  style:
+                      const TextStyle(fontSize: 14, color: CgColors.gray900)),
             ],
           ),
         ),

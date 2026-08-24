@@ -15,7 +15,6 @@ import '../../core/widgets/cg_outline_button.dart';
 import '../../core/network/api_user_message.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../discover/data/discover_api.dart';
-import '../location/enable_location_screen.dart';
 import '../location/location_profile.dart';
 import '../messages/data/messages_api.dart';
 import '../profiles/data/profiles_api.dart';
@@ -39,6 +38,7 @@ class _GhinderScreenState extends State<GhinderScreen> {
   bool _loading = true;
   bool _missingLocation = false;
   String? _error;
+
   /// First profile photo URL from `GET /profiles/me` (viewer).
   String? _myPhotoUrl;
   double? _myHandicap;
@@ -59,7 +59,22 @@ class _GhinderScreenState extends State<GhinderScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPremiumStatus());
+  }
+
+  Future<void> _loadPremiumStatus() async {
+    final session = context.read<AuthSession>();
+    final t = session.accessToken;
+    if (t == null) return;
+    try {
+      final me = await ProfilesApi(session.apiClient).getMe(t);
+      final user = me['user'] as Map<String, dynamic>?;
+      if (mounted) {
+        setState(() => _isPremium = user?['membershipType'] == 'PREMIUM');
+      }
+    } catch (_) {
+      // The feed handles its own loading and errors; the pill can remain inactive.
+    }
   }
 
   Future<void> _load() async {
@@ -96,7 +111,8 @@ class _GhinderScreenState extends State<GhinderScreen> {
         friendly420: _friendly420 == 'Any' ? null : _friendly420,
       );
       final list = raw
-          .map((e) => ApiGolferCard.fromDiscoveryProfile(e as Map<String, dynamic>))
+          .map((e) =>
+              ApiGolferCard.fromDiscoveryProfile(e as Map<String, dynamic>))
           .whereType<ApiGolferCard>()
           .toList();
       SwipeDailyQuota? quota;
@@ -111,7 +127,8 @@ class _GhinderScreenState extends State<GhinderScreen> {
       }
       final h = me['handicap'];
       final myHcp = h is num ? h.toDouble() : double.tryParse('$h');
-      final premium = user?['membershipType'] == 'PREMIUM' || (quota?.isPremium ?? false);
+      final premium =
+          user?['membershipType'] == 'PREMIUM' || (quota?.isPremium ?? false);
       if (mounted) {
         setState(() {
           _profiles = _applyFilters(list);
@@ -132,12 +149,15 @@ class _GhinderScreenState extends State<GhinderScreen> {
     }
   }
 
-  ApiGolferCard? get _current => _index < _profiles.length ? _profiles[_index] : null;
+  ApiGolferCard? get _current =>
+      _index < _profiles.length ? _profiles[_index] : null;
 
   void _showMatchDialog(ApiGolferCard peer) {
     final session = context.read<AuthSession>();
     final handicapLine = _matchHandicapLine(peer, _myHandicap);
-    final locationLine = peer.cityLine.isNotEmpty && peer.cityLine != 'Nearby' ? peer.cityLine : 'Nearby';
+    final locationLine = peer.cityLine.isNotEmpty && peer.cityLine != 'Nearby'
+        ? peer.cityLine
+        : 'Nearby';
 
     showGeneralDialog<void>(
       context: context,
@@ -152,7 +172,8 @@ class _GhinderScreenState extends State<GhinderScreen> {
           children: [
             Positioned.fill(
               child: IgnorePointer(
-                child: _FallingGolfIconsLayer(height: size.height, width: size.width),
+                child: _FallingGolfIconsLayer(
+                    height: size.height, width: size.width),
               ),
             ),
             Center(
@@ -168,7 +189,9 @@ class _GhinderScreenState extends State<GhinderScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 24)],
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black38, blurRadius: 24)
+                      ],
                     ),
                     padding: const EdgeInsets.fromLTRB(0, 32, 0, 24),
                     child: Column(
@@ -186,9 +209,13 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                 decoration: const BoxDecoration(
                                   color: CgColors.white,
                                   shape: BoxShape.circle,
-                                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 12)],
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: Colors.black26, blurRadius: 12)
+                                  ],
                                 ),
-                                child: const Icon(Icons.sports_golf, color: CgColors.green700, size: 32),
+                                child: const Icon(Icons.sports_golf,
+                                    color: CgColors.green700, size: 32),
                               ),
                             ),
                             Transform.translate(
@@ -200,7 +227,10 @@ class _GhinderScreenState extends State<GhinderScreen> {
                         const SizedBox(height: 24),
                         const Text(
                           "It's a Match!",
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: CgColors.white),
+                          style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: CgColors.white),
                         ),
                         const SizedBox(height: 12),
                         Padding(
@@ -208,7 +238,9 @@ class _GhinderScreenState extends State<GhinderScreen> {
                           child: Text(
                             'You and ${peer.displayName} both swiped right',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, color: CgColors.white.withValues(alpha: 0.95)),
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: CgColors.white.withValues(alpha: 0.95)),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -219,13 +251,19 @@ class _GhinderScreenState extends State<GhinderScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.place_outlined, size: 18, color: CgColors.white.withValues(alpha: 0.9)),
+                                  Icon(Icons.place_outlined,
+                                      size: 18,
+                                      color: CgColors.white
+                                          .withValues(alpha: 0.9)),
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
                                       locationLine,
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 14, color: CgColors.white.withValues(alpha: 0.9)),
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: CgColors.white
+                                              .withValues(alpha: 0.9)),
                                     ),
                                   ),
                                 ],
@@ -234,13 +272,19 @@ class _GhinderScreenState extends State<GhinderScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.verified_outlined, size: 18, color: CgColors.white.withValues(alpha: 0.9)),
+                                  Icon(Icons.verified_outlined,
+                                      size: 18,
+                                      color: CgColors.white
+                                          .withValues(alpha: 0.9)),
                                   const SizedBox(width: 6),
                                   Flexible(
                                     child: Text(
                                       handicapLine,
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 14, color: CgColors.white.withValues(alpha: 0.9)),
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: CgColors.white
+                                              .withValues(alpha: 0.9)),
                                     ),
                                   ),
                                 ],
@@ -260,7 +304,9 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                   final t = session.accessToken;
                                   if (t == null) return;
                                   try {
-                                    final conv = await MessagesApi(session.apiClient).startConversation(
+                                    final conv =
+                                        await MessagesApi(session.apiClient)
+                                            .startConversation(
                                       accessToken: t,
                                       otherUserId: peer.userId,
                                     );
@@ -279,15 +325,23 @@ class _GhinderScreenState extends State<GhinderScreen> {
                                 style: TextButton.styleFrom(
                                   backgroundColor: CgColors.white,
                                   foregroundColor: CgColors.green700,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
                                 ),
                                 icon: const Icon(Icons.chat_bubble_outline),
-                                label: const Text('Send a Message', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                label: const Text('Send a Message',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600)),
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(ctx),
-                                child: Text('Keep Swiping', style: TextStyle(color: CgColors.white.withValues(alpha: 0.9))),
+                                child: Text('Keep Swiping',
+                                    style: TextStyle(
+                                        color: CgColors.white
+                                            .withValues(alpha: 0.9))),
                               ),
                             ],
                           ),
@@ -305,7 +359,8 @@ class _GhinderScreenState extends State<GhinderScreen> {
   }
 
   static String _matchHandicapLine(ApiGolferCard peer, double? myHcp) {
-    if (peer.handicap == null || myHcp == null) return 'Great match on the course';
+    if (peer.handicap == null || myHcp == null)
+      return 'Great match on the course';
     final d = (peer.handicap! - myHcp).abs();
     if (d <= 3) return 'Similar handicaps';
     if (d <= 8) return 'Compatible skill levels';
@@ -393,7 +448,9 @@ class _GhinderScreenState extends State<GhinderScreen> {
 
   List<ApiGolferCard> _applyFilters(List<ApiGolferCard> source) {
     return source.where((g) {
-      if (_filterDistance < 100 && g.distanceMiles != null && g.distanceMiles! > _filterDistance) {
+      if (_filterDistance < 100 &&
+          g.distanceMiles != null &&
+          g.distanceMiles! > _filterDistance) {
         return false;
       }
       final h = g.handicap;
@@ -410,21 +467,29 @@ class _GhinderScreenState extends State<GhinderScreen> {
 
       if (_smokePref != 'Any') {
         if (_smokePref == 'No smoking') {
-          if (smoke.isNotEmpty && !(smoke.contains('no') || smoke.contains('never'))) return false;
+          if (smoke.isNotEmpty &&
+              !(smoke.contains('no') || smoke.contains('never'))) return false;
         } else if (_smokePref == 'OK') {
-          if (smoke.isNotEmpty && (smoke.contains('no') || smoke.contains('never'))) return false;
+          if (smoke.isNotEmpty &&
+              (smoke.contains('no') || smoke.contains('never'))) return false;
         }
       }
       if (_friendly420 != 'Any') {
-        final hit = chips.any((c) => c.contains('420') || c.contains('cannabis') || c.contains('weed')) ||
+        final hit = chips.any((c) =>
+                c.contains('420') ||
+                c.contains('cannabis') ||
+                c.contains('weed')) ||
             smoke.contains('420') ||
             bio.contains('420');
-        if (_friendly420 == 'Yes' && smoke.isNotEmpty && bio.isNotEmpty && !hit) return false;
+        if (_friendly420 == 'Yes' && smoke.isNotEmpty && bio.isNotEmpty && !hit)
+          return false;
         if (_friendly420 == 'No' && hit) return false;
       }
       if (_drinkPref != 'Any' && drink.isNotEmpty) {
         final want = _drinkPref.toLowerCase();
-        if (!drink.contains(want) && !chips.any((c) => c.contains(want)) && !bio.contains(want)) {
+        if (!drink.contains(want) &&
+            !chips.any((c) => c.contains(want)) &&
+            !bio.contains(want)) {
           return false;
         }
       }
@@ -437,13 +502,19 @@ class _GhinderScreenState extends State<GhinderScreen> {
       }
       if (_playStyle != 'Any') {
         final want = _playStyle.toLowerCase();
-        if (skill.isNotEmpty && !skill.contains(want) && !chips.any((c) => c.contains(want)) && !bio.contains(want)) {
+        if (skill.isNotEmpty &&
+            !skill.contains(want) &&
+            !chips.any((c) => c.contains(want)) &&
+            !bio.contains(want)) {
           return false;
         }
       }
       if (_availability != 'Any') {
         final want = _availability.toLowerCase();
-        if (avail.isNotEmpty && !avail.contains(want) && !chips.any((c) => c.contains(want)) && !bio.contains(want)) {
+        if (avail.isNotEmpty &&
+            !avail.contains(want) &&
+            !chips.any((c) => c.contains(want)) &&
+            !bio.contains(want)) {
           return false;
         }
       }
@@ -510,7 +581,8 @@ class _GhinderScreenState extends State<GhinderScreen> {
                               onTap: () => Navigator.pop(ctx),
                               child: const Padding(
                                 padding: EdgeInsets.all(8),
-                                child: Icon(Icons.close_rounded, color: CgColors.gray700),
+                                child: Icon(Icons.close_rounded,
+                                    color: CgColors.gray700),
                               ),
                             ),
                           ),
@@ -524,14 +596,17 @@ class _GhinderScreenState extends State<GhinderScreen> {
                         children: [
                           _PairFilterSectionLabel(
                             label: 'DISTANCE',
-                            value: distance >= 100 ? 'Unlimited' : '${distance.round()} mi',
+                            value: distance >= 100
+                                ? 'Unlimited'
+                                : '${distance.round()} mi',
                           ),
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: CgColors.green700,
                               inactiveTrackColor: CgColors.gray200,
                               thumbColor: CgColors.green700,
-                              overlayColor: CgColors.green700.withValues(alpha: 0.12),
+                              overlayColor:
+                                  CgColors.green700.withValues(alpha: 0.12),
                               trackHeight: 4,
                             ),
                             child: Slider(
@@ -545,21 +620,28 @@ class _GhinderScreenState extends State<GhinderScreen> {
                           const Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('5 mi', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
-                              Text('Unlimited', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                              Text('5 mi',
+                                  style: TextStyle(
+                                      fontSize: 12, color: CgColors.gray500)),
+                              Text('Unlimited',
+                                  style: TextStyle(
+                                      fontSize: 12, color: CgColors.gray500)),
                             ],
                           ),
                           const SizedBox(height: 18),
                           _PairFilterSectionLabel(
                             label: 'MAX HANDICAP',
-                            value: maxHandicap >= 36 ? 'Any' : maxHandicap.round().toString(),
+                            value: maxHandicap >= 36
+                                ? 'Any'
+                                : maxHandicap.round().toString(),
                           ),
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: CgColors.green700,
                               inactiveTrackColor: CgColors.gray200,
                               thumbColor: CgColors.green700,
-                              overlayColor: CgColors.green700.withValues(alpha: 0.12),
+                              overlayColor:
+                                  CgColors.green700.withValues(alpha: 0.12),
                               trackHeight: 4,
                             ),
                             child: Slider(
@@ -573,20 +655,34 @@ class _GhinderScreenState extends State<GhinderScreen> {
                           const Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('1', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
-                              Text('Any (36+)', style: TextStyle(fontSize: 12, color: CgColors.gray500)),
+                              Text('1',
+                                  style: TextStyle(
+                                      fontSize: 12, color: CgColors.gray500)),
+                              Text('Any (36+)',
+                                  style: TextStyle(
+                                      fontSize: 12, color: CgColors.gray500)),
                             ],
                           ),
                           const SizedBox(height: 20),
                           _PairFilterChipGroup(
                             label: 'STYLE OF PLAY',
-                            options: const ['Any', 'Casual', 'Serious', 'Tournament'],
+                            options: const [
+                              'Any',
+                              'Casual',
+                              'Serious',
+                              'Tournament'
+                            ],
                             selected: playStyle,
                             onSelected: (v) => setModal(() => playStyle = v),
                           ),
                           _PairFilterChipGroup(
                             label: 'AVAILABILITY',
-                            options: const ['Any', 'Weekdays', 'Weekends', 'Both'],
+                            options: const [
+                              'Any',
+                              'Weekdays',
+                              'Weekends',
+                              'Both'
+                            ],
                             selected: availability,
                             onSelected: (v) => setModal(() => availability = v),
                           ),
@@ -663,242 +759,86 @@ class _GhinderScreenState extends State<GhinderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const ColoredBox(
-        color: CgColors.gray50,
-        child: Center(child: CircularProgressIndicator(color: CgColors.green700)),
-      );
-    }
-    if (_error != null) {
-      return ColoredBox(
-        color: CgColors.gray50,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(_error!, textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                CgPrimaryButton(label: 'Retry', onPressed: _load),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    if (_missingLocation) {
-      return ColoredBox(
-        color: CgColors.white,
-        child: EnableLocationPanel(
-          onSaved: _load,
-          onSkipManual: () async {
-            await context.push(AppPaths.appManualLocation);
-            if (mounted) _load();
-          },
-        ),
-      );
-    }
-
-    final current = _current;
-    final distanceLabel =
-        _filterDistance >= 100 ? 'Any distance' : 'Within ${_filterDistance.round()} miles';
-    final filtersActive = _filterDistance != 25 ||
-        _maxHandicap != 36 ||
-        _smokePref != 'Any' ||
-        _friendly420 != 'Any' ||
-        _drinkPref != 'Any' ||
-        _musicPref != 'Any' ||
-        _playStyle != 'Any' ||
-        _availability != 'Any';
-    final likesLeft = _tabIndex == 0 &&
-            _quota != null &&
-            !_quota!.isPremium &&
-            _quota!.dailyLimit != null
-        ? _quota!.remaining
-        : null;
-
     return ColoredBox(
       color: CgColors.cream,
       child: Column(
         children: [
-          _PairUpHeader(
-            likesLeft: likesLeft,
-            filtersActive: filtersActive,
+          _FeedHeader(
             isPremium: _isPremium,
-            tabIndex: _tabIndex,
-            onFilters: _openPairUpFilters,
             onPremium: () => context.push(AppPaths.appMembership),
-            onTabChanged: (i) => setState(() => _tabIndex = i),
           ),
-          if (_tabIndex == 1)
-            const Expanded(child: FoursomeFeedTab())
-          else if (current == null)
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 88,
-                        height: 88,
-                        decoration: const BoxDecoration(
-                          color: CgColors.green50,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.golf_course_rounded, size: 40, color: CgColors.green700),
-                      ),
-                      const SizedBox(height: 22),
-                      Text(
-                        'You’re all caught up',
-                        style: GoogleFonts.fraunces(
-                          color: CgColors.gray900,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'No more golfers in range right now. Widen filters or check Discover.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: CgColors.gray500, fontSize: 14, height: 1.35),
-                      ),
-                      const SizedBox(height: 24),
-                      CgPrimaryButton(label: 'Refresh', onPressed: _load),
-                      const SizedBox(height: 12),
-                      CgOutlineButton(
-                        label: 'Open Discover',
-                        onPressed: () => context.go(AppPaths.appDiscover),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final short = constraints.maxHeight < 520;
-                  final metaGap = short ? 6.0 : 8.0;
-                  final actionGap = short ? 8.0 : 12.0;
-                  final actionSize = short ? 48.0 : 54.0;
-                  final pairSize = short ? 58.0 : 66.0;
-                  return Padding(
-                    padding: EdgeInsets.fromLTRB(14, short ? 8 : 10, 14, short ? 4 : 6),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 15,
-                              color: filtersActive ? CgColors.green700 : CgColors.gray500,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                filtersActive ? 'Filtered · $distanceLabel' : distanceLabel,
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: filtersActive ? CgColors.green700 : CgColors.gray600,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              '${_index + 1} of ${_profiles.length}',
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: CgColors.gray500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: metaGap),
-                        Expanded(
-                          child: GestureDetector(
-                            onHorizontalDragUpdate: (d) => setState(() => _drag += d.delta),
-                            onHorizontalDragEnd: (d) {
-                              final vx = d.velocity.pixelsPerSecond.dx;
-                              final p = _current;
-                              if (p == null) return;
-                              if (_drag.dx < -80 || vx < -300) {
-                                setState(() => _drag = const Offset(-300, 0));
-                                _advance(p, right: false);
-                              } else if (_drag.dx > 80 || vx > 300) {
-                                setState(() => _drag = const Offset(300, 0));
-                                _advance(p, right: true);
-                              } else {
-                                setState(() => _drag = Offset.zero);
-                              }
-                            },
-                            child: Transform.translate(
-                              offset: _drag,
-                              child: Transform.rotate(
-                                angle: _drag.dx * 0.0007,
-                                child: _PairUpProfileCard(
-                                  golfer: current,
-                                  dragDx: _drag.dx,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: actionGap),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _LabeledActionBtn(
-                              size: actionSize,
-                              label: 'Pass',
-                              labelColor: CgColors.red500,
-                              background: CgColors.white,
-                              borderColor: CgColors.red500,
-                              icon: Icons.close_rounded,
-                              iconColor: CgColors.red500,
-                              onTap: () => _swipeUi(false),
-                            ),
-                            SizedBox(width: short ? 16 : 20),
-                            _LabeledActionBtn(
-                              size: pairSize,
-                              label: 'Pair Up',
-                              labelColor: CgColors.green700,
-                              background: CgColors.green700,
-                              icon: Icons.thumb_up_alt_rounded,
-                              iconColor: CgColors.white,
-                              elevated: true,
-                              onTap: () => _swipeUi(true),
-                            ),
-                            SizedBox(width: short ? 16 : 20),
-                            _LabeledActionBtn(
-                              size: actionSize,
-                              label: 'Details',
-                              labelColor: CgColors.gray600,
-                              background: CgColors.white,
-                              borderColor: CgColors.gray300,
-                              icon: Icons.info_outline_rounded,
-                              iconColor: CgColors.gray700,
-                              onTap: () => context.push(
-                                AppPaths.appProfileUser(current.userId),
-                                extra: {
-                                  if (current.distanceMiles != null)
-                                    'distanceMilesHint': current.distanceMiles!.toStringAsFixed(1),
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
+          const Expanded(child: FoursomeFeedTab()),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeedHeader extends StatelessWidget {
+  const _FeedHeader({required this.isPremium, required this.onPremium});
+
+  final bool isPremium;
+  final VoidCallback onPremium;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 150,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/pair_up_header.jpg',
+            fit: BoxFit.cover,
+            alignment: const Alignment(0.3, 0.25),
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Color(0xE60F3A28),
+                  Color(0x70144F37),
+                  Color(0x30144F37)
+                ],
               ),
             ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 14, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _HeaderPillBtn(
+                      label: 'Premium',
+                      icon: Icons.workspace_premium_rounded,
+                      gold: true,
+                      active: isPremium,
+                      onTap: onPremium,
+                      compact: true,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Pair up with other golfers in your area',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: CgColors.white.withValues(alpha: 0.96),
+                      shadows: const [
+                        Shadow(color: Colors.black45, blurRadius: 6)
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -981,7 +921,8 @@ class _PairFilterChipGroup extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   onTap: () => onSelected(option),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     child: Text(
                       option,
                       style: TextStyle(
@@ -1019,7 +960,7 @@ class _FindFourthTabBar extends StatelessWidget {
         children: [
           Expanded(
             child: _TabChip(
-              label: 'Pair Up',
+              label: 'Connect',
               icon: Icons.groups_rounded,
               selected: index == 0,
               onTap: () => onChanged(0),
@@ -1068,7 +1009,9 @@ class _TabChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 15,
-                color: selected ? CgColors.green800 : CgColors.white.withValues(alpha: 0.85),
+                color: selected
+                    ? CgColors.green800
+                    : CgColors.white.withValues(alpha: 0.85),
               ),
               const SizedBox(width: 5),
               Text(
@@ -1076,7 +1019,9 @@ class _TabChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: selected ? CgColors.green800 : CgColors.white.withValues(alpha: 0.88),
+                  color: selected
+                      ? CgColors.green800
+                      : CgColors.white.withValues(alpha: 0.88),
                 ),
               ),
             ],
@@ -1110,7 +1055,6 @@ class _PairUpHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenH = MediaQuery.sizeOf(context).height;
     final compact = screenH < 760;
-    final titleSize = compact ? 24.0 : 26.0;
 
     return ClipRect(
       child: Stack(
@@ -1188,7 +1132,8 @@ class _PairUpHeader extends StatelessWidget {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(14, compact ? 2 : 4, 14, compact ? 8 : 10),
+              padding: EdgeInsets.fromLTRB(
+                  14, compact ? 2 : 4, 14, compact ? 8 : 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
@@ -1211,7 +1156,8 @@ class _PairUpHeader extends StatelessWidget {
                         Icon(
                           Icons.groups_outlined,
                           size: 14,
-                          color: CgColors.premiumGoldLight.withValues(alpha: 0.9),
+                          color:
+                              CgColors.premiumGoldLight.withValues(alpha: 0.9),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -1219,7 +1165,8 @@ class _PairUpHeader extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
+                            color: CgColors.premiumGoldLight
+                                .withValues(alpha: 0.95),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -1236,20 +1183,7 @@ class _PairUpHeader extends StatelessWidget {
                   ),
                   SizedBox(height: compact ? 6 : 8),
                   Text(
-                    'Find Your 4th',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.fraunces(
-                      color: CgColors.white,
-                      fontSize: titleSize,
-                      fontWeight: FontWeight.w600,
-                      height: 1.05,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Pair up with golfers near you',
+                    'Pair up with other golfers in your area',
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w500,
@@ -1395,12 +1329,14 @@ class _PairUpProfileCard extends StatelessWidget {
       chips.add(_CardChipData(label: c, icon: _chipIconFor(c)));
     }
     if (hcp != null) {
-      chips.add(_CardChipData(label: hcp, icon: Icons.sports_golf, filledGreen: true));
+      chips.add(_CardChipData(
+          label: hcp, icon: Icons.sports_golf, filledGreen: true));
     }
 
     return LayoutBuilder(
       builder: (context, cardConstraints) {
-        final maxOverlay = (cardConstraints.maxHeight * 0.5).clamp(150.0, 320.0);
+        final maxOverlay =
+            (cardConstraints.maxHeight * 0.5).clamp(150.0, 320.0);
         return Container(
           decoration: BoxDecoration(
             color: CgColors.charcoalSoft,
@@ -1426,7 +1362,9 @@ class _PairUpProfileCard extends StatelessWidget {
               else
                 const ColoredBox(
                   color: CgColors.gray300,
-                  child: Center(child: Icon(Icons.person, size: 96, color: CgColors.gray500)),
+                  child: Center(
+                      child: Icon(Icons.person,
+                          size: 96, color: CgColors.gray500)),
                 ),
               const DecoratedBox(
                 decoration: BoxDecoration(
@@ -1452,11 +1390,13 @@ class _PairUpProfileCard extends StatelessWidget {
                   child: Transform.rotate(
                     angle: dragDx > 0 ? -0.16 : 0.16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.35),
                         border: Border.all(
-                          color: dragDx > 0 ? CgColors.green600 : CgColors.red500,
+                          color:
+                              dragDx > 0 ? CgColors.green600 : CgColors.red500,
                           width: 2.5,
                         ),
                         borderRadius: BorderRadius.circular(10),
@@ -1464,7 +1404,8 @@ class _PairUpProfileCard extends StatelessWidget {
                       child: Text(
                         dragDx > 0 ? 'PAIR' : 'PASS',
                         style: TextStyle(
-                          color: dragDx > 0 ? CgColors.green600 : CgColors.red500,
+                          color:
+                              dragDx > 0 ? CgColors.green600 : CgColors.red500,
                           fontWeight: FontWeight.w800,
                           fontSize: 20,
                           letterSpacing: 1.2,
@@ -1483,7 +1424,8 @@ class _PairUpProfileCard extends StatelessWidget {
                       const CgPremiumBadge(compact: true),
                       const SizedBox(width: 6),
                     ],
-                    if (golfer.verified) const CgHandicapVerifiedBadge(compact: true),
+                    if (golfer.verified)
+                      const CgHandicapVerifiedBadge(compact: true),
                   ],
                 ),
               ),
@@ -1526,7 +1468,9 @@ class _PairUpProfileCard extends StatelessWidget {
                         const SizedBox(height: 5),
                         Row(
                           children: [
-                            Icon(Icons.location_on_rounded, size: 14, color: CgColors.white.withValues(alpha: 0.85)),
+                            Icon(Icons.location_on_rounded,
+                                size: 14,
+                                color: CgColors.white.withValues(alpha: 0.85)),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -1547,7 +1491,9 @@ class _PairUpProfileCard extends StatelessWidget {
                           Wrap(
                             spacing: 6,
                             runSpacing: 6,
-                            children: chips.map((c) => _ProfileTagChip(data: c)).toList(),
+                            children: chips
+                                .map((c) => _ProfileTagChip(data: c))
+                                .toList(),
                           ),
                         ],
                         if (bio.isNotEmpty) ...[
@@ -1575,16 +1521,25 @@ class _PairUpProfileCard extends StatelessWidget {
 
   static IconData _chipIconFor(String label) {
     final t = label.toLowerCase();
-    if (t.contains('month') || t.contains('week') || t.contains('day') || t.contains('rarely')) {
+    if (t.contains('month') ||
+        t.contains('week') ||
+        t.contains('day') ||
+        t.contains('rarely')) {
       return Icons.calendar_month_rounded;
     }
-    if (t.contains('beginner') || t.contains('inter') || t.contains('advanced') || t.contains('pro')) {
+    if (t.contains('beginner') ||
+        t.contains('inter') ||
+        t.contains('advanced') ||
+        t.contains('pro')) {
       return Icons.bar_chart_rounded;
     }
-    if (t.contains('sometimes') || t.contains('avail') || t.contains('weekend')) {
+    if (t.contains('sometimes') ||
+        t.contains('avail') ||
+        t.contains('weekend')) {
       return Icons.schedule_rounded;
     }
-    if (t.contains('music') || t.contains('quiet')) return Icons.music_note_rounded;
+    if (t.contains('music') || t.contains('quiet'))
+      return Icons.music_note_rounded;
     if (t.contains('smok')) return Icons.smoke_free;
     return Icons.sports_golf;
   }
@@ -1641,7 +1596,8 @@ class _ProfileTagChip extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             data.label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg),
+            style:
+                TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg),
           ),
         ],
       ),
@@ -1692,7 +1648,9 @@ class _LabeledActionBtn extends StatelessWidget {
               height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: borderColor == null ? null : Border.all(color: borderColor!, width: 2),
+                border: borderColor == null
+                    ? null
+                    : Border.all(color: borderColor!, width: 2),
               ),
               child: Icon(icon, size: size * 0.4, color: iconColor),
             ),
@@ -1723,7 +1681,8 @@ class _FallingGolfIconsLayer extends StatefulWidget {
   State<_FallingGolfIconsLayer> createState() => _FallingGolfIconsLayerState();
 }
 
-class _FallingGolfIconsLayerState extends State<_FallingGolfIconsLayer> with SingleTickerProviderStateMixin {
+class _FallingGolfIconsLayerState extends State<_FallingGolfIconsLayer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late final List<_FallParticle> _particles;
   final math.Random _rng = math.Random();
@@ -1739,7 +1698,9 @@ class _FallingGolfIconsLayerState extends State<_FallingGolfIconsLayer> with Sin
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..forward();
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2400))
+      ..forward();
     _particles = List.generate(20, (i) {
       return _FallParticle(
         icon: _icons[i % _icons.length],
@@ -1846,11 +1807,10 @@ class _RoundAvatar extends StatelessWidget {
       child: url.isEmpty
           ? ColoredBox(
               color: CgColors.gray300,
-              child: Icon(Icons.person, size: 48, color: CgColors.gray500.withValues(alpha: 0.8)),
+              child: Icon(Icons.person,
+                  size: 48, color: CgColors.gray500.withValues(alpha: 0.8)),
             )
           : CachedNetworkImage(imageUrl: url, fit: BoxFit.cover),
     );
   }
 }
-
-

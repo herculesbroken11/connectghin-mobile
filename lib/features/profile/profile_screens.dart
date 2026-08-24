@@ -25,6 +25,8 @@ import '../../core/widgets/cg_profile_post_card.dart';
 import '../../core/widgets/cg_rating_chip.dart';
 import '../player_ratings/data/player_ratings_api.dart';
 import '../profiles/data/profiles_api.dart';
+import '../swipes/data/swipes_api.dart';
+import '../swipes/swipe_daily_quota.dart';
 import 'data/profile_posts_api.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -120,14 +122,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final results = await Future.wait<Object>([
         api.getMe(t),
         matchesApi.list(t),
-        if (uid != null) ratingsApi.listForUser(t, uid, status: 'approved', pageSize: 1) else Future.value(<String, dynamic>{}),
-        if (uid != null) postsApi.listForUser(t, uid) else Future.value(<String, dynamic>{}),
+        if (uid != null)
+          ratingsApi.listForUser(t, uid, status: 'approved', pageSize: 1)
+        else
+          Future.value(<String, dynamic>{}),
+        if (uid != null)
+          postsApi.listForUser(t, uid)
+        else
+          Future.value(<String, dynamic>{}),
       ]);
       final profileJson = results[0] as Map<String, dynamic>;
       final matches = results[1] as List<dynamic>;
       if (results.length > 2) {
         final ratingsJson = results[2] as Map<String, dynamic>;
-        ratingSummary = GolferRatingSummary.fromJson(ratingsJson['profileSummary'] as Map<String, dynamic>?);
+        ratingSummary = GolferRatingSummary.fromJson(
+            ratingsJson['profileSummary'] as Map<String, dynamic>?);
       }
       if (results.length > 3) {
         final postsJson = results[3] as Map<String, dynamic>;
@@ -189,14 +198,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Delete post?'),
         content: const Text('This removes the post from your profile.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete')),
         ],
       ),
     );
     if (ok != true) return;
     try {
-      await ProfilePostsApi(session.apiClient).deletePost(accessToken: t, postId: post.id);
+      await ProfilePostsApi(session.apiClient)
+          .deletePost(accessToken: t, postId: post.id);
       if (!mounted) return;
       setState(() => _posts = _posts.where((p) => p.id != post.id).toList());
       showUserMessageSnackBar(context, 'Post deleted');
@@ -240,7 +254,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
                     const Text(
                       'Share a moment',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     const Text(
@@ -273,10 +288,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 imageQuality: 85,
                                 maxWidth: 1600,
                               );
-                              if (file != null) setModal(() => pickedPath = file.path);
+                              if (file != null)
+                                setModal(() => pickedPath = file.path);
                             },
                       icon: const Icon(Icons.photo_library_outlined),
-                      label: Text(pickedPath == null ? 'Add photo' : 'Photo selected'),
+                      label: Text(
+                          pickedPath == null ? 'Add photo' : 'Photo selected'),
                     ),
                     if (pickedPath != null) ...[
                       const SizedBox(height: 8),
@@ -298,7 +315,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : () async {
                               final caption = captionCtrl.text.trim();
                               if (caption.isEmpty && pickedPath == null) {
-                                showUserMessageSnackBar(context, 'Add a caption or a photo');
+                                showUserMessageSnackBar(
+                                    context, 'Add a caption or a photo');
                                 return;
                               }
                               setModal(() => saving = true);
@@ -314,12 +332,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     body: caption.isEmpty ? null : caption,
                                   );
                                 } else {
-                                  await api.createText(accessToken: t, body: caption);
+                                  await api.createText(
+                                      accessToken: t, body: caption);
                                 }
                                 if (ctx.mounted) Navigator.pop(ctx);
                                 await _load();
                                 if (mounted) {
-                                  showUserMessageSnackBar(context, 'Posted — nice shot!');
+                                  showUserMessageSnackBar(
+                                      context, 'Posted — nice shot!');
                                 }
                               } catch (e) {
                                 setModal(() => saving = false);
@@ -450,7 +470,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_loading && _card == null) {
       return const Scaffold(
         backgroundColor: CgColors.gray50,
-        body: Center(child: CircularProgressIndicator(color: CgColors.green700)),
+        body:
+            Center(child: CircularProgressIndicator(color: CgColors.green700)),
       );
     }
     if (_error != null && _card == null) {
@@ -607,7 +628,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         Positioned(
                                           right: -2,
                                           bottom: -2,
-                                          child: CgHandicapVerifiedAvatarBadge(size: 30),
+                                          child: CgHandicapVerifiedAvatarBadge(
+                                              size: 30),
                                         )
                                       else if (_premium)
                                         Positioned(
@@ -674,12 +696,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   const SizedBox(height: 8),
                                   if (!_premium)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: CgColors.gray100,
-                                        borderRadius: BorderRadius.circular(999),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
                                       ),
-                                      child: const Text('Free member', style: TextStyle(fontSize: 12, color: CgColors.gray600)),
+                                      child: const Text('Free member',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: CgColors.gray600)),
                                     )
                                   else
                                     const Align(
@@ -715,19 +742,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 24),
                         Row(
                           children: [
-                            Expanded(child: _miniStat('$_matchCount', 'Connections')),
+                            Expanded(
+                                child:
+                                    _miniStat('$_matchCount', 'Connections')),
                             const SizedBox(width: 12),
                             Expanded(
                               child: _miniStat(
-                                _ratingSummary.hasRating ? _ratingSummary.averageRating!.toStringAsFixed(1) : '—',
+                                _ratingSummary.hasRating
+                                    ? _ratingSummary.averageRating!
+                                        .toStringAsFixed(1)
+                                    : '—',
                                 'Rating',
                                 leading: _ratingSummary.hasRating
-                                    ? const Icon(Icons.star_rounded, color: CgColors.yellow500, size: 18)
+                                    ? const Icon(Icons.star_rounded,
+                                        color: CgColors.yellow500, size: 18)
                                     : null,
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(child: _miniStat('${_ratingSummary.reviewCount}', 'Reviews')),
+                            Expanded(
+                                child: _miniStat(
+                                    '${_ratingSummary.reviewCount}',
+                                    'Reviews')),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -740,9 +776,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           child: Row(
                             children: [
-                              Expanded(child: _trustStatusChip('Premium', _premium, Icons.workspace_premium_rounded)),
+                              Expanded(
+                                  child: _trustStatusChip('Premium', _premium,
+                                      Icons.workspace_premium_rounded)),
                               const SizedBox(width: 10),
-                              Expanded(child: _trustStatusChip('Handicap Verified', _verified, Icons.verified_user_rounded)),
+                              Expanded(
+                                  child: _trustStatusChip('Handicap Verified',
+                                      _verified, Icons.verified_user_rounded)),
                             ],
                           ),
                         ),
@@ -755,8 +795,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const SizedBox(height: 12),
                               _KeyValueRow('Member Since', _memberSinceLabel()),
                               const SizedBox(height: 12),
-                              _KeyValueRow('Handicap Status',
-                                  _verified ? 'Handicap Verified' : 'Not verified',
+                              _KeyValueRow(
+                                  'Handicap Status',
+                                  _verified
+                                      ? 'Handicap Verified'
+                                      : 'Not verified',
                                   badge: _verified),
                             ],
                           ),
@@ -787,12 +830,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 spacing: 8,
                                 runSpacing: 8,
                                 children: [
-                                  _prefChip(drink != '—' ? 'Drink: $drink' : 'Drink TBD'),
-                                  _prefChip(smoke != '—' ? 'Smoke: $smoke' : 'Smoke TBD'),
-                                  _prefChip(music != '—' ? 'Music: $music' : 'Music TBD'),
+                                  _prefChip(drink != '—'
+                                      ? 'Drink: $drink'
+                                      : 'Drink TBD'),
+                                  _prefChip(smoke != '—'
+                                      ? 'Smoke: $smoke'
+                                      : 'Smoke TBD'),
+                                  _prefChip(music != '—'
+                                      ? 'Music: $music'
+                                      : 'Music TBD'),
                                   _prefChip('420 Friendly'),
-                                  if ((_profileJson?['skillLevel'] as String?)?.isNotEmpty == true)
-                                    _prefChip(_profileJson!['skillLevel'] as String),
+                                  if ((_profileJson?['skillLevel'] as String?)
+                                          ?.isNotEmpty ==
+                                      true)
+                                    _prefChip(
+                                        _profileJson!['skillLevel'] as String),
                                 ],
                               ),
                             ],
@@ -803,7 +855,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           title: 'Profile Posts',
                           trailing: TextButton.icon(
                             onPressed: _openCreatePostSheet,
-                            icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                            icon: const Icon(Icons.add_a_photo_outlined,
+                                size: 18),
                             label: const Text('Post'),
                           ),
                           child: _posts.isEmpty
@@ -815,21 +868,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       decoration: BoxDecoration(
                                         color: CgColors.cream,
                                         borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: CgColors.gray200),
+                                        border:
+                                            Border.all(color: CgColors.gray200),
                                       ),
                                       child: const Column(
                                         children: [
-                                          Icon(Icons.sports_golf, size: 36, color: CgColors.green700),
+                                          Icon(Icons.sports_golf,
+                                              size: 36,
+                                              color: CgColors.green700),
                                           SizedBox(height: 10),
                                           Text(
                                             'Share the fun',
-                                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 16),
                                           ),
                                           SizedBox(height: 6),
                                           Text(
                                             'Post course shots, group pics, or a quick note from the round.',
                                             textAlign: TextAlign.center,
-                                            style: TextStyle(fontSize: 13, color: CgColors.gray600, height: 1.35),
+                                            style: TextStyle(
+                                                fontSize: 13,
+                                                color: CgColors.gray600,
+                                                height: 1.35),
                                           ),
                                         ],
                                       ),
@@ -873,7 +934,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               CgColors.green900
                             ],
                             title: 'Upgrade to Premium',
-                            subtitle: 'Post open spots, reply in the feed, and more',
+                            subtitle:
+                                'Post open spots, reply in the feed, and more',
                             icon: Icons.arrow_forward_ios,
                             onTap: () => context.push(AppPaths.appMembership),
                           ),
@@ -982,7 +1044,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  static Widget _whiteCard({required String title, required Widget child, Widget? trailing}) {
+  static Widget _whiteCard(
+      {required String title, required Widget child, Widget? trailing}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -1003,7 +1066,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: TextStyle(
                     fontSize: title == 'TRUST PROFILE' ? 12 : 16,
                     fontWeight: FontWeight.w600,
-                    color: title == 'TRUST PROFILE' ? CgColors.gray500 : CgColors.gray900,
+                    color: title == 'TRUST PROFILE'
+                        ? CgColors.gray500
+                        : CgColors.gray900,
                     letterSpacing: title == 'TRUST PROFILE' ? 0.8 : 0,
                     decoration: TextDecoration.none,
                     inherit: false,
@@ -1030,7 +1095,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CgColors.green800),
+        style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: CgColors.green800),
       ),
     );
   }
@@ -1042,11 +1110,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: active ? CgColors.green50 : CgColors.gray100,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: active ? CgColors.green600 : CgColors.gray200),
+        border:
+            Border.all(color: active ? CgColors.green600 : CgColors.gray200),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: active ? CgColors.green700 : CgColors.gray500),
+          Icon(icon,
+              size: 18, color: active ? CgColors.green700 : CgColors.gray500),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -1524,6 +1594,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
   int _totalReviewCount = 0;
   bool _viewerPremium = false;
   bool _isMatched = false;
+  bool _connecting = false;
+  bool _connectSent = false;
   bool _loading = true;
   String? _error;
   late final PageController _photoController;
@@ -1557,7 +1629,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
       final postsApi = ProfilePostsApi(session.apiClient);
       final results = await Future.wait<Object>([
         api.getPublic(accessToken: t, userId: widget.userId),
-        ratingsApi.listForUser(t, widget.userId, status: 'approved', pageSize: 3),
+        ratingsApi.listForUser(t, widget.userId,
+            status: 'approved', pageSize: 3),
         api.getMe(t),
         matchesApi.list(t),
         postsApi.listForUser(t, widget.userId),
@@ -1577,13 +1650,15 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
       final reviews = (ratingsJson['items'] as List<dynamic>? ?? [])
           .whereType<Map<String, dynamic>>()
           .toList();
-      final totalReviews = (ratingsJson['total'] as num?)?.toInt() ?? summary.reviewCount;
+      final totalReviews =
+          (ratingsJson['total'] as num?)?.toInt() ?? summary.reviewCount;
       final posts = (postsJson['items'] as List<dynamic>? ?? [])
           .map((e) => ProfilePostItem.fromJson(e as Map<String, dynamic>))
           .whereType<ProfilePostItem>()
           .toList();
       final meUser = meJson['user'] as Map<String, dynamic>?;
-      final viewerPremium = meUser?['membershipType'] == 'PREMIUM';
+      final viewerPremium = meJson['isPremium'] == true ||
+          meUser?['membershipType'] == 'PREMIUM';
       final viewerId = session.userId;
       var matched = false;
       if (viewerId != null) {
@@ -1640,6 +1715,40 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
       }
     } catch (e) {
       if (mounted) showApiErrorSnackBar(context, e);
+    }
+  }
+
+  Future<void> _connect() async {
+    if (_connecting || _isMatched || _connectSent) return;
+    final session = context.read<AuthSession>();
+    final t = session.accessToken;
+    if (t == null) return;
+    setState(() => _connecting = true);
+    try {
+      final result = await SwipesApi(session.apiClient).swipe(
+        accessToken: t,
+        toUserId: widget.userId,
+        action: 'LIKE',
+      );
+      if (!mounted) return;
+      final matched = result['matched'] == true;
+      setState(() {
+        _isMatched = matched;
+        _connectSent = !matched;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(matched ? 'Connected' : 'Connection request sent')),
+      );
+    } catch (e) {
+      final limit = tryParseDailySwipeLimit(e);
+      if (limit != null) {
+        if (mounted) await showDailySwipeLimitSheet(context, limit);
+      } else if (mounted) {
+        showApiErrorSnackBar(context, e);
+      }
+    } finally {
+      if (mounted) setState(() => _connecting = false);
     }
   }
 
@@ -1927,17 +2036,23 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     runSpacing: 8,
                     children: [
                       if (d.isPremium) const CgPremiumBadge(compact: false),
-                      if (d.verified) const CgHandicapVerifiedBadge(compact: true, useShortLabel: true),
+                      if (d.verified)
+                        const CgHandicapVerifiedBadge(
+                            compact: true, useShortLabel: true),
                       CgRatingChip(
-                        averageRating: _ratingsSummary.averageRating ?? d.rating.averageRating,
-                        reviewCount: _ratingsSummary.reviewCount > 0 ? _ratingsSummary.reviewCount : d.rating.reviewCount,
+                        averageRating: _ratingsSummary.averageRating ??
+                            d.rating.averageRating,
+                        reviewCount: _ratingsSummary.reviewCount > 0
+                            ? _ratingsSummary.reviewCount
+                            : d.rating.reviewCount,
                         compact: true,
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
                   CgProfileRatingStatsCard(
-                    summary: _ratingsSummary.hasRating ? _ratingsSummary : d.rating,
+                    summary:
+                        _ratingsSummary.hasRating ? _ratingsSummary : d.rating,
                     showRateButton: !isOwnProfile,
                     onRatePlayer: isOwnProfile
                         ? null
@@ -2037,7 +2152,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                       children: [
                         for (final row in prefs)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: CgColors.green50,
                               borderRadius: BorderRadius.circular(999),
@@ -2053,7 +2169,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                             ),
                           ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: CgColors.yellow50,
                             borderRadius: BorderRadius.circular(999),
@@ -2073,7 +2190,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   ],
                   const SizedBox(height: 28),
                   const Text('Recent Posts',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                      style:
+                          TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
                   if (_posts.isEmpty)
                     Container(
@@ -2090,16 +2208,16 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                         style: TextStyle(color: CgColors.gray600, fontSize: 13),
                       ),
                     )
-                  else
-                    ...[
-                      for (var i = 0; i < _posts.length; i++) ...[
-                        if (i > 0) const SizedBox(height: 10),
-                        CgProfilePostCard(post: _posts[i]),
-                      ],
+                  else ...[
+                    for (var i = 0; i < _posts.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 10),
+                      CgProfilePostCard(post: _posts[i]),
                     ],
+                  ],
                   const SizedBox(height: 28),
                   CgPlayerRatingsProfileSection(
-                    summary: _ratingsSummary.hasRating ? _ratingsSummary : d.rating,
+                    summary:
+                        _ratingsSummary.hasRating ? _ratingsSummary : d.rating,
                     recentReviews: _recentReviews,
                     totalReviewCount: _totalReviewCount,
                     userId: widget.userId,
@@ -2136,15 +2254,37 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton.icon(
-                        onPressed: () => context.go(AppPaths.appGhinder),
+                        onPressed:
+                            _isMatched || _connectSent || _connecting ? null : _connect,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: CgColors.green700,
                           foregroundColor: CgColors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        icon: const Icon(Icons.person_add_outlined, size: 22),
-                        label: const Text('Invite to Your Foursome',
+                        icon: _connecting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: CgColors.white,
+                                ),
+                              )
+                            : Icon(
+                                _isMatched
+                                    ? Icons.check_circle_outline_rounded
+                                    : _connectSent
+                                    ? Icons.schedule_rounded
+                                    : Icons.person_add_outlined,
+                                size: 22,
+                              ),
+                        label: Text(
+                            _connecting
+                                ? 'Connecting…'
+                                : (_isMatched
+                                    ? 'Connected'
+                                    : (_connectSent ? 'Request Sent' : 'Connect')),
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
@@ -2152,44 +2292,44 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   if (!isOwnProfile) const SizedBox(height: 12),
                   if (!isOwnProfile)
                     Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => context.push(
-                            '${AppPaths.appReportUser}?userId=${Uri.encodeComponent(widget.userId)}',
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push(
+                              '${AppPaths.appReportUser}?userId=${Uri.encodeComponent(widget.userId)}',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: CgColors.gray900,
+                              side: const BorderSide(color: CgColors.gray300),
+                              minimumSize: const Size(0, 48),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.flag_outlined, size: 20),
+                            label: const Text('Report',
+                                style: TextStyle(fontWeight: FontWeight.w500)),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: CgColors.gray900,
-                            side: const BorderSide(color: CgColors.gray300),
-                            minimumSize: const Size(0, 48),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                          icon: const Icon(Icons.flag_outlined, size: 20),
-                          label: const Text('Report',
-                              style: TextStyle(fontWeight: FontWeight.w500)),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => context.push(
-                            '${AppPaths.appBlockUser}?userId=${Uri.encodeComponent(widget.userId)}',
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push(
+                              '${AppPaths.appBlockUser}?userId=${Uri.encodeComponent(widget.userId)}',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: CgColors.gray900,
+                              side: const BorderSide(color: CgColors.gray300),
+                              minimumSize: const Size(0, 48),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.block_rounded, size: 20),
+                            label: const Text('Block',
+                                style: TextStyle(fontWeight: FontWeight.w500)),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: CgColors.gray900,
-                            side: const BorderSide(color: CgColors.gray300),
-                            minimumSize: const Size(0, 48),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                          icon: const Icon(Icons.block_rounded, size: 20),
-                          label: const Text('Block',
-                              style: TextStyle(fontWeight: FontWeight.w500)),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
             ),

@@ -37,7 +37,9 @@ class SwipeDailyQuota {
 DailySwipeLimitError? tryParseDailySwipeLimit(Object error) {
   if (error is! ApiHttpException || error.statusCode != 403) return null;
   final payload = parseNestHttpErrorBody(error.body);
-  if (payload == null || payload['code'] != 'DAILY_SWIPE_LIMIT') return null;
+  if (payload == null) return null;
+  final code = payload['code']?.toString();
+  if (code != 'DAILY_SWIPE_LIMIT' && code != 'LIKE_LIMIT_REACHED') return null;
   final limit = payload['limit'];
   final used = payload['used'];
   if (limit is! num || used is! num) return null;
