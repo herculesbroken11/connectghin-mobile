@@ -66,6 +66,13 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
       if (!mounted) return;
       await session.clear();
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Your account deletion request was processed. Manage any Google Play subscription in the Play Store.',
+          ),
+        ),
+      );
       context.go(AppPaths.welcome);
     } catch (e) {
       if (!mounted) return;
@@ -122,7 +129,7 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'This action cannot be undone',
+                      'Request account deletion',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -131,7 +138,7 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'Deleting your account will permanently remove:',
+                      'Submitting this request signs you out and deletes or anonymizes your ConnectGHIN account data using our standard deletion workflow. Google Play or App Store subscriptions are not cancelled automatically — manage billing in the store.',
                       style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
                     ),
                   ],
@@ -144,25 +151,25 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
         _infoCard(
           icon: Icons.person_outline_rounded,
           title: 'Your Profile',
-          body: 'All profile information, photos, and preferences',
+          body: 'Profile information and photos are deleted or anonymized',
         ),
         const SizedBox(height: 12),
         _infoCard(
           icon: Icons.chat_bubble_outline_rounded,
           title: 'Messages & Matches',
-          body: 'All conversations and connections will be lost',
+          body: 'Messages and matches are anonymized; some records may be retained for safety',
         ),
         const SizedBox(height: 12),
         _infoCard(
           icon: Icons.verified_user_outlined,
           title: 'Handicap Verification',
-          body: 'Verification status will be removed',
+          body: 'Verification submission details are redacted or removed',
         ),
         const SizedBox(height: 12),
         _infoCard(
           icon: Icons.credit_card_outlined,
           title: 'Subscription',
-          body: 'Active subscriptions will be cancelled',
+          body: 'Cancel billing separately in Google Play or the App Store',
         ),
         const SizedBox(height: 28),
         SizedBox(
@@ -176,7 +183,7 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             icon: const Icon(Icons.delete_outline_rounded),
-            label: const Text('Continue to Delete', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            label: const Text('Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
         const SizedBox(height: 12),
@@ -331,7 +338,7 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Are you absolutely sure?',
+                      'Confirm deletion request',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -340,7 +347,7 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'This action is permanent and cannot be reversed. All your data will be permanently deleted.',
+                      'You will be signed out after submitting. Account data is deleted or anonymized promptly. Store subscriptions must be cancelled separately.',
                       style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
                     ),
                   ],
@@ -385,7 +392,7 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2, color: CgColors.white),
                   )
                 : const Text(
-                    'Delete My Account Permanently',
+                    'Submit Deletion Request',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
           ),

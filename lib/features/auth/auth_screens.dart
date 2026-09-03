@@ -390,6 +390,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _continueWithGoogle() async {
+    if (!_agreedTerms || !_over18) {
+      showUserMessageSnackBar(
+        context,
+        'Please agree to the Terms and confirm you are 18 or older before signing up.',
+      );
+      return;
+    }
     setState(() {
       _googleBusy = true;
       _googleError = null;
@@ -417,6 +424,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _continueWithApple() async {
     if (!_canUseAppleSignIn) {
       showUserMessageSnackBar(context, 'Apple sign up is available on iPhone and iPad.');
+      return;
+    }
+    if (!_agreedTerms || !_over18) {
+      showUserMessageSnackBar(
+        context,
+        'Please agree to the Terms and confirm you are 18 or older before signing up.',
+      );
       return;
     }
     setState(() => _appleBusy = true);

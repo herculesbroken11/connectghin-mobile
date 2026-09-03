@@ -57,6 +57,14 @@ class AuthApi {
     return _apiClient.getJson('/auth/me', bearerToken: accessToken);
   }
 
+  Future<Map<String, dynamic>> acceptTerms(String accessToken) {
+    return _apiClient.postJson(
+      '/auth/accept-terms',
+      bearerToken: accessToken,
+      body: const <String, dynamic>{},
+    );
+  }
+
   Future<void> logout(String accessToken) async {
     await _apiClient.postJson('/auth/logout', bearerToken: accessToken);
   }

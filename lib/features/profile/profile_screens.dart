@@ -20,7 +20,6 @@ import '../messages/data/messages_api.dart';
 import '../../core/widgets/cg_handicap_verified_badge.dart';
 import '../../core/widgets/cg_player_ratings_profile_section.dart';
 import '../../core/widgets/cg_premium_badge.dart';
-import '../../core/widgets/cg_premium_locked_cta.dart';
 import '../../core/widgets/cg_profile_post_card.dart';
 import '../../core/widgets/cg_rating_chip.dart';
 import '../player_ratings/data/player_ratings_api.dart';
@@ -1592,7 +1591,6 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
   List<Map<String, dynamic>> _recentReviews = [];
   List<ProfilePostItem> _posts = [];
   int _totalReviewCount = 0;
-  bool _viewerPremium = false;
   bool _isMatched = false;
   bool _connecting = false;
   bool _connectSent = false;
@@ -1657,9 +1655,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           .whereType<ProfilePostItem>()
           .toList();
       final meUser = meJson['user'] as Map<String, dynamic>?;
-      final viewerPremium = meJson['isPremium'] == true ||
-          meUser?['membershipType'] == 'PREMIUM';
-      final viewerId = session.userId;
+      final viewerId = session.userId ?? meUser?['id'] as String?;
       var matched = false;
       if (viewerId != null) {
         for (final m in matches) {
@@ -1682,7 +1678,6 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           _recentReviews = reviews;
           _posts = posts;
           _totalReviewCount = totalReviews;
-          _viewerPremium = viewerPremium;
           _isMatched = matched;
           _loading = false;
           _error = detail == null ? 'Could not load profile' : null;
@@ -2223,13 +2218,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                     userId: widget.userId,
                   ),
                   const SizedBox(height: 28),
-                  if (!isOwnProfile && !_viewerPremium && !_isMatched)
-                    CgPremiumLockedCta(
-                      message: 'Message — Upgrade to Premium',
-                      helpText: 'Premium members can message golfers directly',
-                      onUpgrade: () => context.push(AppPaths.appMembership),
-                    )
-                  else if (!isOwnProfile)
+                  if (!isOwnProfile && _isMatched)
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -2248,7 +2237,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
                     ),
-                  if (!isOwnProfile) const SizedBox(height: 12),
+                  if (!isOwnProfile && _isMatched) const SizedBox(height: 12),
                   if (!isOwnProfile)
                     SizedBox(
                       width: double.infinity,

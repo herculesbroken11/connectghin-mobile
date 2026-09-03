@@ -12,6 +12,7 @@ import '../../core/constants/us_states.dart';
 import '../../core/formatting/relative_time.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/legal/terms_acceptance_gate.dart';
 import '../../core/widgets/cg_handicap_verified_badge.dart';
 import '../../core/widgets/cg_premium_badge.dart';
 import '../../core/widgets/cg_premium_locked_cta.dart';
@@ -19,6 +20,7 @@ import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_rating_chip.dart';
 import '../../data/api_profile.dart';
 import 'data/foursome_feed_api.dart';
+import 'report_feed_post_sheet.dart';
 
 const _gameStyleFilters = <String, String>{
   'CASUAL': 'Casual',
@@ -146,11 +148,13 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
     }
   }
 
-  void _openCreatePost() {
+  Future<void> _openCreatePost() async {
     if (!_isPremium) {
       _showPremiumGate();
       return;
     }
+    final ok = await ensureTermsAcceptedForUgc(context);
+    if (!ok || !mounted) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -262,6 +266,7 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
                       isPremium: _isPremium,
                       onContact: () => _contact(p),
                       onLockedTap: _showPremiumGate,
+                      onReport: () => showReportFeedPostSheet(context, postId: p.id),
                     ),
                   ),
                 ),
@@ -400,12 +405,14 @@ class _FoursomePostCard extends StatelessWidget {
     required this.isPremium,
     required this.onContact,
     required this.onLockedTap,
+    required this.onReport,
   });
 
   final FoursomeFeedPost post;
   final bool isPremium;
   final VoidCallback onContact;
   final VoidCallback onLockedTap;
+  final VoidCallback onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -465,6 +472,20 @@ class _FoursomePostCard extends StatelessWidget {
                         Text(timeAgo,
                             style: const TextStyle(
                                 fontSize: 12, color: CgColors.gray500)),
+                        PopupMenuButton<String>(
+                          tooltip: 'Post options',
+                          icon: const Icon(Icons.more_vert,
+                              size: 20, color: CgColors.gray600),
+                          onSelected: (value) {
+                            if (value == 'report') onReport();
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'report',
+                              child: Text('Report Post'),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                     if (p.posterHandicap != null)

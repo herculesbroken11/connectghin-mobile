@@ -16,26 +16,27 @@ class HelpSupportScreen extends StatelessWidget {
     (
       'How do I complete handicap verification?',
       'Open Profile → Handicap Verification and enter your handicap number. We review the submitted information. '
-          'Your handicap may appear on your profile after approval.',
+          'If approved, a Handicap Verified badge can appear on your profile. This is Connectghin’s review process, '
+          'not an official third-party certification.',
     ),
     (
       'What are Premium benefits?',
-      'Premium unlocks expanded discovery, priority placement, and member-only features shown on the Membership screen. '
-          'Exact benefits may vary by release.',
+      'Premium includes unlimited Connect likes, full access to The Feed (browse, post open spots, and contact posters), '
+          'and a Premium profile badge. Exact benefits are listed on the Membership screen.',
     ),
     (
       'How do I cancel my subscription?',
-      'Open Membership or your platform subscription settings (App Store / Google Play) to manage or cancel billing. '
-          'You keep access until the end of the paid period.',
+      'Manage or cancel billing in Google Play (or the App Store on iOS). In-app Membership tools sync entitlement status '
+          'with our servers; store billing is controlled by the platform.',
     ),
     (
       'How does matching work?',
-      'Swipe on golfers you want to meet. When you both like each other, you match and can start chatting.',
+      'On Connect, send a like to golfers nearby. When both of you Connect, you match and can message each other from Matches.',
     ),
     (
       'How do I report a user?',
-      'Open their profile and use Report, or go through Help & Support with the user’s details. '
-          'Our team reviews safety reports promptly.',
+      'Open their profile and use Report, or contact Help & Support with the user’s details. '
+          'Our team reviews safety reports.',
     ),
   ];
 

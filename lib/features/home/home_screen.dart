@@ -15,6 +15,7 @@ import '../../core/widgets/google_mark.dart';
 import '../../data/api_profile.dart';
 import '../auth/widgets/auth_multi_login_widgets.dart';
 import '../matches/data/matches_api.dart';
+import '../membership/premium_benefits.dart';
 import '../messages/data/inbox_realtime_tick.dart';
 import '../messages/data/messages_api.dart';
 import '../notifications/data/notifications_api.dart';
@@ -633,7 +634,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Message anyone directly, unlimited swipes, and more',
+                        PremiumBenefits.homePromoSubtitle,
                         style: TextStyle(
                             fontSize: 14,
                             color: CgColors.white.withValues(alpha: 0.9)),

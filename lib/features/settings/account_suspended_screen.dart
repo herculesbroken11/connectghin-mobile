@@ -10,8 +10,6 @@ import '../../core/widgets/cg_primary_button.dart';
 
 /// Shown when `GET /auth/me` reports the account is suspended or not ACTIVE.
 /// The app router sends restricted users here instead of the main shell.
-///
-/// Reason / end date / reference ID are placeholders until the API exposes them.
 class AccountSuspendedScreen extends StatelessWidget {
   const AccountSuspendedScreen({super.key});
 
@@ -32,7 +30,8 @@ class AccountSuspendedScreen extends StatelessWidget {
                   color: CgColors.red50,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.warning_amber_rounded, color: CgColors.red700, size: 40),
+                child: const Icon(Icons.warning_amber_rounded,
+                    color: CgColors.red700, size: 40),
               ),
             ),
             const SizedBox(height: 24),
@@ -47,43 +46,9 @@ class AccountSuspendedScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Your account has been temporarily suspended due to a violation of our Community Guidelines.',
+              'Your account has been suspended and you cannot use Connectghin until access is restored.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 15, height: 1.45, color: CgColors.gray600),
-            ),
-            const SizedBox(height: 28),
-            Container(
-              decoration: BoxDecoration(
-                color: CgColors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(color: CgColors.gray200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _detailRow(
-                    'Reason',
-                    'Multiple reports of inappropriate behavior',
-                  ),
-                  const Divider(height: 1, color: CgColors.gray200),
-                  _detailRow(
-                    'Suspension period',
-                    '7 days (ends April 15, 2026)',
-                  ),
-                  const Divider(height: 1, color: CgColors.gray200),
-                  _detailRow(
-                    'Reference ID',
-                    'SUSP-2026-04-08-1234',
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 28),
             const Text(
@@ -95,11 +60,14 @@ class AccountSuspendedScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _bullet(CgColors.green700, 'Review our Community Guidelines to understand our policies'),
+            _bullet(CgColors.green700,
+                'Review our Terms of Service and community expectations'),
             const SizedBox(height: 10),
-            _bullet(CgColors.green700, 'If you believe this is a mistake, contact our support team'),
+            _bullet(CgColors.green700,
+                'Contact support if you believe this is a mistake'),
             const SizedBox(height: 10),
-            _bullet(CgColors.green700, 'Your account will be automatically restored after the suspension period'),
+            _bullet(CgColors.green700,
+                'Wait for our team to review your account status'),
             const SizedBox(height: 28),
             CgPrimaryButton(
               label: 'Contact Support',
@@ -108,7 +76,7 @@ class AccountSuspendedScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             CgOutlineButton(
-              label: 'View Community Guidelines',
+              label: 'View Terms of Service',
               onPressed: () => context.push(AppPaths.appTerms),
             ),
             const SizedBox(height: 20),
@@ -134,36 +102,6 @@ class AccountSuspendedScreen extends StatelessWidget {
     );
   }
 
-  static Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: CgColors.gray500,
-              letterSpacing: 0.2,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: _headingBlue,
-              height: 1.35,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   static Widget _bullet(Color color, String text) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +116,8 @@ class AccountSuspendedScreen extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 15, height: 1.45, color: CgColors.gray700),
+            style: const TextStyle(
+                fontSize: 15, height: 1.45, color: CgColors.gray700),
           ),
         ),
       ],

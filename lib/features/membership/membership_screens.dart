@@ -7,6 +7,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
@@ -17,6 +18,7 @@ import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
 import '../subscriptions/data/subscriptions_api.dart';
 import '../subscriptions/iap_product_config.dart';
+import 'premium_benefits.dart';
 
 /// Display strings aligned with membership mockups (actual charge is provided by in-app purchase products).
 const String kPremiumMonthlyDisplay = '\$3.99';
@@ -65,21 +67,9 @@ DateTime? _parseIso(dynamic v) {
   return null;
 }
 
-List<(String, String)> get _upgradeBenefits => const [
-      ('Unlimited Swipes', 'No daily limit — swipe as much as you want'),
-      ('Message Anyone', 'Send messages without matching first'),
-      ('Priority in Connect', 'Get seen by more golfers in your area'),
-      ('Advanced Filters', 'Filter by skill level, distance, and more'),
-      ('Priority Support', 'Get help faster with premium support'),
-      ('Profile Boost', 'Appear first in discovery for 30 minutes daily'),
-    ];
+List<(String, String)> get _upgradeBenefits => PremiumBenefits.items;
 
-List<(String, String)> get _manageBenefits => const [
-      ('Unlimited Swipes', 'No daily limit — swipe as much as you want'),
-      ('Message Anyone', 'Send messages without matching first'),
-      ('Priority in Connect', 'Get seen by more golfers in your area'),
-      ('Advanced Filters', 'Filter by skill level, distance, and more'),
-    ];
+List<(String, String)> get _manageBenefits => PremiumBenefits.manageItems;
 
 class MembershipScreen extends StatefulWidget {
   const MembershipScreen({super.key});
@@ -464,12 +454,30 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
   Future<void> _openStoreManagementHelp() async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-            'Manage subscriptions in Apple App Store or Google Play for your account.'),
-      ),
+    final uri = Uri.parse(
+      Platform.isAndroid
+          ? 'https://play.google.com/store/account/subscriptions'
+          : 'https://apps.apple.com/account/subscriptions',
     );
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Open Google Play or the App Store to manage your subscription.'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Open Google Play or the App Store to manage your subscription.'),
+        ),
+      );
+    }
   }
 
   Future<void> _cancelAtPeriodEnd() async {
@@ -481,7 +489,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Cancel subscription?'),
         content: const Text(
-            'You will keep premium until the end of the billing period. You can also manage billing in Apple App Store or Google Play.'),
+            'This marks your Premium status as canceled in Connectghin. To stop recurring charges, cancel the subscription in Google Play or the App Store.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -846,9 +854,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          _compareLine('Basic profile & discovery'),
-                          _compareLine('Limited messaging'),
-                          _compareLine('Basic filters'),
+                          _compareLine('Nearby golfer Connect (daily limit)'),
+                          _compareLine('Message after you match'),
+                          _compareLine('Feed preview (limited posts)'),
                         ],
                       ),
                     ),
@@ -887,11 +895,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          _compareLine('Full discovery & advanced filters',
+                          _compareLine('Unlimited Connect likes',
                               premium: true),
-                          _compareLine('See who likes you & message anyone',
+                          _compareLine('Full Feed browse, post & contact',
                               premium: true),
-                          _compareLine('Handicap verification & premium badge',
+                          _compareLine('Premium profile badge',
                               premium: true),
                         ],
                       ),
@@ -1420,9 +1428,8 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                         TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
                 const SizedBox(height: 12),
                 _missingRow('Unlimited Connect likes'),
-                _missingRow('Message anyone without matching first'),
-                _missingRow('Advanced filters'),
-                _missingRow('Priority customer support'),
+                _missingRow('Full Feed access, posting, and contact'),
+                _missingRow('Premium profile badge'),
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(16),

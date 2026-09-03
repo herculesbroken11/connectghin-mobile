@@ -6,10 +6,11 @@ import 'package:provider/provider.dart';
 
 import '../../app/design_tokens.dart';
 import '../../app/session/auth_session.dart';
+import '../../core/legal/terms_acceptance_gate.dart';
 import '../../core/network/api_user_message.dart';
 import '../profiles/data/profiles_api.dart';
 
-/// GHINder-style grid: reorder, primary, delete, add slot, tips.
+/// Photo grid: reorder, primary, delete, add slot, tips.
 class ManagePhotosScreen extends StatefulWidget {
   const ManagePhotosScreen({super.key});
 
@@ -61,6 +62,8 @@ class _ManagePhotosScreenState extends State<ManagePhotosScreen> {
 
   Future<void> _pickAndUpload() async {
     if (_photos.length >= ManagePhotosScreen.maxPhotos) return;
+    final ok = await ensureTermsAcceptedForUgc(context);
+    if (!ok || !mounted) return;
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) return;

@@ -218,12 +218,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                 ),
                 _linkTile(
                   title: 'Download My Data',
-                  subtitle: 'Request a copy of your data.',
+                  subtitle: 'Request a copy via Help & Support.',
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                            'Data export is coming soon. Use Help & Support to request a copy.'),
+                            'In-app data export is not available yet. Contact Help & Support to request a copy of your data.'),
                       ),
                     );
                     context.push(AppPaths.support);
@@ -231,7 +231,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                 ),
                 _linkTile(
                   title: 'Delete Account',
-                  subtitle: 'Permanently delete your account.',
+                  subtitle: 'Request deletion of your account.',
                   destructive: true,
                   showDividerAfter: false,
                   onTap: () => context.push(AppPaths.appDeleteAccount),

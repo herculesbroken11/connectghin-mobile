@@ -294,7 +294,7 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
   }
 }
 
-// --- Intro (Get GHIN Verified + benefits + what you need) ---
+// --- Intro (Get Handicap Verified + benefits + what you need) ---
 
 class _IntroBody extends StatelessWidget {
   const _IntroBody({
@@ -364,7 +364,7 @@ class _IntroBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'Official Handicap Verification',
+                  'Handicap Verification',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       fontSize: 18,
@@ -373,7 +373,7 @@ class _IntroBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Verify your handicap index using your handicap number',
+                  'Submit your handicap number for review. If approved, a Handicap Verified badge can appear on your profile.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       fontSize: 15, color: CgColors.gray600, height: 1.45),

@@ -825,7 +825,7 @@ class _FeedHeader extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    'Pair up with other golfers in your area',
+                    'Find golfers looking for open spots nearby',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -1183,7 +1183,7 @@ class _PairUpHeader extends StatelessWidget {
                   ),
                   SizedBox(height: compact ? 6 : 8),
                   Text(
-                    'Pair up with other golfers in your area',
+                    'Find golfers looking for open spots nearby',
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w500,

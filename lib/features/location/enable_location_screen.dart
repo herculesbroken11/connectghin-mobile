@@ -78,7 +78,7 @@ class _EnableLocationPanelState extends State<EnableLocationPanel> {
             const SizedBox(height: 28),
             _bulletRow('See golfers nearby', 'Connect with players in your area'),
             const SizedBox(height: 14),
-            _bulletRow('Discover local courses', 'Find great places to play near you'),
+            _bulletRow('Find local courses', 'See great places to play near you'),
             const SizedBox(height: 14),
             _bulletRow('Better matches', 'Get matched with golfers you can meet'),
             const SizedBox(height: 24),

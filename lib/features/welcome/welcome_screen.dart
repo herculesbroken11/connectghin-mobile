@@ -115,7 +115,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                           SizedBox(height: short ? 6 : 8),
                           Text(
-                            'The Premier Golf Network',
+                            'Find golf partners near you',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: wide ? 18 : (short ? 15 : 16),
@@ -127,7 +127,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                           SizedBox(height: short ? 8 : 10),
                           Text(
-                            'Connect with verified golfers and find your next partner',
+                            'Connect with nearby golfers, browse open spots, and chat after you match',
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -156,7 +156,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                           SizedBox(height: short ? 12 : 14),
                           Text(
-                            'Free to join • Connect with verified golfers',
+                            'Free to join • Find nearby golf partners',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: short ? 12 : 13,
@@ -231,9 +231,9 @@ class _FeatureCardsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const cards = [
-      _MiniFeatureCard(icon: Icons.verified_user_outlined, title: 'Verified\nHandicaps'),
-      _MiniFeatureCard(icon: Icons.star_outline_rounded, title: 'Player\nRatings'),
-      _MiniFeatureCard(icon: Icons.groups_2_outlined, title: 'Smart\nMatching'),
+      _MiniFeatureCard(icon: Icons.explore_outlined, title: 'Nearby\nGolfers'),
+      _MiniFeatureCard(icon: Icons.sports_golf_outlined, title: 'Open\nSpots'),
+      _MiniFeatureCard(icon: Icons.chat_bubble_outline_rounded, title: 'Match\nChat'),
     ];
     return IntrinsicHeight(
       child: Row(

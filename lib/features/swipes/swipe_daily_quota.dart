@@ -79,13 +79,13 @@ Future<void> showDailySwipeLimitSheet(BuildContext context, DailySwipeLimitError
               ),
               const SizedBox(height: 16),
               const Text(
-                'Daily swipe limit',
+                'Daily Connect limit',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: CgColors.gray900),
               ),
               const SizedBox(height: 10),
               Text(
-                'Free members can swipe up to ${err.limit} new profiles per day (UTC). Upgrade to Premium for unlimited swipes.',
+                'Free members can send up to ${err.limit} new Connect likes per day (UTC). Upgrade to Premium for unlimited Connect likes.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 15, height: 1.45, color: CgColors.gray600),
               ),

@@ -213,7 +213,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                       _bullets(const [
                         'Access your personal information',
                         'Update or correct your information',
-                        'Delete your account and data',
+                        'Request deletion of your account and personal data from Settings (processed by ConnectGHIN; store subscriptions are managed separately in Google Play or the App Store)',
                         'Opt-out of marketing communications',
                       ]),
                     ],

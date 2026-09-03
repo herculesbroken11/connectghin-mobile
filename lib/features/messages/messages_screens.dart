@@ -135,8 +135,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         icon: const Icon(Icons.chat_bubble_outline, size: 44, color: CgColors.gray400),
                         title: 'No messages yet',
                         description: 'Match with golfers to start conversations. Send a message to break the ice!',
-                        actionLabel: 'Find Matches',
-                        onAction: () => context.go(AppPaths.appGhinder),
+                        actionLabel: 'Go to Connect',
+                        onAction: () => context.go(AppPaths.appDiscover),
                       )
                     : _visible.isEmpty
                         ? Center(

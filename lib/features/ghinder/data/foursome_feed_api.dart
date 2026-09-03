@@ -64,4 +64,20 @@ class FoursomeFeedApi {
       body: const <String, dynamic>{},
     );
   }
+
+  Future<Map<String, dynamic>> reportPost({
+    required String accessToken,
+    required String postId,
+    required String reason,
+    String? details,
+  }) {
+    return _apiClient.postJson(
+      '/foursome-feed/$postId/report',
+      bearerToken: accessToken,
+      body: <String, dynamic>{
+        'reason': reason,
+        if (details != null && details.trim().isNotEmpty) 'details': details.trim(),
+      },
+    );
+  }
 }

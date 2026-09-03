@@ -364,7 +364,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                       ),
                                       SizedBox(height: 4),
                                       Text(
-                                        'Show only players with confirmed official handicap',
+                                        'Show only players with a Handicap Verified badge',
                                         style: TextStyle(
                                             fontSize: 12,
                                             color: CgColors.gray500,
@@ -468,7 +468,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Make a Foursome',
+                            'Connect',
                             style: Theme.of(context)
                                 .textTheme
                                 .headlineMedium

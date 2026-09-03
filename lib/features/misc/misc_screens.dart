@@ -214,16 +214,48 @@ class TermsOfServiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _LegalScaffold(title: 'Terms of service', body: _lorem);
+    return const _LegalScaffold(title: 'Terms of service', body: _termsBody);
   }
 }
 
-const _lorem =
-    'Connectghin helps golfers discover matches, communicate, and manage golf-related profile information. '
-    'We collect account details, profile content, and app activity needed to deliver matching and messaging features. '
-    'You control profile visibility through privacy settings, and may request account deletion from Settings. '
-    'By using the app, you agree to provide accurate information, follow community rules, and avoid harassment, abuse, or impersonation. '
-    'Reports and blocks are reviewed to protect users and may result in moderation actions.';
+const _termsBody =
+    'Last updated: August 31, 2026\n\n'
+    '1. Acceptance\n'
+    'By creating an account or using Connectghin, you agree to these Terms of Service and our Privacy Policy. '
+    'If you do not agree, do not use the app.\n\n'
+    '2. Eligibility\n'
+    'You must be at least 18 years old to use Connectghin. The app is intended for golfers seeking playing partners '
+    'and related social features.\n\n'
+    '3. Accounts\n'
+    'You are responsible for accurate account information and for activity under your account. '
+    'You may request account deletion from Settings or at https://connectghin.com/delete-account. '
+    'Verified requests are processed using our standard deletion workflow (data deleted or anonymized). '
+    'Google Play or App Store subscriptions must be managed separately in the store. '
+    'Paid subscriptions billed through Google Play or the App Store must be managed in those stores.\n\n'
+    '4. Acceptable use\n'
+    'You agree not to harass, abuse, impersonate, spam, scrape, or otherwise misuse the service. '
+    'Do not post unlawful, hateful, or sexually explicit content. We may remove content and suspend or terminate '
+    'accounts that violate these rules.\n\n'
+    '5. User content & safety\n'
+    'You retain rights to content you submit (profiles, photos, Feed posts, messages, and ratings). '
+    'You grant Connectghin a license to host and display that content to operate the service. '
+    'You can report and block other users. Reports may lead to moderation actions including content removal or suspension.\n\n'
+    '6. Handicap information\n'
+    'Handicap details you submit may be reviewed for a Handicap Verified badge. '
+    'Connectghin is not affiliated with, endorsed by, or operated by any third-party handicap authority. '
+    'Verification in the app is based on information you provide and our review process—not an official external certification.\n\n'
+    '7. Premium subscriptions\n'
+    'Optional Premium membership is sold through Google Play or the App Store. '
+    'Benefits shown in the Membership screen apply while your Premium entitlement is active. '
+    'Billing, renewals, and cancellations follow the store’s terms.\n\n'
+    '8. Disclaimers\n'
+    'Connectghin is provided “as is.” We do not guarantee matches, playing partners, or uninterrupted service. '
+    'You are responsible for real-world interactions arranged through the app.\n\n'
+    '9. Limitation of liability\n'
+    'To the fullest extent permitted by law, Connectghin and its operators are not liable for indirect, incidental, '
+    'or consequential damages arising from use of the app.\n\n'
+    '10. Contact\n'
+    'Questions about these Terms: support@connectghin.com';
 
 class _LegalScaffold extends StatelessWidget {
   const _LegalScaffold({required this.title, required this.body});
@@ -521,14 +553,14 @@ class PremiumFeaturesDemoScreen extends StatelessWidget {
       body: ListView(
         children: const [
           ListTile(
-              title: Text('Unlimited likes'),
-              subtitle: Text('Connect without daily limits')),
+              title: Text('Unlimited Connect likes'),
+              subtitle: Text('No daily Connect limit')),
           ListTile(
-              title: Text('Direct messages'),
-              subtitle: Text('Reach out before matching')),
+              title: Text('Full Feed access'),
+              subtitle: Text('Browse all posts, publish open spots, contact posters')),
           ListTile(
-              title: Text('Profile insights'),
-              subtitle: Text('See who viewed you')),
+              title: Text('Premium badge'),
+              subtitle: Text('Show Premium on your profile')),
         ],
       ),
     );
