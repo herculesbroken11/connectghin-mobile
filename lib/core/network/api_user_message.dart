@@ -95,6 +95,16 @@ String messageFromApiError(
     if (isSignInCancelledError(error)) {
       return 'Sign-in was cancelled.';
     }
+    final raw = '$error'.toLowerCase();
+    if (raw.contains('socketexception') ||
+        raw.contains('clientexception') ||
+        raw.contains('failed host lookup') ||
+        raw.contains('network is unreachable') ||
+        raw.contains('connection refused') ||
+        raw.contains('timed out') ||
+        raw.contains('timeout')) {
+      return 'Cannot reach Connectghin right now. Check your connection and try again.';
+    }
     final s = '$error'
         .replaceFirst(RegExp(r'^Exception:\s*'), '')
         .replaceFirst(RegExp(r'^PlatformException\([^,]+,\s*'), '')
@@ -118,6 +128,11 @@ String messageFromApiError(
     if (bl.contains('apple')) {
       return 'Apple sign-in failed. Please try again.';
     }
+    // Backend returns "Invalid credentials" for unknown email/wrong password.
+    // Keep a single clear login message for reviewers and users.
+    if (bl.contains('invalid credentials') || bl.contains('unauthorized')) {
+      return 'Invalid email or password.';
+    }
   }
   if (e.statusCode == 503 && bl.contains('google')) {
     return 'Google sign-in is not available right now. Please use email login.';
@@ -129,7 +144,14 @@ String messageFromApiError(
   final payload = parseNestHttpErrorBody(e.body);
   if (payload != null) {
     final extracted = _extractUserTextFromPayload(payload);
-    if (extracted != null && extracted.isNotEmpty) return extracted;
+    if (extracted != null && extracted.isNotEmpty) {
+      final el = extracted.toLowerCase();
+      if (e.statusCode == 401 &&
+          (el.contains('invalid credentials') || el == 'unauthorized')) {
+        return 'Invalid email or password.';
+      }
+      return extracted;
+    }
   }
 
   switch (e.statusCode) {

@@ -54,6 +54,9 @@ void main() {
       'USGA Verified',
       'Official Handicap Verification',
       'official handicap',
+      'Your Premier Golf Network',
+      'the premier golf network',
+      'premier golf',
     ];
 
     final violations = <String>[];

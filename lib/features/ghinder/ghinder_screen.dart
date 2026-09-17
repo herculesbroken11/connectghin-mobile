@@ -1,6 +1,8 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -108,7 +110,9 @@ class _GhinderScreenState extends State<GhinderScreen> {
         musicPreference: _musicPref == 'Any' ? null : _musicPref,
         drinkingPreference: _drinkPref == 'Any' ? null : _drinkPref,
         smokingPreference: _smokePref == 'Any' ? null : _smokePref,
-        friendly420: _friendly420 == 'Any' ? null : _friendly420,
+        friendly420: (!kIsWeb && Platform.isAndroid)
+            ? null
+            : (_friendly420 == 'Any' ? null : _friendly420),
       );
       final list = raw
           .map((e) =>
@@ -698,12 +702,13 @@ class _GhinderScreenState extends State<GhinderScreen> {
                             selected: drink,
                             onSelected: (v) => setModal(() => drink = v),
                           ),
-                          _PairFilterChipGroup(
-                            label: '420 FRIENDLY',
-                            options: const ['Any', 'No', 'Yes'],
-                            selected: friendly420,
-                            onSelected: (v) => setModal(() => friendly420 = v),
-                          ),
+                          if (kIsWeb || !Platform.isAndroid)
+                            _PairFilterChipGroup(
+                              label: '420 FRIENDLY',
+                              options: const ['Any', 'No', 'Yes'],
+                              selected: friendly420,
+                              onSelected: (v) => setModal(() => friendly420 = v),
+                            ),
                           _PairFilterChipGroup(
                             label: 'SMOKING',
                             options: const ['Any', 'No smoking', 'OK'],

@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -88,7 +91,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         musicPreference: _music == 'Any' ? null : _music,
         drinkingPreference: _drinking == 'Any' ? null : _drinking,
         smokingPreference: _smoking == 'Any' ? null : _smoking,
-        friendly420: _friendly420 == 'Any' ? null : _friendly420,
+        friendly420: (!kIsWeb && Platform.isAndroid)
+            ? null
+            : (_friendly420 == 'Any' ? null : _friendly420),
       );
       final items = raw
           .map((e) =>
@@ -327,12 +332,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             selected: drinking,
                             onSelected: (v) => setModal(() => drinking = v),
                           ),
-                          _FilterChipGroup(
-                            label: '420 FRIENDLY',
-                            options: const ['Any', 'No', 'Yes'],
-                            selected: friendly420,
-                            onSelected: (v) => setModal(() => friendly420 = v),
-                          ),
+                          if (kIsWeb || !Platform.isAndroid)
+                            _FilterChipGroup(
+                              label: '420 FRIENDLY',
+                              options: const ['Any', 'No', 'Yes'],
+                              selected: friendly420,
+                              onSelected: (v) => setModal(() => friendly420 = v),
+                            ),
                           _FilterChipGroup(
                             label: 'SMOKING',
                             options: const ['Any', 'No smoking', 'OK'],

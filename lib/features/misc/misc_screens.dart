@@ -219,7 +219,7 @@ class TermsOfServiceScreen extends StatelessWidget {
 }
 
 const _termsBody =
-    'Last updated: August 31, 2026\n\n'
+    'Last updated: September 15, 2026\n\n'
     '1. Acceptance\n'
     'By creating an account or using Connectghin, you agree to these Terms of Service and our Privacy Policy. '
     'If you do not agree, do not use the app.\n\n'
@@ -240,6 +240,12 @@ const _termsBody =
     'You retain rights to content you submit (profiles, photos, Feed posts, messages, and ratings). '
     'You grant Connectghin a license to host and display that content to operate the service. '
     'You can report and block other users. Reports may lead to moderation actions including content removal or suspension.\n\n'
+    '5A. Child safety\n'
+    'Connectghin is for users 18 years of age or older. We do not knowingly allow minors to create accounts. '
+    'We prohibit child sexual abuse and exploitation (CSAE), child sexual abuse material (CSAM), grooming, '
+    'sexualization of minors, and any attempt to exploit or endanger children. '
+    'Report safety concerns through in-app reporting tools where available, or email support@connectghin.com. '
+    'We review reports and may remove content, suspend or terminate accounts, and escalate matters when required by applicable law.\n\n'
     '6. Handicap information\n'
     'Handicap details you submit may be reviewed for a Handicap Verified badge. '
     'Connectghin is not affiliated with, endorsed by, or operated by any third-party handicap authority. '

@@ -52,10 +52,23 @@ void main() {
     expect(messageFromAppleSignInError(error), 'Sign-in was cancelled.');
   });
 
-  test('messageFromAppleSignInError maps Apple API 503', () {
+  test('messageFromApiError maps nested Invalid credentials to clear login copy', () {
     const body =
-        '{"statusCode":503,"message":"Apple sign-in is not available right now. Please use email login.","path":"/api/v1/auth/apple","timestamp":"t"}';
-    final msg = messageFromAppleSignInError(ApiHttpException(503, body));
-    expect(msg, 'Apple sign-in is not available right now. Please use email login.');
+        '{"statusCode":401,"message":{"statusCode":401,"message":"Invalid credentials","error":"Unauthorized"},"path":"/api/v1/auth/login","timestamp":"t"}';
+    final msg = messageFromApiError(ApiHttpException(401, body));
+    expect(msg, 'Invalid email or password.');
+  });
+
+  test('messageFromApiError maps Account unavailable distinctly from bad password', () {
+    const body =
+        '{"statusCode":401,"message":{"statusCode":401,"message":"Account unavailable","error":"Unauthorized"},"path":"/api/v1/auth/login","timestamp":"t"}';
+    final msg = messageFromApiError(ApiHttpException(401, body));
+    expect(msg.toLowerCase(), contains('suspended'));
+  });
+
+  test('messageFromApiError maps network failures without Invalid credentials', () {
+    final msg = messageFromApiError(Exception('SocketException: Failed host lookup'));
+    expect(msg.toLowerCase(), contains('connection'));
+    expect(msg.toLowerCase(), isNot(contains('invalid credentials')));
   });
 }

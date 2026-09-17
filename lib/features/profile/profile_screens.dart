@@ -838,7 +838,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   _prefChip(music != '—'
                                       ? 'Music: $music'
                                       : 'Music TBD'),
-                                  _prefChip('420 Friendly'),
                                   if ((_profileJson?['skillLevel'] as String?)
                                           ?.isNotEmpty ==
                                       true)
@@ -2163,23 +2162,6 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                               ),
                             ),
                           ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: CgColors.yellow50,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: CgColors.yellow200),
-                          ),
-                          child: const Text(
-                            '420 Friendly',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: CgColors.yellow800,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ],

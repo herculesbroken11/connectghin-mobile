@@ -508,7 +508,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                                 SizedBox(height: gap(6)),
                                 Text(
-                                  'Join Connectghin — the premier golf network',
+                                  'Find golf partners near you',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: CgColors.gray600,
