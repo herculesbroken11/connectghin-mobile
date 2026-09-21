@@ -133,7 +133,7 @@ class CgAuthGreenHero extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Find your Fourth',
+                  'Find golf partners near you',
                   style: TextStyle(
                     color: CgColors.premiumGoldLight.withValues(alpha: 0.95),
                     fontSize: 14,

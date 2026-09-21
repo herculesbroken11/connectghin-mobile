@@ -18,7 +18,8 @@ App name: **Connectghin** · Package: **com.connectghin.app**
 | Unlimited Connect | Premium path in swipes | premium check | Premium | Yes | Yes | Yes |
 | Mutual Connect → Match | swipes → matches | matches module | Free | Yes | Yes | Yes |
 | Chat with Matches | `messages_screens.dart` | conversations + socket | Free after Match | Yes | Yes | Yes |
-| The Feed | `foursome_feed_tab.dart` | foursome-feed | Preview free | Yes | Yes | Yes |
+| The Feed | `ghinder_screen.dart` + `foursome_feed_tab.dart` | discovery + foursome-feed | Pair Up free (shared swipe quota); Feed preview free | Yes | Yes | Yes |
+| Pair Up (Feed mode) | `ghinder_screen.dart` mode tab | `/discovery` + swipes | Free (same daily like limit as Connect) | Yes | Yes — as Feed mode, **not** bottom nav | Yes |
 | Full Feed / post / contact | Premium gates | `PREMIUM_REQUIRED` | Premium | Yes | Yes | Yes |
 | Premium badge | `cg_premium_badge.dart` | membershipType | Premium | Yes | Yes | Yes |
 | Restore purchases | IAP membership screens | Google Play verify | Premium | Yes | Yes | Yes |
@@ -37,6 +38,7 @@ App name: **Connectghin** · Package: **com.connectghin.app**
 - Official GHIN / USGA verification or affiliation
 - Premier / best / #1 claims
 - See who likes you, Profile Boost, priority placement, message anyone
-- Discover / Pair Up / Find Your 4th as current nav names
+- Discover / Find Your 4th as current bottom-nav names
+- Pair Up as a bottom-nav name (Pair Up is a mode **inside** The Feed)
 - Automatic Google Play subscription cancellation on account deletion
 - Guaranteed safety/moderation outcomes

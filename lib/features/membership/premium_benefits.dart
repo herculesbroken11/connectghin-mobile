@@ -26,6 +26,7 @@ class PremiumBenefits {
 
   static const List<String> compareFreeLines = [
     'Nearby golfer Connect (daily limit)',
+    'Pair Up on The Feed (same daily limit)',
     'Message after you match',
     'Feed preview (limited posts)',
   ];

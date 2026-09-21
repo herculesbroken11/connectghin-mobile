@@ -18,6 +18,7 @@ import '../../core/widgets/cg_outline_button.dart';
 import '../../core/network/api_user_message.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../discover/data/discover_api.dart';
+import '../location/enable_location_screen.dart';
 import '../location/location_profile.dart';
 import '../messages/data/messages_api.dart';
 import '../profiles/data/profiles_api.dart';
@@ -26,6 +27,12 @@ import '../swipes/swipe_daily_quota.dart';
 import '../../core/widgets/cg_handicap_verified_badge.dart';
 import '../../core/widgets/cg_premium_badge.dart';
 import 'foursome_feed_tab.dart';
+
+/// Feed mode indices / labels (The Feed bottom-nav screen).
+const kFeedModePairUp = 0;
+const kFeedModeFoursome = 1;
+const kFeedModePairUpLabel = 'Pair Up';
+const kFeedModeFoursomeLabel = 'Foursome Feed';
 
 class GhinderScreen extends StatefulWidget {
   const GhinderScreen({super.key});
@@ -62,21 +69,7 @@ class _GhinderScreenState extends State<GhinderScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPremiumStatus());
-  }
-
-  Future<void> _loadPremiumStatus() async {
-    final session = context.read<AuthSession>();
-    final t = session.accessToken;
-    if (t == null) return;
-    try {
-      final me = await ProfilesApi(session.apiClient).getMe(t);
-      if (mounted) {
-        setState(() => _isPremium = isEffectivePremiumFromJson(me));
-      }
-    } catch (_) {
-      // The feed handles its own loading and errors; the pill can remain inactive.
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -764,84 +757,266 @@ class _GhinderScreenState extends State<GhinderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const ColoredBox(
+        color: CgColors.gray50,
+        child: Center(
+            child: CircularProgressIndicator(color: CgColors.green700)),
+      );
+    }
+    if (_error != null) {
+      return ColoredBox(
+        color: CgColors.gray50,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(_error!, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                CgPrimaryButton(label: 'Retry', onPressed: _load),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    if (_missingLocation) {
+      return ColoredBox(
+        color: CgColors.white,
+        child: EnableLocationPanel(
+          onSaved: _load,
+          onSkipManual: () async {
+            await context.push(AppPaths.appManualLocation);
+            if (mounted) _load();
+          },
+        ),
+      );
+    }
+
+    final current = _current;
+    final distanceLabel = _filterDistance >= 100
+        ? 'Any distance'
+        : 'Within ${_filterDistance.round()} miles';
+    final filtersActive = _filterDistance != 25 ||
+        _maxHandicap != 36 ||
+        _smokePref != 'Any' ||
+        _friendly420 != 'Any' ||
+        _drinkPref != 'Any' ||
+        _musicPref != 'Any' ||
+        _playStyle != 'Any' ||
+        _availability != 'Any';
+    final likesLeft = _tabIndex == kFeedModePairUp &&
+            _quota != null &&
+            !_quota!.isPremium &&
+            _quota!.dailyLimit != null
+        ? _quota!.remaining
+        : null;
+
     return ColoredBox(
       color: CgColors.cream,
       child: Column(
         children: [
-          _FeedHeader(
+          _PairUpHeader(
+            likesLeft: likesLeft,
+            filtersActive: filtersActive,
             isPremium: _isPremium,
+            tabIndex: _tabIndex,
+            onFilters: _openPairUpFilters,
             onPremium: () => context.push(AppPaths.appMembership),
+            onTabChanged: (i) => setState(() => _tabIndex = i),
           ),
-          const Expanded(child: FoursomeFeedTab()),
-        ],
-      ),
-    );
-  }
-}
-
-class _FeedHeader extends StatelessWidget {
-  const _FeedHeader({required this.isPremium, required this.onPremium});
-
-  final bool isPremium;
-  final VoidCallback onPremium;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 150,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/pair_up_header.jpg',
-            fit: BoxFit.cover,
-            alignment: const Alignment(0.3, 0.25),
-          ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Color(0xE60F3A28),
-                  Color(0x70144F37),
-                  Color(0x30144F37)
-                ],
-              ),
-            ),
-          ),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 14, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: _HeaderPillBtn(
-                      label: 'Premium',
-                      icon: Icons.workspace_premium_rounded,
-                      gold: true,
-                      active: isPremium,
-                      onTap: onPremium,
-                      compact: true,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Find golfers looking for open spots nearby',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: CgColors.white.withValues(alpha: 0.96),
-                      shadows: const [
-                        Shadow(color: Colors.black45, blurRadius: 6)
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          Expanded(
+            child: IndexedStack(
+              index: _tabIndex,
+              children: [
+                current == null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 88,
+                                height: 88,
+                                decoration: const BoxDecoration(
+                                  color: CgColors.green50,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.golf_course_rounded,
+                                    size: 40, color: CgColors.green700),
+                              ),
+                              const SizedBox(height: 22),
+                              Text(
+                                "You're all caught up",
+                                style: GoogleFonts.fraunces(
+                                  color: CgColors.gray900,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'No more golfers in range right now. Widen filters or try Connect.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: CgColors.gray500,
+                                    fontSize: 14,
+                                    height: 1.35),
+                              ),
+                              const SizedBox(height: 24),
+                              CgPrimaryButton(
+                                  label: 'Refresh', onPressed: _load),
+                              const SizedBox(height: 12),
+                              CgOutlineButton(
+                                label: 'Open Connect',
+                                onPressed: () =>
+                                    context.go(AppPaths.appDiscover),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final short = constraints.maxHeight < 520;
+                          final metaGap = short ? 6.0 : 8.0;
+                          final actionGap = short ? 8.0 : 12.0;
+                          final actionSize = short ? 48.0 : 54.0;
+                          final pairSize = short ? 58.0 : 66.0;
+                          return Padding(
+                            padding: EdgeInsets.fromLTRB(
+                                14, short ? 8 : 10, 14, short ? 4 : 6),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      size: 15,
+                                      color: filtersActive
+                                          ? CgColors.green700
+                                          : CgColors.gray500,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        filtersActive
+                                            ? 'Filtered · $distanceLabel'
+                                            : distanceLabel,
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: filtersActive
+                                              ? CgColors.green700
+                                              : CgColors.gray600,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${_index + 1} of ${_profiles.length}',
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: CgColors.gray500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: metaGap),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onHorizontalDragUpdate: (d) =>
+                                        setState(() => _drag += d.delta),
+                                    onHorizontalDragEnd: (d) {
+                                      final vx =
+                                          d.velocity.pixelsPerSecond.dx;
+                                      final p = _current;
+                                      if (p == null) return;
+                                      if (_drag.dx < -80 || vx < -300) {
+                                        setState(() =>
+                                            _drag = const Offset(-300, 0));
+                                        _advance(p, right: false);
+                                      } else if (_drag.dx > 80 ||
+                                          vx > 300) {
+                                        setState(() =>
+                                            _drag = const Offset(300, 0));
+                                        _advance(p, right: true);
+                                      } else {
+                                        setState(() => _drag = Offset.zero);
+                                      }
+                                    },
+                                    child: Transform.translate(
+                                      offset: _drag,
+                                      child: Transform.rotate(
+                                        angle: _drag.dx * 0.0007,
+                                        child: _PairUpProfileCard(
+                                          golfer: current,
+                                          dragDx: _drag.dx,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: actionGap),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    _LabeledActionBtn(
+                                      size: actionSize,
+                                      label: 'Pass',
+                                      labelColor: CgColors.red500,
+                                      background: CgColors.white,
+                                      borderColor: CgColors.red500,
+                                      icon: Icons.close_rounded,
+                                      iconColor: CgColors.red500,
+                                      onTap: () => _swipeUi(false),
+                                    ),
+                                    SizedBox(width: short ? 16 : 20),
+                                    _LabeledActionBtn(
+                                      size: pairSize,
+                                      label: kFeedModePairUpLabel,
+                                      labelColor: CgColors.green700,
+                                      background: CgColors.green700,
+                                      icon: Icons.thumb_up_alt_rounded,
+                                      iconColor: CgColors.white,
+                                      elevated: true,
+                                      onTap: () => _swipeUi(true),
+                                    ),
+                                    SizedBox(width: short ? 16 : 20),
+                                    _LabeledActionBtn(
+                                      size: actionSize,
+                                      label: 'Details',
+                                      labelColor: CgColors.gray600,
+                                      background: CgColors.white,
+                                      borderColor: CgColors.gray300,
+                                      icon: Icons.info_outline_rounded,
+                                      iconColor: CgColors.gray700,
+                                      onTap: () => context.push(
+                                        AppPaths.appProfileUser(
+                                            current.userId),
+                                        extra: {
+                                          if (current.distanceMiles != null)
+                                            'distanceMilesHint': current
+                                                .distanceMiles!
+                                                .toStringAsFixed(1),
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                const FoursomeFeedTab(),
+              ],
             ),
           ),
         ],
@@ -947,8 +1122,8 @@ class _PairFilterChipGroup extends StatelessWidget {
   }
 }
 
-class _FindFourthTabBar extends StatelessWidget {
-  const _FindFourthTabBar({required this.index, required this.onChanged});
+class _FeedModeTabBar extends StatelessWidget {
+  const _FeedModeTabBar({required this.index, required this.onChanged});
 
   final int index;
   final ValueChanged<int> onChanged;
@@ -965,18 +1140,18 @@ class _FindFourthTabBar extends StatelessWidget {
         children: [
           Expanded(
             child: _TabChip(
-              label: 'Connect',
+              label: kFeedModePairUpLabel,
               icon: Icons.groups_rounded,
-              selected: index == 0,
-              onTap: () => onChanged(0),
+              selected: index == kFeedModePairUp,
+              onTap: () => onChanged(kFeedModePairUp),
             ),
           ),
           Expanded(
             child: _TabChip(
-              label: 'Foursome Feed',
+              label: kFeedModeFoursomeLabel,
               icon: Icons.view_list_rounded,
-              selected: index == 1,
-              onTap: () => onChanged(1),
+              selected: index == kFeedModeFoursome,
+              onTap: () => onChanged(kFeedModeFoursome),
             ),
           ),
         ],
@@ -1060,6 +1235,10 @@ class _PairUpHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenH = MediaQuery.sizeOf(context).height;
     final compact = screenH < 760;
+    final titleSize = compact ? 24.0 : 26.0;
+    final subtitle = tabIndex == kFeedModePairUp
+        ? 'Swipe to find golfers ready to play a round.'
+        : 'Browse open spots for upcoming rounds.';
 
     return ClipRect(
       child: Stack(
@@ -1145,7 +1324,7 @@ class _PairUpHeader extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      if (tabIndex == 0)
+                      if (tabIndex == kFeedModePairUp)
                         _HeaderPillBtn(
                           label: 'Filters',
                           icon: Icons.tune_rounded,
@@ -1188,7 +1367,20 @@ class _PairUpHeader extends StatelessWidget {
                   ),
                   SizedBox(height: compact ? 6 : 8),
                   Text(
-                    'Find golfers looking for open spots nearby',
+                    'The Feed',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.fraunces(
+                      color: CgColors.white,
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.w600,
+                      height: 1.05,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w500,
@@ -1196,7 +1388,7 @@ class _PairUpHeader extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: compact ? 8 : 10),
-                  _FindFourthTabBar(index: tabIndex, onChanged: onTabChanged),
+                  _FeedModeTabBar(index: tabIndex, onChanged: onTabChanged),
                 ],
               ),
             ),

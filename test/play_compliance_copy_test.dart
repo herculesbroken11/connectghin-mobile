@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:connectghin_flutter/features/ghinder/ghinder_screen.dart';
 import 'package:connectghin_flutter/features/ghinder/report_feed_post_sheet.dart';
 import 'package:connectghin_flutter/features/membership/premium_benefits.dart';
 import 'package:connectghin_flutter/features/shell/app_bottom_nav_bar.dart';
@@ -12,6 +13,13 @@ void main() {
     expect(AppBottomNavBar.labels, isNot(contains('Discover')));
     expect(AppBottomNavBar.labels, isNot(contains('Pair Up')));
     expect(AppBottomNavBar.labels, isNot(contains('Find Your 4th')));
+  });
+
+  test('Feed mode labels are Pair Up and Foursome Feed', () {
+    expect(kFeedModePairUpLabel, 'Pair Up');
+    expect(kFeedModeFoursomeLabel, 'Foursome Feed');
+    expect(kFeedModePairUp, 0);
+    expect(kFeedModeFoursome, 1);
   });
 
   test('Feed report reasons include required Play safety categories', () {
@@ -43,7 +51,8 @@ void main() {
     final libDir = Directory('lib');
     expect(libDir.existsSync(), isTrue);
 
-    const obsoleteNavLabels = ['Pair Up', 'Find Your 4th'];
+    // Pair Up is allowed as a Feed mode label; ban only obsolete bottom-nav names.
+    const obsoleteNavLabels = ['Find Your 4th'];
     const unsafeVisiblePhrases = [
       'See who likes you',
       'Profile Boost',

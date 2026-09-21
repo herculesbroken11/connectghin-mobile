@@ -8,6 +8,8 @@ Version prepared: **1.0.2+24**
 
 Code-level Metadata and several safety/copy gaps were fixed for resubmission after Google’s conditional appeal acceptance. **Reviewer login remains primarily an operations/Play Console credential problem**: the app correctly calls production and maps failed auth to “Invalid email or password.” Google’s “Invalid credentials” screenshot matches a real 401 against production when the supplied account does not exist or the password is wrong.
 
+**Pair Up restored** as a mode **inside The Feed** (alongside Foursome Feed). Bottom nav remains Home / Connect / The Feed / Matches / Settings — Pair Up is not a bottom-nav item.
+
 **Conditional GO for code/build** — only after a human verifies the Play Console reviewer credentials on a clean production install and updates the store listing/screenshots.
 
 ## Google-Named Issues
@@ -32,7 +34,7 @@ Code-level Metadata and several safety/copy gaps were fixed for resubmission aft
 ## Critical Release Blockers
 
 1. **Play Console reviewer credentials** must work on production (create/test dedicated account).
-2. **Store listing + screenshots** must match `google_play_store_listing_final.md` (no Premier / Discover / Pair Up).
+2. **Store listing + screenshots** must match `google_play_store_listing_final.md` (no Premier / Discover-as-nav / Find Your 4th). Pair Up is allowed **inside** The Feed.
 3. **Play Console** Child Safety / Data Safety / account deletion URL must be completed by a human.
 4. Confirm production backend migrations for deletion / Feed report / Terms are deployed.
 
@@ -99,7 +101,7 @@ Recommended next versionCode if another upload is needed after this one: **25**.
 
 - [ ] Clean install release APK/AAB
 - [ ] Sign in with Play Console credentials
-- [ ] Connect / The Feed labels
+- [ ] Connect / The Feed labels (Pair Up + Foursome Feed modes inside The Feed)
 - [ ] Free quota / Premium gates
 - [ ] Report user + Report Feed post
 - [ ] Terms / Privacy / Delete Account copy
