@@ -20,6 +20,7 @@ import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_rating_chip.dart';
 import '../../data/api_profile.dart';
 import 'data/foursome_feed_api.dart';
+import 'feed_post_create_ux.dart';
 import 'report_feed_post_sheet.dart';
 
 const _gameStyleFilters = <String, String>{
@@ -116,11 +117,14 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
   }
 
   Future<void> _contact(FoursomeFeedPost post) async {
+    final session = context.read<AuthSession>();
+    if (isOwnFeedPost(posterId: post.posterId, currentUserId: session.userId)) {
+      return;
+    }
     if (!_isPremium) {
       _showPremiumGate();
       return;
     }
-    final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) return;
     try {
@@ -170,21 +174,31 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
             final t = session.accessToken;
             if (t == null) return;
             try {
-              await FoursomeFeedApi(session.apiClient).create(
-                accessToken: t,
-                courseName: fields.courseName,
-                city: fields.city,
-                state: fields.state,
-                roundDateIso: fields.roundDateIso,
-                teeTime: fields.teeTime,
-                spotsNeeded: fields.spotsNeeded,
-                gameStyle: fields.gameStyle,
-                handicapPreference: fields.handicapPreference,
-                feeLabel: fields.feeLabel,
-                notes: fields.notes,
+              await afterSuccessfulFeedPostCreate(
+                create: () => FoursomeFeedApi(session.apiClient).create(
+                  accessToken: t,
+                  courseName: fields.courseName,
+                  city: fields.city,
+                  state: fields.state,
+                  roundDateIso: fields.roundDateIso,
+                  teeTime: fields.teeTime,
+                  spotsNeeded: fields.spotsNeeded,
+                  gameStyle: fields.gameStyle,
+                  handicapPreference: fields.handicapPreference,
+                  feeLabel: fields.feeLabel,
+                  notes: fields.notes,
+                ),
+                closeSheet: () {
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                showSuccess: (message) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(message)),
+                  );
+                },
+                reloadFeed: _load,
               );
-              if (ctx.mounted) Navigator.pop(ctx);
-              await _load();
             } catch (e) {
               if (_isPremiumRequired(e)) {
                 if (ctx.mounted) Navigator.pop(ctx);
@@ -260,16 +274,27 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
                 )
               else
                 ..._posts.map(
-                  (p) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _FoursomePostCard(
-                      post: p,
-                      isPremium: _isPremium,
-                      onContact: () => _contact(p),
-                      onLockedTap: _showPremiumGate,
-                      onReport: () => showReportFeedPostSheet(context, postId: p.id),
-                    ),
-                  ),
+                  (p) {
+                    final session = context.read<AuthSession>();
+                    final isOwn = isOwnFeedPost(
+                      posterId: p.posterId,
+                      currentUserId: session.userId,
+                    );
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _FoursomePostCard(
+                        post: p,
+                        isPremium: _isPremium,
+                        isOwnPost: isOwn,
+                        onContact: () => _contact(p),
+                        onLockedTap: _showPremiumGate,
+                        onReport: () {
+                          if (!feedPostAllowsReport(isOwnPost: isOwn)) return;
+                          showReportFeedPostSheet(context, postId: p.id);
+                        },
+                      ),
+                    );
+                  },
                 ),
             ],
           ),
@@ -404,6 +429,7 @@ class _FoursomePostCard extends StatelessWidget {
   const _FoursomePostCard({
     required this.post,
     required this.isPremium,
+    required this.isOwnPost,
     required this.onContact,
     required this.onLockedTap,
     required this.onReport,
@@ -411,6 +437,7 @@ class _FoursomePostCard extends StatelessWidget {
 
   final FoursomeFeedPost post;
   final bool isPremium;
+  final bool isOwnPost;
   final VoidCallback onContact;
   final VoidCallback onLockedTap;
   final VoidCallback onReport;
@@ -420,6 +447,8 @@ class _FoursomePostCard extends StatelessWidget {
     final p = post;
     final dateLabel = _formatDate(p.roundDate);
     final timeAgo = formatRelativeTime(p.createdAt);
+    final allowContact = feedPostAllowsContact(isOwnPost: isOwnPost);
+    final allowReport = feedPostAllowsReport(isOwnPost: isOwnPost);
 
     return Container(
       decoration: BoxDecoration(
@@ -473,20 +502,21 @@ class _FoursomePostCard extends StatelessWidget {
                         Text(timeAgo,
                             style: const TextStyle(
                                 fontSize: 12, color: CgColors.gray500)),
-                        PopupMenuButton<String>(
-                          tooltip: 'Post options',
-                          icon: const Icon(Icons.more_vert,
-                              size: 20, color: CgColors.gray600),
-                          onSelected: (value) {
-                            if (value == 'report') onReport();
-                          },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: 'report',
-                              child: Text('Report Post'),
-                            ),
-                          ],
-                        ),
+                        if (allowReport)
+                          PopupMenuButton<String>(
+                            tooltip: 'Post options',
+                            icon: const Icon(Icons.more_vert,
+                                size: 20, color: CgColors.gray600),
+                            onSelected: (value) {
+                              if (value == 'report') onReport();
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'report',
+                                child: Text('Report Post'),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                     if (p.posterHandicap != null)
@@ -500,6 +530,24 @@ class _FoursomePostCard extends StatelessWidget {
                       spacing: 6,
                       runSpacing: 6,
                       children: [
+                        if (isOwnPost)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: CgColors.gray100,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: CgColors.gray200),
+                            ),
+                            child: const Text(
+                              kFoursomeFeedOwnPostLabel,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: CgColors.gray600,
+                              ),
+                            ),
+                          ),
                         if (p.posterPremium)
                           const CgPremiumBadge(compact: true),
                         if (p.posterVerified)
@@ -587,18 +635,20 @@ class _FoursomePostCard extends StatelessWidget {
                 style: const TextStyle(
                     fontSize: 14, color: CgColors.gray700, height: 1.4)),
           ],
-          const SizedBox(height: 14),
-          if (isPremium)
-            CgPrimaryButton(
-              label: 'Join / Contact',
-              onPressed: onContact,
-            )
-          else
-            CgPremiumLockedCta(
-              message: 'Contact this golfer — Upgrade to Premium',
-              helpText: 'Premium members can reply and contact golfers',
-              onUpgrade: onLockedTap,
-            ),
+          if (allowContact) ...[
+            const SizedBox(height: 14),
+            if (isPremium)
+              CgPrimaryButton(
+                label: 'Join / Contact',
+                onPressed: onContact,
+              )
+            else
+              CgPremiumLockedCta(
+                message: 'Contact this golfer — Upgrade to Premium',
+                helpText: 'Premium members can reply and contact golfers',
+                onUpgrade: onLockedTap,
+              ),
+          ],
         ],
       ),
     );
@@ -741,6 +791,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
   final _hcpPref = TextEditingController();
   final _fee = TextEditingController();
   final _notes = TextEditingController();
+  final _submitGate = FeedPostSubmitGate();
   DateTime _date = DateTime.now().add(const Duration(days: 1));
   int _spots = 1;
   String _style = 'CASUAL';
@@ -796,24 +847,27 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
       );
       return;
     }
-    setState(() => _saving = true);
-    try {
-      await widget.onSubmit(_CreatePostFields(
-        courseName: _course.text.trim(),
-        city: _city.text.trim(),
-        state: _stateCode,
-        roundDateIso:
-            DateTime(_date.year, _date.month, _date.day).toIso8601String(),
-        teeTime: _teeTime.text.trim(),
-        spotsNeeded: _spots,
-        gameStyle: _style,
-        handicapPreference: _hcpPref.text.trim(),
-        feeLabel: _fee.text.trim(),
-        notes: _notes.text.trim(),
-      ));
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    await _submitGate.run(() async {
+      if (!mounted) return;
+      setState(() => _saving = true);
+      try {
+        await widget.onSubmit(_CreatePostFields(
+          courseName: _course.text.trim(),
+          city: _city.text.trim(),
+          state: _stateCode,
+          roundDateIso:
+              DateTime(_date.year, _date.month, _date.day).toIso8601String(),
+          teeTime: _teeTime.text.trim(),
+          spotsNeeded: _spots,
+          gameStyle: _style,
+          handicapPreference: _hcpPref.text.trim(),
+          feeLabel: _fee.text.trim(),
+          notes: _notes.text.trim(),
+        ));
+      } finally {
+        if (mounted) setState(() => _saving = false);
+      }
+    });
   }
 
   @override
