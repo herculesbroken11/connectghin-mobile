@@ -12,6 +12,7 @@ import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_image_url.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/premium/effective_premium.dart';
 import '../../data/api_profile.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_text_field.dart';
@@ -382,7 +383,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  bool get _premium => (_userJson?['membershipType'] as String?) == 'PREMIUM';
+  bool get _premium =>
+      isEffectivePremiumFromJson(_profileJson, user: _userJson) ||
+      (_profileJson?['isPremium'] == true);
   bool get _verified => _profileJson?['isGHINVerified'] as bool? ?? false;
 
   /// Primary first, then [sortOrder] — same order as header and gallery.
@@ -810,12 +813,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _KeyValueRow(
-                                  'Pace',
+                                  'Play Frequency',
                                   _profileJson?['playFrequency'] as String? ??
                                       '—'),
                               const SizedBox(height: 12),
                               _KeyValueRow(
-                                  'Competition',
+                                  'Skill Level',
                                   _profileJson?['skillLevel'] as String? ??
                                       '—'),
                               const SizedBox(height: 12),
@@ -1787,8 +1790,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
       if (t != null && t.isNotEmpty) rows.add(MapEntry(label, t));
     }
 
-    add('Pace', d.playFrequency);
-    add('Competition', d.skillLevel);
+    add('Play Frequency', d.playFrequency);
+    add('Skill Level', d.skillLevel);
     add('Drinking', d.drinkingPreference);
     add('Smoking', d.smokingPreference);
     add('Music', d.musicPreference);

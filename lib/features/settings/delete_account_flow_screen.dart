@@ -141,6 +141,11 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
                       'Submitting this request signs you out and deletes or anonymizes your ConnectGHIN account data using our standard deletion workflow. Google Play or App Store subscriptions are not cancelled automatically — manage billing in the store.',
                       style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
                     ),
+                    SizedBox(height: 8),
+                    Text(
+                      'You can also request deletion on the web at https://connectghin.com/delete-account.',
+                      style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
+                    ),
                   ],
                 ),
               ),

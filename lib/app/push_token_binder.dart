@@ -77,7 +77,14 @@ class _PushTokenBinderState extends State<PushTokenBinder> {
       return;
     }
     _accessToken = access;
-    final fcm = await PushNotifications.getToken();
+    String? fcm;
+    try {
+      fcm = await PushNotifications.getToken();
+    } catch (e) {
+      // Soft-fail: notifications optional; never block the rest of the app.
+      debugPrint('FCM getToken in binder failed: $e');
+      return;
+    }
     if (fcm == null || fcm.isEmpty) {
       return;
     }

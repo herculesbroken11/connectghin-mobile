@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
+import '../../core/premium/effective_premium.dart';
 import '../../data/api_profile.dart';
 import '../../core/widgets/cg_outline_button.dart';
 import '../../core/network/api_user_message.dart';
@@ -70,9 +71,8 @@ class _GhinderScreenState extends State<GhinderScreen> {
     if (t == null) return;
     try {
       final me = await ProfilesApi(session.apiClient).getMe(t);
-      final user = me['user'] as Map<String, dynamic>?;
       if (mounted) {
-        setState(() => _isPremium = user?['membershipType'] == 'PREMIUM');
+        setState(() => _isPremium = isEffectivePremiumFromJson(me));
       }
     } catch (_) {
       // The feed handles its own loading and errors; the pill can remain inactive.
@@ -132,7 +132,7 @@ class _GhinderScreenState extends State<GhinderScreen> {
       final h = me['handicap'];
       final myHcp = h is num ? h.toDouble() : double.tryParse('$h');
       final premium =
-          user?['membershipType'] == 'PREMIUM' || (quota?.isPremium ?? false);
+          isEffectivePremiumFromJson(me) || (quota?.isPremium ?? false);
       if (mounted) {
         setState(() {
           _profiles = _applyFilters(list);

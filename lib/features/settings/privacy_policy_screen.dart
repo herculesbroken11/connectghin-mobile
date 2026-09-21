@@ -20,6 +20,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   String _supportEmail = 'support@connectghin.com';
   String _companyDisplayName = 'Connectghin';
   String _businessMailingAddress = '';
+  String _privacyUrl = 'https://connectghin.com/privacy';
 
   @override
   void initState() {
@@ -44,8 +45,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             _nonEmpty(data['companyDisplayName']) ?? _companyDisplayName;
         _businessMailingAddress =
             _nonEmpty(data['businessMailingAddress']) ?? '';
+        _privacyUrl =
+            _nonEmpty(data['privacyUrl']) ?? 'https://connectghin.com/privacy';
         _nonEmpty(data['termsUrl']);
-        _nonEmpty(data['privacyUrl']);
       });
     } catch (_) {
       // Keep safe defaults when legal configuration is unavailable.
@@ -55,6 +57,22 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   static String? _nonEmpty(dynamic value) {
     final text = value?.toString().trim() ?? '';
     return text.isEmpty ? null : text;
+  }
+
+  Future<void> _openPrivacyUrl() async {
+    final uri = Uri.tryParse(_privacyUrl);
+    if (uri == null) return;
+    var launched = false;
+    try {
+      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      launched = false;
+    }
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open $_privacyUrl')),
+      );
+    }
   }
 
   Future<void> _emailPrivacyTeam() async {
@@ -107,6 +125,18 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             'Last updated: April 8, 2026',
             style:
                 TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.35),
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: _openPrivacyUrl,
+            child: Text(
+              _privacyUrl,
+              style: const TextStyle(
+                fontSize: 14,
+                color: CgColors.blue600,
+                decoration: TextDecoration.underline,
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           Container(

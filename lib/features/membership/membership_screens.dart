@@ -13,6 +13,7 @@ import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/premium/effective_premium.dart';
 import '../../core/widgets/cg_outline_button.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
@@ -88,6 +89,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
   ProductDetails? _yearlyProduct;
   String? _membershipType;
   String? _membershipStatus;
+  bool _isPremiumEffective = false;
   Map<String, dynamic>? _subscription;
   bool _yearlyIapSelected = true;
   bool _purchaseBusy = false;
@@ -122,6 +124,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
             billing['membershipType']?.toString();
         _membershipStatus = me['membershipStatus']?.toString() ??
             billing['membershipStatus']?.toString();
+        _isPremiumEffective = me['isPremium'] == true ||
+            billing['isPremium'] == true ||
+            isEffectivePremiumFromJson(me);
         _subscription = billing['subscription'] as Map<String, dynamic>?;
         _loading = false;
       });
@@ -131,9 +136,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
   }
 
   bool get _isPremiumActive {
+    if (_isPremiumEffective) return true;
     final t = _membershipType;
     final s = _membershipStatus;
-    return t == 'PREMIUM' && (s == 'ACTIVE' || s == 'TRIALING');
+    return t == 'PREMIUM' && (s == 'ACTIVE' || s == 'TRIALING' || s == 'PAST_DUE');
   }
 
   String get _monthlyPriceLabel =>

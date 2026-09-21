@@ -96,6 +96,14 @@ String messageFromApiError(
       return 'Sign-in was cancelled.';
     }
     final raw = '$error'.toLowerCase();
+    if (raw.contains('firebase_messaging') ||
+        raw.contains('fis_auth') ||
+        raw.contains('firebaseinstallations') ||
+        raw.contains('firebase installations') ||
+        raw.contains('messaging/unknown') ||
+        raw.contains('executionexception')) {
+      return 'Notifications could not be enabled right now. Please try again later.';
+    }
     if (raw.contains('socketexception') ||
         raw.contains('clientexception') ||
         raw.contains('failed host lookup') ||
@@ -104,6 +112,13 @@ String messageFromApiError(
         raw.contains('timed out') ||
         raw.contains('timeout')) {
       return 'Cannot reach Connectghin right now. Check your connection and try again.';
+    }
+    // Never surface raw PlatformException / Java stack text to users.
+    if (raw.contains('platformexception') ||
+        raw.contains('java.') ||
+        raw.contains('ioexception') ||
+        raw.contains('firebase')) {
+      return fallback;
     }
     final s = '$error'
         .replaceFirst(RegExp(r'^Exception:\s*'), '')

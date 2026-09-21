@@ -9,6 +9,7 @@ import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
 import '../../core/network/api_user_message.dart';
+import '../../core/premium/effective_premium.dart';
 import '../../core/widgets/cg_app_logo.dart';
 import '../../core/widgets/cg_brand_header.dart';
 import '../../core/widgets/google_mark.dart';
@@ -41,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
   InboxRealtimeTick? _inboxTick;
   String? _profileDisplayName;
   bool _expiredPromptShown = false;
+  /// Effective Premium (store or admin override) from `GET /profiles/me`.
+  bool _isPremium = false;
 
   @override
   void initState() {
@@ -110,11 +113,15 @@ class _HomeScreenState extends State<HomeScreen> {
           _profileCompletionPercent = pct is int ? pct : int.tryParse('$pct');
           _isGhinVerified = verified;
           _profileDisplayName = displayName;
+          _isPremium = isEffectivePremiumFromJson(profileJson);
           _loading = false;
         });
         final membershipStatus = authMe['membershipStatus']?.toString();
         final membershipType = authMe['membershipType']?.toString();
+        final effectivePremium =
+            authMe['isPremium'] == true || _isPremium;
         if (!_expiredPromptShown &&
+            !effectivePremium &&
             membershipStatus == 'EXPIRED' &&
             membershipType == 'PREMIUM' &&
             mounted) {
@@ -601,7 +608,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
+            if (!_isPremium)
+              SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Container(

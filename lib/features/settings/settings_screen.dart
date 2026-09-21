@@ -119,6 +119,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (!mounted) return;
         if (granted) {
           await PushTokenRegistry.requestResync();
+          final token = await PushNotifications.getToken();
+          if (!mounted) return;
+          if (token == null || token.isEmpty) {
+            showUserMessageSnackBar(
+              context,
+              'Notifications could not be enabled right now. Please try again later.',
+            );
+          }
         }
       }
     } catch (e) {

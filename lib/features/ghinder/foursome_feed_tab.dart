@@ -247,13 +247,14 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
               ),
               const SizedBox(height: 16),
               if (_posts.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 48),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 48),
                   child: Center(
                     child: Text(
-                      'No open spots nearby yet.\nCheck back soon or post your own round.',
+                      'No ${_gameStyleFilters[_gameStyle] ?? 'open'} spots yet.\n'
+                      'Try another tab, check back soon, or post your own round.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: CgColors.gray600),
+                      style: const TextStyle(color: CgColors.gray600),
                     ),
                   ),
                 )

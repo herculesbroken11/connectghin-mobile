@@ -354,7 +354,14 @@ class _NotificationPermissionScreenState
       final granted = await PushNotifications.requestPermission();
       if (granted) {
         await PushTokenRegistry.requestResync();
+        final token = await PushNotifications.getToken();
         if (!mounted) return;
+        if (token == null || token.isEmpty) {
+          showUserMessageSnackBar(
+            context,
+            'Notifications could not be enabled right now. Please try again later.',
+          );
+        }
         context.pop();
         return;
       }
@@ -365,6 +372,17 @@ class _NotificationPermissionScreenState
       );
       await Geolocator.openAppSettings();
       if (!mounted) return;
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      showUserMessageSnackBar(
+        context,
+        messageFromApiError(
+          e,
+          fallback:
+              'Notifications could not be enabled right now. Please try again later.',
+        ),
+      );
       context.pop();
     } finally {
       if (mounted) setState(() => _busy = false);

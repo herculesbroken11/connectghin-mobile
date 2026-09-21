@@ -62,28 +62,40 @@ class PushNotifications {
     }
   }
 
-  static Future<bool> requestPermission() async {
-    if (!isSupported) {
-      return false;
-    }
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    if (Platform.isAndroid) {
-      return true;
-    }
-    final status = settings.authorizationStatus;
-    return status == AuthorizationStatus.authorized ||
-        status == AuthorizationStatus.provisional;
-  }
-
   static Future<String?> getToken() async {
     if (!isSupported) {
       return null;
     }
-    return _messaging.getToken();
+    try {
+      return await _messaging.getToken();
+    } catch (e, st) {
+      // FIS_AUTH_ERROR and other Installations failures must not crash UX.
+      debugPrint('FCM getToken failed: $e\n$st');
+      return null;
+    }
+  }
+
+  /// Requests notification permission. Failures are soft (return false).
+  static Future<bool> requestPermission() async {
+    if (!isSupported) {
+      return false;
+    }
+    try {
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (Platform.isAndroid) {
+        return true;
+      }
+      final status = settings.authorizationStatus;
+      return status == AuthorizationStatus.authorized ||
+          status == AuthorizationStatus.provisional;
+    } catch (e, st) {
+      debugPrint('FCM requestPermission failed: $e\n$st');
+      return false;
+    }
   }
 
   static Stream<String> get onTokenRefresh {
