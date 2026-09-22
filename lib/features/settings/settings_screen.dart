@@ -249,7 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               },
                             ),
                             _switchRow(
-                              title: 'Foursome Feed',
+                              title: 'The Feed',
                               subtitle: 'When someone posts near you.',
                               value: _notifyFoursomeFeed,
                               onChanged: (v) {

@@ -266,7 +266,7 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
                   child: Center(
                     child: Text(
                       'No ${_gameStyleFilters[_gameStyle] ?? 'open'} spots yet.\n'
-                      'Try another tab, check back soon, or post your own round.',
+                      'Check back soon or post your own round.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: CgColors.gray600),
                     ),

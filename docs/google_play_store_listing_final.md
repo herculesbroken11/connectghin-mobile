@@ -3,43 +3,39 @@
 **App name:** Connectghin  
 **Package:** com.connectghin.app  
 
-Do **not** use: Premier, best, #1, leading, Official GHIN, GHIN Verified, USGA verified, Discover / Find Your 4th as bottom-nav names, See who likes you, Profile Boost, message anyone.
-
-**Product modes (allowed):** The Feed includes **Pair Up** (swipe) and **Foursome Feed** (open spots). Pair Up is **not** a bottom-nav item.
+Do **not** use: Premier, best, #1, leading, Official GHIN, GHIN Verified, USGA verified, Discover / Find Your 4th / Pair Up as bottom-nav or Feed mode names, See who likes you, Profile Boost, message anyone.
 
 ## Short description
 
-Find nearby golfers on Connect, then Pair Up or browse Foursome Feed open spots.
+Find nearby golfers on Connect, Match and chat, and browse open spots on The Feed.
 
 ## Full description
 
 Connectghin helps golfers find playing partners near them.
-
-The Feed includes Pair Up and Foursome Feed. Pair Up helps golfers find others who are looking to play, while Foursome Feed lets golfers browse open spots for upcoming rounds.
 
 WHAT YOU CAN DO
 
 • Create a golfer profile with photos, location, and golf preferences  
 • Browse nearby golfers on Connect and send a Connect like  
 • When two golfers Connect with each other, they Match and can message in the app  
-• Open The Feed to use Pair Up (swipe) or Foursome Feed (open spots)  
+• Browse The Feed for open spots for upcoming rounds  
+• Premium members can post an open spot and contact Feed posters privately  
 • Submit handicap information for a Handicap Verified badge after review  
 • Rate playing partners and report or block users when needed  
 
 FREE FEATURES
 
 • Profile, Connect, Matches, and messaging with your Matches  
-• Pair Up on The Feed (shares the same daily like limit as Connect)  
-• A limited preview of Foursome Feed posts  
+• A limited preview of posts on The Feed  
 • A daily limit on new Connect likes (shown in the app)  
 
 PREMIUM MEMBERSHIP
 
 Premium includes:
 
-• Unlimited Connect likes (and Pair Up likes)  
+• Unlimited Connect likes  
 • Full access to The Feed  
-• Posting open spots on Foursome Feed  
+• Posting open spots on The Feed  
 • Contacting golfers who posted open spots  
 • A Premium badge on your profile  
 
@@ -63,11 +59,11 @@ Find Golf Partners Near You
 
 ## Screenshot captions (suggestions)
 
-1. Home — Connectghin  
+1. Home — Player Ratings  
 2. Connect — nearby golfers  
 3. Golfer profile  
-4. The Feed — Pair Up swipe  
-5. The Feed — Foursome Feed open spots  
+4. The Feed — open spots  
+5. Post open spot  
 6. Matches  
 7. Chat with a Match  
 8. Premium benefits  
@@ -75,3 +71,10 @@ Find Golf Partners Near You
 ## Premium wording (only)
 
 Unlimited Connect likes · Full Feed access · Post open spots · Contact Feed posters · Premium badge
+
+## Subscription list prices (US target; Play Console is source of truth)
+
+See `docs/google_play_subscription_pricing.md`.
+
+Monthly product `connectghin_monthly`: $2.99/month  
+Annual product `connectghin_yearly`: $29.99/year  

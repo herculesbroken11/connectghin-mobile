@@ -20,6 +20,7 @@ import '../membership/premium_benefits.dart';
 import '../messages/data/inbox_realtime_tick.dart';
 import '../messages/data/messages_api.dart';
 import '../notifications/data/notifications_api.dart';
+import '../player_ratings/data/player_ratings_api.dart';
 import '../profiles/data/profiles_api.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -36,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _unreadNotifications = 0;
   List<ApiGolferCard> _recent = [];
 
-  /// From `GET /profiles/me` → `profileCompletionPercent` (see backend `computeProfileCompletionPercent`).
+  /// From `GET /profiles/me` â†’ `profileCompletionPercent` (see backend `computeProfileCompletionPercent`).
   int? _profileCompletionPercent;
   bool _isGhinVerified = false;
   InboxRealtimeTick? _inboxTick;
@@ -44,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _expiredPromptShown = false;
   /// Effective Premium (store or admin override) from `GET /profiles/me`.
   bool _isPremium = false;
+  GolferRatingSummary _ratingSummary = const GolferRatingSummary();
+  bool _ratingsLoaded = false;
 
   @override
   void initState() {
@@ -79,6 +82,9 @@ class _HomeScreenState extends State<HomeScreen> {
         MessagesApi(session.apiClient).listConversations(t),
         ProfilesApi(session.apiClient).getMe(t),
         session.authApi.me(t),
+        PlayerRatingsApi(session.apiClient)
+            .listForUser(t, uid, status: 'approved', pageSize: 2)
+            .catchError((_) => <String, dynamic>{}),
       ]);
       final notificationsRaw = await NotificationsApi(session.apiClient)
           .listNotifications(t)
@@ -87,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final convRaw = results[1] as List<dynamic>;
       final profileJson = results[2] as Map<String, dynamic>;
       final authMe = results[3] as Map<String, dynamic>;
+      final ratingsJson = results[4] as Map<String, dynamic>;
       final unread = notificationsRaw.where((e) {
         if (e is! Map) return false;
         return e['isRead'] != true;
@@ -104,6 +111,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       final pct = profileJson['profileCompletionPercent'];
       final verified = profileJson['isGHINVerified'] == true;
+      final ratingSummary = GolferRatingSummary.fromJson(
+        ratingsJson['profileSummary'] as Map<String, dynamic>?,
+      );
       if (mounted) {
         setState(() {
           _matchCount = matchesRaw.length;
@@ -114,6 +124,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _isGhinVerified = verified;
           _profileDisplayName = displayName;
           _isPremium = isEffectivePremiumFromJson(profileJson);
+          _ratingSummary = ratingSummary;
+          _ratingsLoaded = true;
           _loading = false;
         });
         final membershipStatus = authMe['membershipStatus']?.toString();
@@ -234,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 _loading
-                                    ? 'Loading your profile…'
+                                    ? 'Loading your profileâ€¦'
                                     : 'Welcome back, $firstName',
                                 style: TextStyle(
                                   color: CgColors.white.withValues(alpha: 0.9),
@@ -314,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _StatCard(
-                            value: '—',
+                            value: 'â€”',
                             label: 'Profile Views',
                             bg: Colors.white.withValues(alpha: 0.12),
                             fg: CgColors.white,
@@ -491,8 +503,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Center(
                         child: Text(
                           _loading
-                              ? 'Loading…'
-                              : 'No matches yet — try Connect!',
+                              ? 'Loadingâ€¦'
+                              : 'No matches yet â€” try Connect!',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
@@ -576,35 +588,23 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: Text('Quick Actions',
+                child: Text('Your Player Ratings',
                     style: Theme.of(context).textTheme.titleLarge),
               ),
             ),
             SliverPadding(
               padding: const EdgeInsets.all(24),
               sliver: SliverToBoxAdapter(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _QuickTile(
-                        icon: Icons.grid_view_rounded,
-                        iconBg: CgColors.green100,
-                        iconColor: CgColors.green700,
-                        label: 'The Feed',
-                        onTap: () => context.go(AppPaths.appGhinder),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _QuickTile(
-                        icon: Icons.search,
-                        iconBg: CgColors.blue50,
-                        iconColor: CgColors.blue700,
-                        label: 'Connect',
-                        onTap: () => context.go(AppPaths.appDiscover),
-                      ),
-                    ),
-                  ],
+                child: _HomePlayerRatingsCard(
+                  loaded: _ratingsLoaded,
+                  summary: _ratingSummary,
+                  onView: () {
+                    final uid = context.read<AuthSession>().userId;
+                    if (uid == null || uid.isEmpty) return;
+                    context.push(
+                      '${AppPaths.appPlayerRatings}?userId=${Uri.encodeComponent(uid)}',
+                    );
+                  },
                 ),
               ),
             ),
@@ -829,48 +829,70 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-class _QuickTile extends StatelessWidget {
-  const _QuickTile({
-    required this.icon,
-    required this.iconBg,
-    required this.iconColor,
-    required this.label,
-    required this.onTap,
+class _HomePlayerRatingsCard extends StatelessWidget {
+  const _HomePlayerRatingsCard({
+    required this.loaded,
+    required this.summary,
+    required this.onView,
   });
 
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
-  final String label;
-  final VoidCallback onTap;
+  final bool loaded;
+  final GolferRatingSummary summary;
+  final VoidCallback onView;
 
   @override
   Widget build(BuildContext context) {
+    final has = summary.hasRating;
     return Material(
       color: CgColors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        onTap: onView,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 24),
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: CgColors.gray200),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration:
-                    BoxDecoration(color: iconBg, shape: BoxShape.circle),
-                child: Icon(icon, color: iconColor, size: 26),
+              if (!loaded)
+                const Text(
+                  'Loading ratings…',
+                  style: TextStyle(color: CgColors.gray500, fontSize: 14),
+                )
+              else if (!has)
+                const Text(
+                  'No player ratings yet.',
+                  style: TextStyle(color: CgColors.gray600, fontSize: 15),
+                )
+              else ...[
+                Text(
+                  'Average rating: ${summary.averageRating!.toStringAsFixed(1)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: CgColors.gray900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Ratings: ${summary.reviewCount}',
+                  style: const TextStyle(fontSize: 14, color: CgColors.gray600),
+                ),
+              ],
+              const SizedBox(height: 14),
+              const Text(
+                'View ratings',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: CgColors.green700,
+                ),
               ),
-              const SizedBox(height: 8),
-              Text(label,
-                  style:
-                      const TextStyle(fontSize: 14, color: CgColors.gray900)),
             ],
           ),
         ),

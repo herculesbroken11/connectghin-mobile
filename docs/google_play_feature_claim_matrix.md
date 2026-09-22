@@ -1,6 +1,6 @@
 # Google Play feature / claim matrix
 
-Source: Connectghin Flutter app + NestJS backend audit (2026-09-15).
+Source: Connectghin Flutter app + NestJS backend audit (updated 2026-09-22).
 
 App name: **Connectghin** · Package: **com.connectghin.app**
 
@@ -13,18 +13,17 @@ App name: **Connectghin** · Package: **com.connectghin.app**
 | Profile | `profile_screens.dart` | `/profiles/me` | Free | Yes | Yes | Yes |
 | Photos (gallery) | `manage_photos_screen.dart` | upload endpoints | Free | Yes | Yes | Yes |
 | Location (when in use) | `location_device.dart` | profile lat/lng | Free | Yes | Yes | Yes |
-| Connect (nearby) | `discover_screen.dart` (nav label Connect) | `/discovery` | Free | Yes | Yes | Yes |
+| Connect (nearby) | `discover_screen.dart` (nav label Connect) | `/discovery` + `/swipes` | Free | Yes | Yes | Yes |
 | Daily Connect like limit | `swipe_daily_quota.dart` | `LIKE_LIMIT_REACHED` | Free limited | Yes | Yes | Yes |
 | Unlimited Connect | Premium path in swipes | premium check | Premium | Yes | Yes | Yes |
 | Mutual Connect → Match | swipes → matches | matches module | Free | Yes | Yes | Yes |
 | Chat with Matches | `messages_screens.dart` | conversations + socket | Free after Match | Yes | Yes | Yes |
-| The Feed | `ghinder_screen.dart` + `foursome_feed_tab.dart` | discovery + foursome-feed | Pair Up free (shared swipe quota); Feed preview free | Yes | Yes | Yes |
-| Pair Up (Feed mode) | `ghinder_screen.dart` mode tab | `/discovery` + swipes | Free (same daily like limit as Connect) | Yes | Yes — as Feed mode, **not** bottom nav | Yes |
+| The Feed (open spots) | `ghinder_screen.dart` + `foursome_feed_tab.dart` | foursome-feed | Preview free | Yes | Yes | Yes |
 | Full Feed / post / contact | Premium gates | `PREMIUM_REQUIRED` | Premium | Yes | Yes | Yes |
-| Premium badge | `cg_premium_badge.dart` | membershipType | Premium | Yes | Yes | Yes |
+| Premium badge | `cg_premium_badge.dart` | effective Premium | Premium | Yes | Yes | Yes |
 | Restore purchases | IAP membership screens | Google Play verify | Premium | Yes | Yes | Yes |
 | Handicap Verified (manual) | verification screens + badge | GHIN verification queue (manual) | Free submit | Yes | Yes — as **manual review**, not official | Yes |
-| Player ratings | player_ratings screens | player-ratings | Free | Yes | Yes | Yes |
+| Player ratings | player_ratings + Home card | player-ratings | Free | Yes | Yes | Yes |
 | Report / block user | report/block flows | reports, blocks | Free | Yes | Yes | Yes |
 | Report Feed post | `report_feed_post_sheet.dart` | feed report API | Free | Yes | Yes | Yes |
 | Terms acceptance before UGC | `terms_acceptance_gate.dart` | `TERMS_ACCEPTANCE_REQUIRED` | Free | Yes | Yes | Yes |
@@ -33,12 +32,17 @@ App name: **Connectghin** · Package: **com.connectghin.app**
 | Account deletion (web) | Terms link | web deletion APIs | Free | Yes | Yes | Yes |
 | Push notifications | Firebase messaging | device tokens | Optional | Yes | Yes | Yes |
 
+## Subscriptions (US target; Console is source of truth)
+
+- `connectghin_monthly` → $2.99/month  
+- `connectghin_yearly` → $29.99/year  
+- See `docs/google_play_subscription_pricing.md`
+
 ## Do not advertise
 
 - Official GHIN / USGA verification or affiliation
 - Premier / best / #1 claims
 - See who likes you, Profile Boost, priority placement, message anyone
-- Discover / Find Your 4th as current bottom-nav names
-- Pair Up as a bottom-nav name (Pair Up is a mode **inside** The Feed)
+- Discover / Pair Up / Find Your 4th / Foursome Feed as current nav or Feed mode names
 - Automatic Google Play subscription cancellation on account deletion
 - Guaranteed safety/moderation outcomes

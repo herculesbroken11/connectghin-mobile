@@ -21,10 +21,15 @@ import '../subscriptions/data/subscriptions_api.dart';
 import '../subscriptions/iap_product_config.dart';
 import 'premium_benefits.dart';
 
-/// Display strings aligned with membership mockups (actual charge is provided by in-app purchase products).
-const String kPremiumMonthlyDisplay = '\$3.99';
-const String kPremiumYearlyDisplay = '\$39.99';
-const String kRenewMonthlyDisplay = '\$3.99';
+/// Fallback display strings when Play Billing ProductDetails are unavailable.
+/// Authoritative purchase price always comes from Google Play ProductDetails.price.
+const String kPremiumMonthlyDisplay = '\$2.99';
+const String kPremiumYearlyDisplay = '\$29.99';
+const String kRenewMonthlyDisplay = '\$2.99';
+
+/// Factual annual-vs-monthly savings note (12 × $2.99 = $35.88 − $29.99 ≈ 16%).
+const String kPremiumYearlySavingsHint = 'Save about 16% vs paying monthly';
+const String kPremiumYearlyEffectiveMonthlyHint = 'About \$2.50/month';
 
 String _formatUiDate(DateTime d) {
   const months = <String>[
@@ -1468,14 +1473,17 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text('$kPremiumYearlyDisplay / year',
-                          style: TextStyle(
+                      Text('$kPremiumYearlyDisplay / year',
+                          style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
                               color: CgColors.green900)),
-                      const Text('Save 16% • Just \$3.33/month',
+                      const Text(kPremiumYearlySavingsHint,
                           style:
                               TextStyle(fontSize: 13, color: CgColors.gray700)),
+                      const Text(kPremiumYearlyEffectiveMonthlyHint,
+                          style:
+                              TextStyle(fontSize: 12, color: CgColors.gray500)),
                       const SizedBox(height: 12),
                       CgPrimaryButton(
                         label: 'Renew Annual',
