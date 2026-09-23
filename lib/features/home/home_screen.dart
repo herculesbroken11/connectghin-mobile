@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 _loading
-                                    ? 'Loading your profileâ€¦'
+                                    ? 'Loading your profile...'
                                     : 'Welcome back, $firstName',
                                 style: TextStyle(
                                   color: CgColors.white.withValues(alpha: 0.9),
@@ -326,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _StatCard(
-                            value: 'â€”',
+                            value: '-',
                             label: 'Profile Views',
                             bg: Colors.white.withValues(alpha: 0.12),
                             fg: CgColors.white,
@@ -503,8 +503,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Center(
                         child: Text(
                           _loading
-                              ? 'Loadingâ€¦'
-                              : 'No matches yet â€” try Connect!',
+                              ? 'Loading...'
+                              : 'No matches yet - try Connect!',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
