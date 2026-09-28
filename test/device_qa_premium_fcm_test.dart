@@ -33,6 +33,28 @@ void main() {
         isFalse,
       );
     });
+
+    test('treats an active Premium membership as entitled', () {
+      expect(
+        isEffectivePremiumFromJson({
+          'isPremium': false,
+          'membershipType': 'PREMIUM',
+          'membershipStatus': 'ACTIVE',
+        }),
+        isTrue,
+      );
+    });
+
+    test('does not treat a canceled Premium membership as entitled', () {
+      expect(
+        isEffectivePremiumFromJson({
+          'isPremium': false,
+          'membershipType': 'PREMIUM',
+          'membershipStatus': 'CANCELED',
+        }),
+        isFalse,
+      );
+    });
   });
 
   group('FCM user-facing errors', () {

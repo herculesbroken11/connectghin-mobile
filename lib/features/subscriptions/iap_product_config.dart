@@ -1,4 +1,5 @@
-/// Google Play / App Store subscription product IDs (must match store consoles exactly).
+/// Subscription product IDs shared by Google Play and the App Store.
+/// The same IDs are valid on both stores; do not invent a second iOS pair.
 abstract final class IapProductConfig {
   static const String androidPackageName = 'com.connectghin.app';
   static const String iosBundleId = 'com.connectghin.app';

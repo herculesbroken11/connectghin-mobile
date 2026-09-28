@@ -19,10 +19,11 @@ import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
 import '../subscriptions/data/subscriptions_api.dart';
 import '../subscriptions/iap_product_config.dart';
+import '../subscriptions/store_billing_copy.dart';
 import 'premium_benefits.dart';
 
-/// Fallback display strings when Play Billing ProductDetails are unavailable.
-/// Authoritative purchase price always comes from Google Play ProductDetails.price.
+/// Fallback display strings when store ProductDetails are unavailable.
+/// The charged price always comes from the store ProductDetails.price.
 const String kPremiumMonthlyDisplay = '\$2.99';
 const String kPremiumYearlyDisplay = '\$29.99';
 const String kRenewMonthlyDisplay = '\$2.99';
@@ -101,6 +102,12 @@ class _MembershipScreenState extends State<MembershipScreen> {
   bool _restoreBusy = false;
   bool _cancelBusy = false;
 
+  StoreBillingCopy get _billingCopy => StoreBillingCopy(
+        Platform.isIOS
+            ? StoreBillingPlatform.appleAppStore
+            : StoreBillingPlatform.googlePlay,
+      );
+
   @override
   void initState() {
     super.initState();
@@ -175,29 +182,32 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
       final monthly = byId(IapProductConfig.monthlyProductId);
       final yearly = byId(IapProductConfig.yearlyProductId);
-      String? err = response.error?.message;
-      if (response.notFoundIDs.isNotEmpty) {
-        final missing = response.notFoundIDs.join(', ');
-        final emulatorHint = Platform.isAndroid
-            ? ' LDPlayer/emulators need Google Play and published subscription products.'
-            : '';
-        err =
-            'Products not found in store: $missing. In Play Console (app com.Connectghin.app), create subscriptions with these exact product IDs, activate them, and use a licensed test account.$emulatorHint';
-      } else if (monthly == null && yearly == null) {
-        err ??=
-            'No subscription products returned. Add ${IapProductConfig.monthlyProductId} and ${IapProductConfig.yearlyProductId} in Google Play Console.';
+      if (response.notFoundIDs.isNotEmpty ||
+          response.error != null ||
+          monthly == null ||
+          yearly == null) {
+        developer.log(
+          'IAP product query platform=${Platform.operatingSystem} '
+          'notFoundIDs=${response.notFoundIDs.join(',')} '
+          'storeError=${response.error?.code}:${response.error?.message} '
+          'returned=${response.productDetails.map((p) => p.id).join(',')}',
+          name: 'IAP',
+        );
       }
       setState(() {
         _monthlyProduct = monthly;
         _yearlyProduct = yearly;
-        _storeError = err;
+        _storeError = (monthly == null && yearly == null)
+            ? kSubscriptionsUnavailableMessage
+            : null;
         _storeLoading = false;
       });
-    } catch (_) {
+    } catch (e, st) {
+      developer.log('IAP product query failed: $e', name: 'IAP', stackTrace: st);
       if (!mounted) return;
       setState(() {
         _storeLoading = false;
-        _storeError = 'Failed to load store products.';
+        _storeError = kSubscriptionsUnavailableMessage;
       });
     }
   }
@@ -286,14 +296,19 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
   Future<void> _startInAppPurchase() async {
     if (_storeLoading) return;
-    final product = _yearlyIapSelected
-        ? (_yearlyProduct ?? _monthlyProduct)
-        : (_monthlyProduct ?? _yearlyProduct);
+    final product = selectedStoreProduct<ProductDetails>(
+      yearlySelected: _yearlyIapSelected,
+      monthly: _monthlyProduct,
+      yearly: _yearlyProduct,
+    );
     if (product == null) {
-      final msg = _storeError ??
-          'No subscription product found. Expected IDs: '
-              '${IapProductConfig.monthlyProductId}, ${IapProductConfig.yearlyProductId}';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      developer.log(
+        'Subscribe blocked; selected plan has no store product yearly=$_yearlyIapSelected',
+        name: 'IAP',
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(kSubscriptionsUnavailableMessage)),
+      );
       return;
     }
     setState(() => _purchaseBusy = true);
@@ -360,14 +375,19 @@ class _MembershipScreenState extends State<MembershipScreen> {
       await _load();
       if (mounted) {
         final unlocked = _isPremiumActive;
+        if (!unlocked && synced > 0 && Platform.isAndroid) {
+          developer.log(
+            'Google Play purchase synced but backend did not mark Premium.',
+            name: 'IAP',
+          );
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              unlocked
-                  ? 'Premium restored successfully.'
-                  : synced > 0
-                      ? 'Store purchase found, but backend verification failed. Check server Google Play credentials.'
-                      : 'No active subscription found on this Google account.',
+              _billingCopy.restoreResult(
+                unlocked: unlocked,
+                syncedFromStore: synced,
+              ),
             ),
           ),
         );
@@ -414,7 +434,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   content: Text(
                     _isPremiumActive
                         ? 'Existing subscription synced. Premium unlocked.'
-                        : 'Play shows an existing subscription. Tap Restore Purchases, or confirm Google Play API credentials on the server.',
+                        : _billingCopy.alreadyOwnedFollowUp,
                   ),
                 ),
               );
@@ -465,28 +485,19 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
   Future<void> _openStoreManagementHelp() async {
     if (!mounted) return;
-    final uri = Uri.parse(
-      Platform.isAndroid
-          ? 'https://play.google.com/store/account/subscriptions'
-          : 'https://apps.apple.com/account/subscriptions',
-    );
+    final copy = _billingCopy;
+    final uri = Uri.parse(copy.subscriptionManagementUrl);
     try {
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Open Google Play or the App Store to manage your subscription.'),
-          ),
+          SnackBar(content: Text(copy.storeManagementLaunchFailure)),
         );
       }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Open Google Play or the App Store to manage your subscription.'),
-        ),
+        SnackBar(content: Text(copy.storeManagementLaunchFailure)),
       );
     }
   }
@@ -499,8 +510,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Cancel subscription?'),
-        content: const Text(
-            'This marks your Premium status as canceled in Connectghin. To stop recurring charges, cancel the subscription in Google Play or the App Store.'),
+        content: Text(_billingCopy.cancelDialogBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -595,6 +605,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final copy = _billingCopy;
     final subStatus = _subscription?['status']?.toString();
     final hasManagedSubscription = _subscription != null;
     final periodEnd = _parseIso(_subscription?['currentPeriodEnd']);
@@ -800,7 +811,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                         ),
                                         const SizedBox(height: 6),
                                         Text(
-                                            'Billed once per year in the app store',
+                                            copy.annualBillingNote,
                                             style: TextStyle(
                                                 fontSize: 13,
                                                 color: CgColors.white
@@ -972,16 +983,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       decoration: BoxDecoration(
                           color: CgColors.blue50,
                           borderRadius: BorderRadius.circular(10)),
-                      child: const Row(
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.shopping_bag_outlined,
+                          const Icon(Icons.shopping_bag_outlined,
                               size: 20, color: CgColors.blue700),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Subscriptions are purchased and renewed through Apple App Store or Google Play. Manage or cancel anytime in your store account settings.',
-                              style: TextStyle(
+                              copy.renewalDisclosure,
+                              style: const TextStyle(
                                   fontSize: 12,
                                   color: CgColors.blue700,
                                   height: 1.35),
@@ -996,10 +1007,14 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     child: CgPrimaryButton(
                       label: _purchaseBusy
                           ? 'Opening store…'
-                          : Platform.isAndroid
-                              ? 'Subscribe with Google Play'
-                              : 'Subscribe with App Store / Google Play',
-                      onPressed: _purchaseBusy || _storeLoading
+                          : copy.subscribeButtonLabel,
+                      onPressed: _purchaseBusy ||
+                              _storeLoading ||
+                              !canStartStorePurchase(
+                                yearlySelected: _yearlyIapSelected,
+                                monthly: _monthlyProduct,
+                                yearly: _yearlyProduct,
+                              )
                           ? null
                           : _startInAppPurchase,
                     ),
@@ -1021,9 +1036,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       decoration: BoxDecoration(
                           color: CgColors.green50,
                           borderRadius: BorderRadius.circular(14)),
-                      child: const Column(
+                      child: Column(
                         children: [
-                          Text(
+                          const Text(
                             'Launch pricing — no free trial',
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -1031,11 +1046,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 fontWeight: FontWeight.w700,
                                 color: CgColors.green900),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
-                            '$kPremiumMonthlyDisplay/month or $kPremiumYearlyDisplay/year. Cancel anytime in Google Play. A short trial may be offered later as the community grows.',
+                            '$kPremiumMonthlyDisplay/month or $kPremiumYearlyDisplay/year. ${copy.cancelAnytimeSentence} A short trial may be offered later as the community grows.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 fontSize: 12,
                                 color: CgColors.green800,
                                 height: 1.35),
@@ -1072,21 +1087,41 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   ),
                   const SizedBox(height: 8),
                   CgResponsiveContainer(
-                    child: InkWell(
-                      onTap: () => context.push(AppPaths.appTerms),
-                      borderRadius: BorderRadius.circular(8),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 6),
-                        child: Text(
-                          'By subscribing, you agree to our Terms of Service',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: CgColors.blue700,
-                            decoration: TextDecoration.underline,
+                    child: Column(
+                      children: [
+                        InkWell(
+                          onTap: () => context.push(AppPaths.appTerms),
+                          borderRadius: BorderRadius.circular(8),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 6),
+                            child: Text(
+                              'By subscribing, you agree to our Terms of Service',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: CgColors.blue700,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        InkWell(
+                          onTap: () => context.push(AppPaths.appPrivacyPolicy),
+                          borderRadius: BorderRadius.circular(8),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 6),
+                            child: Text(
+                              'Privacy Policy',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: CgColors.blue700,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ] else ...[
@@ -1210,20 +1245,20 @@ class _MembershipScreenState extends State<MembershipScreen> {
                         child: _billingTile(
                             Icons.storefront,
                             'Manage Subscription',
-                            'Open Apple / Google subscription management',
+                            copy.manageSubscriptionSubtitle,
                             _openStoreManagementHelp)),
                     CgResponsiveContainer(
                         child: _billingTile(
                             Icons.receipt_long,
                             'Purchase History',
-                            'View purchases in your app store account',
+                            copy.purchaseHistorySubtitle,
                             _openStoreManagementHelp)),
                   ] else
-                    const CgResponsiveContainer(
+                    CgResponsiveContainer(
                       child: Text(
-                          'Complete an in-app subscription to manage billing in your app store account.',
-                          style:
-                              TextStyle(color: CgColors.gray600, fontSize: 13)),
+                          copy.unmanagedSubscriptionHint,
+                          style: const TextStyle(
+                              color: CgColors.gray600, fontSize: 13)),
                     ),
                   const SizedBox(height: 22),
                   const CgResponsiveContainer(

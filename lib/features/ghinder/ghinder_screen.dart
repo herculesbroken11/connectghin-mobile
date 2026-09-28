@@ -47,7 +47,7 @@ class _GhinderScreenState extends State<GhinderScreen> {
       color: CgColors.cream,
       child: Column(
         children: [
-          _FeedHeader(
+          FeedHeroHeader(
             isPremium: _isPremium,
             onPremium: () => context.push(AppPaths.appMembership),
           ),
@@ -58,108 +58,116 @@ class _GhinderScreenState extends State<GhinderScreen> {
   }
 }
 
-class _FeedHeader extends StatelessWidget {
-  const _FeedHeader({required this.isPremium, required this.onPremium});
+/// Golf hero for The Feed. Height follows the safe-area inset and text scale
+/// so the title and subtitle are not clipped under the status bar or Dynamic Island.
+class FeedHeroHeader extends StatelessWidget {
+  const FeedHeroHeader({
+    super.key,
+    required this.isPremium,
+    required this.onPremium,
+  });
 
   final bool isPremium;
   final VoidCallback onPremium;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 150,
+    final topInset = MediaQuery.paddingOf(context).top;
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: topInset + 120),
       child: Stack(
-        fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/pair_up_header.jpg',
-            fit: BoxFit.cover,
-            alignment: const Alignment(0.3, 0.25),
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/pair_up_header.jpg',
+              fit: BoxFit.cover,
+              alignment: const Alignment(0.3, 0.25),
+            ),
           ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Color(0xE60F3A28),
-                  Color(0x70144F37),
-                  Color(0x30144F37),
-                ],
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xE60F3A28),
+                    Color(0x70144F37),
+                    Color(0x30144F37),
+                  ],
+                ),
               ),
             ),
           ),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 14, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Material(
-                      color: isPremium
-                          ? CgColors.premiumGold
-                          : CgColors.premiumGoldLight.withValues(alpha: 0.35),
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, topInset + 10, 14, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Material(
+                    color: isPremium
+                        ? CgColors.premiumGold
+                        : CgColors.premiumGoldLight.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(999),
+                    child: InkWell(
                       borderRadius: BorderRadius.circular(999),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(999),
-                        onTap: onPremium,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.workspace_premium_rounded,
-                                size: 14,
+                      onTap: onPremium,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.workspace_premium_rounded,
+                              size: 14,
+                              color: isPremium
+                                  ? CgColors.green900
+                                  : CgColors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Premium',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
                                 color: isPremium
                                     ? CgColors.green900
                                     : CgColors.white,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Premium',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: isPremium
-                                      ? CgColors.green900
-                                      : CgColors.white,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  const Text(
-                    'The Feed',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: CgColors.white,
-                      shadows: [Shadow(color: Colors.black45, blurRadius: 6)],
-                    ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'The Feed',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: CgColors.white,
+                    shadows: [Shadow(color: Colors.black45, blurRadius: 6)],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Find golfers looking for open spots nearby',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: CgColors.white.withValues(alpha: 0.96),
-                      shadows: const [
-                        Shadow(color: Colors.black45, blurRadius: 6),
-                      ],
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Find golfers looking for open spots nearby',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: CgColors.white.withValues(alpha: 0.96),
+                    shadows: const [
+                      Shadow(color: Colors.black45, blurRadius: 6),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
