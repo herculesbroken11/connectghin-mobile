@@ -236,6 +236,13 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
     return g.isEmpty ? '—' : g;
   }
 
+  /// Opens the signed-in user's profile. [pop] only returns to whoever pushed
+  /// this screen (often Settings), which is not the profile page.
+  void _goToOwnProfile() {
+    context.read<AuthSession>().bumpProfileRefresh();
+    context.go(AppPaths.appProfile);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -267,26 +274,17 @@ class _GhinVerificationScreenState extends State<GhinVerificationScreen> {
           _Pane.pending => _PendingBody(
               ghin: _displayGhin(),
               nameLine: _displayNameLine(),
-              onBackToProfile: () {
-                context.read<AuthSession>().bumpProfileRefresh();
-                context.pop();
-              },
+              onBackToProfile: _goToOwnProfile,
             ),
           _Pane.success => _SuccessBody(
-              onViewProfile: () {
-                context.read<AuthSession>().bumpProfileRefresh();
-                context.go(AppPaths.appSettings);
-              },
+              onViewProfile: _goToOwnProfile,
               onHome: () => context.go(AppPaths.app),
             ),
           _Pane.rejected => _RejectedBody(
               onTryAgain: _tryAgainFromRejected,
               onAppeal: _submitAppeal,
               onSupport: () => context.push(AppPaths.support),
-              onBackToProfile: () {
-                context.read<AuthSession>().bumpProfileRefresh();
-                context.pop();
-              },
+              onBackToProfile: _goToOwnProfile,
             ),
         },
       ),
