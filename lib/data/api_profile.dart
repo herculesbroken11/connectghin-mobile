@@ -425,7 +425,7 @@ class FoursomeFeedPost {
       spotsNeeded: json['spotsNeeded'] is int
           ? json['spotsNeeded'] as int
           : int.tryParse('${json['spotsNeeded'] ?? 1}') ?? 1,
-      gameStyle: json['gameStyle'] as String? ?? 'CASUAL',
+      gameStyle: (json['gameStyle'] as String?)?.trim() ?? '',
       handicapPreference: json['handicapPreference'] as String?,
       feeLabel: json['feeLabel'] as String?,
       notes: json['notes'] as String?,
@@ -445,6 +445,8 @@ class FoursomeFeedPost {
 
   String get gameStyleLabel {
     switch (gameStyle.toUpperCase()) {
+      case 'CASUAL':
+        return 'Casual';
       case 'COMPETITIVE':
         return 'Competitive';
       case 'TOURNAMENT':
@@ -452,7 +454,7 @@ class FoursomeFeedPost {
       case 'SERIOUS':
         return 'Serious';
       default:
-        return 'Casual';
+        return gameStyle;
     }
   }
 }

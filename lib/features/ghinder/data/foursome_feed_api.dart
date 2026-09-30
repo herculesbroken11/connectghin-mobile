@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../feed_game_style.dart';
 
 class FoursomeFeedApi {
   FoursomeFeedApi(this._apiClient);
@@ -38,19 +39,18 @@ class FoursomeFeedApi {
     return _apiClient.postJson(
       '/foursome-feed',
       bearerToken: accessToken,
-      body: <String, dynamic>{
-        'courseName': courseName,
-        if (city != null && city.isNotEmpty) 'city': city,
-        if (state != null && state.isNotEmpty) 'state': state,
-        'roundDate': roundDateIso,
-        'teeTime': teeTime,
-        'spotsNeeded': spotsNeeded,
-        'gameStyle': gameStyle,
-        if (handicapPreference != null && handicapPreference.isNotEmpty)
-          'handicapPreference': handicapPreference,
-        if (feeLabel != null && feeLabel.isNotEmpty) 'feeLabel': feeLabel,
-        if (notes != null && notes.isNotEmpty) 'notes': notes,
-      },
+      body: foursomeFeedCreateBody(
+        courseName: courseName,
+        city: city,
+        state: state,
+        roundDateIso: roundDateIso,
+        teeTime: teeTime,
+        spotsNeeded: spotsNeeded,
+        gameStyle: gameStyle,
+        handicapPreference: handicapPreference,
+        feeLabel: feeLabel,
+        notes: notes,
+      ),
     );
   }
 

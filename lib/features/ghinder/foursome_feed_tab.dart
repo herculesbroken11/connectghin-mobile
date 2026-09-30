@@ -20,14 +20,9 @@ import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_rating_chip.dart';
 import '../../data/api_profile.dart';
 import 'data/foursome_feed_api.dart';
+import 'feed_game_style.dart';
 import 'feed_post_create_ux.dart';
 import 'report_feed_post_sheet.dart';
-
-const _gameStyleFilters = <String, String>{
-  'CASUAL': 'Casual',
-  'SERIOUS': 'Serious',
-  'TOURNAMENT': 'Tournament',
-};
 
 class FoursomeFeedTab extends StatefulWidget {
   const FoursomeFeedTab({super.key});
@@ -42,6 +37,7 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
   List<FoursomeFeedPost> _posts = [];
   String _gameStyle = 'CASUAL';
   bool _isPremium = false;
+  int _loadGeneration = 0;
 
   bool _isPremiumRequired(Object error) {
     return error is ApiHttpException &&
@@ -58,6 +54,8 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
     final session = context.read<AuthSession>();
     final t = session.accessToken;
     if (t == null) return;
+    final requestedStyle = canonicalFeedGameStyle(_gameStyle) ?? 'CASUAL';
+    final generation = ++_loadGeneration;
     setState(() {
       _loading = true;
       _error = null;
@@ -65,8 +63,9 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
     try {
       final data = await FoursomeFeedApi(session.apiClient).list(
         t,
-        gameStyle: _gameStyle,
+        gameStyle: requestedStyle,
       );
+      if (!mounted || generation != _loadGeneration) return;
       final items = (data['items'] as List<dynamic>? ?? [])
           .map((e) => FoursomeFeedPost.fromJson(e as Map<String, dynamic>))
           .whereType<FoursomeFeedPost>()
@@ -74,20 +73,17 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
       final premium = data['isPremiumViewer'] == true ||
           data['canContact'] == true ||
           data['canPost'] == true;
-      if (mounted) {
-        setState(() {
-          _posts = items;
-          _isPremium = premium;
-          _loading = false;
-        });
-      }
+      setState(() {
+        _posts = postsForFeedStyle(items, requestedStyle, (post) => post.gameStyle);
+        _isPremium = premium;
+        _loading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = messageFromApiError(e);
-          _loading = false;
-        });
-      }
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        _error = messageFromApiError(e);
+        _loading = false;
+      });
     }
   }
 
@@ -174,6 +170,10 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
             final t = session.accessToken;
             if (t == null) return;
             try {
+              final createdStyle = canonicalFeedGameStyle(fields.gameStyle);
+              if (createdStyle == null) {
+                throw ArgumentError('Select Casual, Serious, or Tournament');
+              }
               await afterSuccessfulFeedPostCreate(
                 create: () => FoursomeFeedApi(session.apiClient).create(
                   accessToken: t,
@@ -183,7 +183,7 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
                   roundDateIso: fields.roundDateIso,
                   teeTime: fields.teeTime,
                   spotsNeeded: fields.spotsNeeded,
-                  gameStyle: fields.gameStyle,
+                  gameStyle: createdStyle,
                   handicapPreference: fields.handicapPreference,
                   feeLabel: fields.feeLabel,
                   notes: fields.notes,
@@ -197,7 +197,14 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
                     SnackBar(content: Text(message)),
                   );
                 },
-                reloadFeed: _load,
+                reloadFeed: () => refreshFeedForCreatedStyle(
+                  gameStyle: createdStyle,
+                  selectStyle: (style) {
+                    if (!mounted) return;
+                    setState(() => _gameStyle = style);
+                  },
+                  reload: _load,
+                ),
               );
             } catch (e) {
               if (_isPremiumRequired(e)) {
@@ -265,7 +272,7 @@ class _FoursomeFeedTabState extends State<FoursomeFeedTab> {
                   padding: const EdgeInsets.symmetric(vertical: 48),
                   child: Center(
                     child: Text(
-                      'No ${_gameStyleFilters[_gameStyle] ?? 'open'} spots yet.\n'
+                      'No ${kFeedGameStyleLabels[_gameStyle] ?? 'open'} spots yet.\n'
                       'Check back soon or post your own round.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: CgColors.gray600),
@@ -350,7 +357,7 @@ class _GameStyleFilterBar extends StatelessWidget {
         boxShadow: CgShadows.soft,
       ),
       child: Row(
-        children: _gameStyleFilters.entries.map((entry) {
+        children: kFeedGameStyleLabels.entries.map((entry) {
           final selected = selectedKey == entry.key;
           return Expanded(
             child: Material(
@@ -847,6 +854,13 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
       );
       return;
     }
+    final style = canonicalFeedGameStyle(_style);
+    if (style == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select Casual, Serious, or Tournament')),
+      );
+      return;
+    }
     await _submitGate.run(() async {
       if (!mounted) return;
       setState(() => _saving = true);
@@ -859,7 +873,7 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
               DateTime(_date.year, _date.month, _date.day).toIso8601String(),
           teeTime: _teeTime.text.trim(),
           spotsNeeded: _spots,
-          gameStyle: _style,
+          gameStyle: style,
           handicapPreference: _hcpPref.text.trim(),
           feeLabel: _fee.text.trim(),
           notes: _notes.text.trim(),
@@ -1064,35 +1078,9 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
                   color: CgColors.gray500),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: const [
-                ('CASUAL', 'Casual'),
-                ('SERIOUS', 'Serious'),
-                ('TOURNAMENT', 'Tournament'),
-              ].map((entry) {
-                final selected = _style == entry.$1;
-                return Material(
-                  color: selected ? CgColors.green700 : CgColors.gray100,
-                  borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => setState(() => _style = entry.$1),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
-                      child: Text(
-                        entry.$2,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: selected ? CgColors.white : CgColors.gray700,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+            FeedGameStyleChips(
+              selected: _style,
+              onSelected: (value) => setState(() => _style = value),
             ),
             const SizedBox(height: 14),
             TextField(
