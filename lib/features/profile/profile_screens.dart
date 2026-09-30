@@ -1,15 +1,13 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
+import '../../core/legal/terms_acceptance_gate.dart';
 import '../../core/network/api_image_url.dart';
 import '../../core/network/api_user_message.dart';
 import '../../core/premium/effective_premium.dart';
@@ -28,6 +26,8 @@ import '../profiles/data/profiles_api.dart';
 import '../swipes/data/swipes_api.dart';
 import '../swipes/swipe_daily_quota.dart';
 import 'data/profile_posts_api.dart';
+import 'profile_post_submit.dart';
+import 'share_moment_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -220,141 +220,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openCreatePostSheet() {
-    final captionCtrl = TextEditingController();
-    String? pickedPath;
-    var saving = false;
-
-    showModalBottomSheet<void>(
+    showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: CgColors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModal) {
-            final bottom = MediaQuery.viewInsetsOf(context).bottom;
-            return Padding(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, bottom + 20),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: CgColors.gray300,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Share a moment',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Course, group pic, landscape — or just a caption.',
-                      style: TextStyle(fontSize: 13, color: CgColors.gray500),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: captionCtrl,
-                      maxLines: 4,
-                      maxLength: 2000,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText: 'Great pace today at Harding Park…',
-                        filled: true,
-                        fillColor: CgColors.inputBg,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: saving
-                          ? null
-                          : () async {
-                              final file = await ImagePicker().pickImage(
-                                source: ImageSource.gallery,
-                                imageQuality: 85,
-                                maxWidth: 1600,
-                              );
-                              if (file != null)
-                                setModal(() => pickedPath = file.path);
-                            },
-                      icon: const Icon(Icons.photo_library_outlined),
-                      label: Text(
-                          pickedPath == null ? 'Add photo' : 'Photo selected'),
-                    ),
-                    if (pickedPath != null) ...[
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(pickedPath!),
-                          height: 160,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    CgPrimaryButton(
-                      label: saving ? 'Posting…' : 'Post to profile',
-                      onPressed: saving
-                          ? null
-                          : () async {
-                              final caption = captionCtrl.text.trim();
-                              if (caption.isEmpty && pickedPath == null) {
-                                showUserMessageSnackBar(
-                                    context, 'Add a caption or a photo');
-                                return;
-                              }
-                              setModal(() => saving = true);
-                              final session = context.read<AuthSession>();
-                              final t = session.accessToken;
-                              if (t == null) return;
-                              try {
-                                final api = ProfilePostsApi(session.apiClient);
-                                if (pickedPath != null) {
-                                  await api.createWithImage(
-                                    accessToken: t,
-                                    filePath: pickedPath!,
-                                    body: caption.isEmpty ? null : caption,
-                                  );
-                                } else {
-                                  await api.createText(
-                                      accessToken: t, body: caption);
-                                }
-                                if (ctx.mounted) Navigator.pop(ctx);
-                                await _load();
-                                if (mounted) {
-                                  showUserMessageSnackBar(
-                                      context, 'Posted — nice shot!');
-                                }
-                              } catch (e) {
-                                setModal(() => saving = false);
-                                if (mounted) showApiErrorSnackBar(context, e);
-                              }
-                            },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
+      builder: (ctx) => ShareMomentSheet(onPost: _submitShareMoment),
+    ).then((posted) {
+      if (posted == true && mounted) {
+        showUserMessageSnackBar(context, 'Posted — nice shot!');
+      }
+    });
+  }
+
+  Future<void> _submitShareMoment(ShareMomentDraft draft) async {
+    final session = context.read<AuthSession>();
+    final token = session.accessToken;
+    if (token == null || token.isEmpty) {
+      throw const ProfilePostFailure(
+        'Your session expired. Please sign in again.',
+      );
+    }
+    final api = ProfilePostsApi(session.apiClient);
+    await submitProfilePost(
+      ensureTerms: () => ensureTermsAcceptedForUgc(context),
+      send: () async {
+        final latest = session.accessToken;
+        if (latest == null || latest.isEmpty) {
+          throw const ProfilePostFailure(
+            'Your session expired. Please sign in again.',
+          );
+        }
+        if (draft.hasImage) {
+          await api.createWithImage(
+            accessToken: latest,
+            bytes: draft.imageBytes!,
+            filename: draft.imageFilename ?? 'photo.jpg',
+            body: draft.caption.isEmpty ? null : draft.caption,
+          );
+        } else {
+          await api.createText(accessToken: latest, body: draft.caption);
+        }
       },
     );
+    if (!mounted) return;
+    await _load();
   }
 
   ApiGolferCard? _fallbackCardFromProfile() {
