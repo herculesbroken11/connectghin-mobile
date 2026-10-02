@@ -1,6 +1,9 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
@@ -9,6 +12,7 @@ import '../../core/network/api_user_message.dart';
 import '../../core/widgets/cg_outline_button.dart';
 import '../../core/widgets/cg_text_field.dart';
 import '../misc/data/account_api.dart';
+import '../subscriptions/store_billing_copy.dart';
 
 /// Multi-step delete flow: intro → feedback → type DELETE → API.
 class DeleteAccountFlowScreen extends StatefulWidget {
@@ -52,6 +56,26 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
   bool get _canFinalDelete =>
       !_saving && _confirmDelete.text.trim().toUpperCase() == 'DELETE';
 
+  bool get _isIos => Platform.isIOS;
+
+  Future<void> _manageAppleSubscription() async {
+    const copy = StoreBillingCopy(StoreBillingPlatform.appleAppStore);
+    final uri = Uri.parse(copy.subscriptionManagementUrl);
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(copy.storeManagementLaunchFailure)),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(copy.storeManagementLaunchFailure)),
+      );
+    }
+  }
+
   Future<void> _submitDeletion() async {
     if (!_canFinalDelete) return;
     final session = context.read<AuthSession>();
@@ -67,9 +91,11 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
       await session.clear();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Your account deletion request was processed. Manage any Google Play subscription in the Play Store.',
+            _isIos
+                ? 'Your ConnectGHIN account was deleted. This does not cancel an App Store subscription. ConnectGHIN Premium keeps billing through Apple until you cancel it in your Apple ID subscriptions.'
+                : 'Your account deletion request was processed. Manage any Google Play subscription in the Play Store.',
           ),
         ),
       );
@@ -119,16 +145,16 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: CgColors.red50),
           ),
-          child: const Row(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.warning_amber_rounded, color: CgColors.red700, size: 28),
-              SizedBox(width: 12),
+              const Icon(Icons.warning_amber_rounded, color: CgColors.red700, size: 28),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Request account deletion',
                       style: TextStyle(
                         fontSize: 16,
@@ -136,13 +162,15 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
                         color: CgColors.red700,
                       ),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Text(
-                      'Submitting this request signs you out and deletes or anonymizes your ConnectGHIN account data using our standard deletion workflow. Google Play or App Store subscriptions are not cancelled automatically — manage billing in the store.',
-                      style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
+                      _isIos
+                          ? 'Submitting this request signs you out and deletes or anonymizes your ConnectGHIN account data. Deleting your ConnectGHIN account does not cancel an App Store subscription. An active ConnectGHIN Premium subscription will continue billing through Apple until you cancel it separately. Manage or cancel the subscription before you delete the account if you do not want billing to continue.'
+                          : 'Submitting this request signs you out and deletes or anonymizes your ConnectGHIN account data using our standard deletion workflow. Google Play or App Store subscriptions are not cancelled automatically — manage billing in the store.',
+                      style: const TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
                     ),
-                    SizedBox(height: 8),
-                    Text(
+                    const SizedBox(height: 8),
+                    const Text(
                       'You can also request deletion on the web at https://connectghin.com/delete-account.',
                       style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
                     ),
@@ -174,8 +202,14 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
         _infoCard(
           icon: Icons.credit_card_outlined,
           title: 'Subscription',
-          body: 'Cancel billing separately in Google Play or the App Store',
+          body: _isIos
+              ? 'Deleting this account does not cancel ConnectGHIN Premium. Billing continues through Apple until you cancel the subscription.'
+              : 'Cancel billing separately in Google Play or the App Store',
         ),
+        if (_isIos) ...[
+          const SizedBox(height: 16),
+          _manageAppleSubscriptionButton(),
+        ],
         const SizedBox(height: 28),
         SizedBox(
           width: double.infinity,
@@ -333,16 +367,16 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
             color: CgColors.red50,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Row(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.warning_amber_rounded, color: CgColors.red700, size: 28),
-              SizedBox(width: 12),
+              const Icon(Icons.warning_amber_rounded, color: CgColors.red700, size: 28),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Confirm deletion request',
                       style: TextStyle(
                         fontSize: 16,
@@ -350,10 +384,12 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
                         color: CgColors.red700,
                       ),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Text(
-                      'You will be signed out after submitting. Account data is deleted or anonymized promptly. Store subscriptions must be cancelled separately.',
-                      style: TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
+                      _isIos
+                          ? 'You will be signed out after submitting. Account data is deleted or anonymized promptly. Deleting your ConnectGHIN account does not cancel an App Store subscription. An active ConnectGHIN Premium subscription will continue billing through Apple until you cancel it separately. Manage or cancel the subscription before deleting if you do not want billing to continue.'
+                          : 'You will be signed out after submitting. Account data is deleted or anonymized promptly. Store subscriptions must be cancelled separately.',
+                      style: const TextStyle(fontSize: 14, height: 1.4, color: CgColors.red700),
                     ),
                   ],
                 ),
@@ -361,6 +397,10 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
             ],
           ),
         ),
+        if (_isIos) ...[
+          const SizedBox(height: 16),
+          _manageAppleSubscriptionButton(),
+        ],
         const SizedBox(height: 24),
         RichText(
           text: const TextSpan(
@@ -429,6 +469,26 @@ class _DeleteAccountFlowScreenState extends State<DeleteAccountFlowScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _manageAppleSubscriptionButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: _saving ? null : _manageAppleSubscription,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: CgColors.gray900,
+          side: const BorderSide(color: CgColors.gray300),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        icon: const Icon(Icons.open_in_new_rounded, size: 18),
+        label: const Text(
+          'Manage Apple Subscription',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
     );
   }
 

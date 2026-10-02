@@ -28,6 +28,8 @@ dependencies:
   # ^0.5.0 lets pub pick 0.5.0 on Dart 3.11 (0.5.0+1+ require Dart 3.12).
   in_app_purchase: ^3.3.0
   in_app_purchase_android: ^0.5.0
+  # Direct dependency so iOS paywall can read StoreKit subscription period.
+  in_app_purchase_storekit: 0.4.8+1
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^8.0.0
   crypto: ^3.0.6

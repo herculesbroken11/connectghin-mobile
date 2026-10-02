@@ -5,6 +5,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -31,6 +32,60 @@ const String kRenewMonthlyDisplay = '\$2.99';
 /// Factual annual-vs-monthly savings note (12 × $2.99 = $35.88 − $29.99 ≈ 16%).
 const String kPremiumYearlySavingsHint = 'Save about 16% vs paying monthly';
 const String kPremiumYearlyEffectiveMonthlyHint = 'About \$2.50/month';
+
+/// StoreKit display name, renewal length, and localized full price.
+/// Returns null until StoreKit provides both a name and a price.
+class StoreKitPlanPresentation {
+  const StoreKitPlanPresentation({
+    required this.title,
+    required this.duration,
+    required this.price,
+  });
+
+  final String title;
+  final String duration;
+  final String price;
+}
+
+StoreKitPlanPresentation? storeKitPlanPresentation(ProductDetails? product) {
+  if (product == null) return null;
+  final title = product.title.trim();
+  final price = product.price.trim();
+  if (title.isEmpty || price.isEmpty) return null;
+  final duration = storeKitSubscriptionDuration(product);
+  if (duration == null) return null;
+  return StoreKitPlanPresentation(title: title, duration: duration, price: price);
+}
+
+/// Human-readable StoreKit subscription period, such as "1 month" or "1 year".
+String? storeKitSubscriptionDuration(ProductDetails product) {
+  if (product is AppStoreProduct2Details) {
+    final period = product.sk2Product.subscription?.subscriptionPeriod;
+    if (period != null && period.value > 0) {
+      return humanSubscriptionDuration(period.value, period.unit.name);
+    }
+  } else if (product is AppStoreProductDetails) {
+    final period = product.skProduct.subscriptionPeriod;
+    if (period != null && period.numberOfUnits > 0) {
+      return humanSubscriptionDuration(period.numberOfUnits, period.unit.name);
+    }
+  }
+  if (product.id == IapProductConfig.monthlyProductId) return '1 month';
+  if (product.id == IapProductConfig.yearlyProductId) return '1 year';
+  return null;
+}
+
+String humanSubscriptionDuration(int value, String unitName) {
+  final count = value < 1 ? 1 : value;
+  final unit = switch (unitName) {
+    'day' => count == 1 ? 'day' : 'days',
+    'week' => count == 1 ? 'week' : 'weeks',
+    'month' => count == 1 ? 'month' : 'months',
+    'year' => count == 1 ? 'year' : 'years',
+    _ => unitName,
+  };
+  return '$count $unit';
+}
 
 String _formatUiDate(DateTime d) {
   const months = <String>[
@@ -483,6 +538,86 @@ class _MembershipScreenState extends State<MembershipScreen> {
     }
   }
 
+  String _activeMembershipPriceLine(String? billingCycle) {
+    final yearly = billingCycle == 'YEARLY';
+    if (Platform.isIOS) {
+      final plan = storeKitPlanPresentation(yearly ? _yearlyProduct : _monthlyProduct);
+      if (plan == null) return 'Billed through the App Store';
+      return '${plan.price} · ${plan.duration}';
+    }
+    return yearly ? '$_yearlyPriceLabel / year' : '$_monthlyPriceLabel / month';
+  }
+
+  List<Widget> _freePlanCopy({
+    required ProductDetails? product,
+    required bool yearly,
+    required Color titleColor,
+    required Color bodyColor,
+    required StoreBillingCopy copy,
+  }) {
+    if (Platform.isIOS) {
+      final plan = storeKitPlanPresentation(product);
+      if (plan == null) {
+        return [
+          Text(
+            'App Store price unavailable',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: titleColor),
+          ),
+        ];
+      }
+      return [
+        Text(
+          plan.title,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: titleColor),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          plan.duration,
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: bodyColor),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          plan.price,
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor),
+        ),
+      ];
+    }
+    if (yearly) {
+      return [
+        Text(
+          'Annual plan',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: titleColor),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '$_yearlyPriceLabel / year',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          copy.annualBillingNote,
+          style: TextStyle(fontSize: 13, color: bodyColor),
+        ),
+      ];
+    }
+    return [
+      Text(
+        'Monthly plan',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: titleColor),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        '$_monthlyPriceLabel / month',
+        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: titleColor),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        'Cancel anytime',
+        style: TextStyle(fontSize: 13, color: bodyColor),
+      ),
+    ];
+  }
+
   Future<void> _openStoreManagementHelp() async {
     if (!mounted) return;
     final copy = _billingCopy;
@@ -611,9 +746,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
     final periodEnd = _parseIso(_subscription?['currentPeriodEnd']);
     final memberSince = _parseIso(_subscription?['createdAt']);
     final billingCycle = _subscription?['billingCycle']?.toString();
-    final activePriceLine = billingCycle == 'YEARLY'
-        ? '$_yearlyPriceLabel / year'
-        : '$_monthlyPriceLabel / month';
+    final activePriceLine = _activeMembershipPriceLine(billingCycle);
 
     return Scaffold(
       backgroundColor: CgColors.gray50,
@@ -708,26 +841,13 @@ class _MembershipScreenState extends State<MembershipScreen> {
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Monthly plan',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: CgColors.gray900)),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      '$_monthlyPriceLabel / month',
-                                      style: const TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w800,
-                                          color: CgColors.gray900),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    const Text('Cancel anytime',
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: CgColors.gray600)),
-                                  ],
+                                  children: _freePlanCopy(
+                                    product: _monthlyProduct,
+                                    yearly: false,
+                                    titleColor: CgColors.gray900,
+                                    bodyColor: CgColors.gray600,
+                                    copy: copy,
+                                  ),
                                 ),
                               ),
                               TextButton(
@@ -795,28 +915,13 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
-                                      children: [
-                                        const Text('Annual plan',
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w700,
-                                                color: CgColors.white)),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '$_yearlyPriceLabel / year',
-                                          style: const TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.w800,
-                                              color: CgColors.white),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                            copy.annualBillingNote,
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                color: CgColors.white
-                                                    .withValues(alpha: 0.9))),
-                                      ],
+                                      children: _freePlanCopy(
+                                        product: _yearlyProduct,
+                                        yearly: true,
+                                        titleColor: CgColors.white,
+                                        bodyColor: CgColors.white.withValues(alpha: 0.9),
+                                        copy: copy,
+                                      ),
                                     ),
                                   ),
                                   TextButton(
@@ -1038,17 +1143,21 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           borderRadius: BorderRadius.circular(14)),
                       child: Column(
                         children: [
-                          const Text(
-                            'Launch pricing — no free trial',
+                          Text(
+                            Platform.isIOS ? 'No free trial' : 'Launch pricing — no free trial',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: CgColors.green900),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '$kPremiumMonthlyDisplay/month or $kPremiumYearlyDisplay/year. ${copy.cancelAnytimeSentence} A short trial may be offered later as the community grows.',
+                            Platform.isIOS
+                                ? (_monthlyProduct != null && _yearlyProduct != null
+                                    ? 'Prices above are the full App Store renewal prices for your storefront. ${copy.cancelAnytimeSentence} A short trial may be offered later as the community grows.'
+                                    : 'Prices load from the App Store for your storefront. ${copy.cancelAnytimeSentence} A short trial may be offered later as the community grows.')
+                                : '$kPremiumMonthlyDisplay/month or $kPremiumYearlyDisplay/year. ${copy.cancelAnytimeSentence} A short trial may be offered later as the community grows.',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                                 fontSize: 12,
@@ -1508,17 +1617,22 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text('$kPremiumYearlyDisplay / year',
+                      Text(
+                          Platform.isIOS
+                              ? '1 year · App Store price on the next screen'
+                              : '$kPremiumYearlyDisplay / year',
                           style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
                               color: CgColors.green900)),
-                      const Text(kPremiumYearlySavingsHint,
-                          style:
-                              TextStyle(fontSize: 13, color: CgColors.gray700)),
-                      const Text(kPremiumYearlyEffectiveMonthlyHint,
-                          style:
-                              TextStyle(fontSize: 12, color: CgColors.gray500)),
+                      if (!Platform.isIOS) ...[
+                        const Text(kPremiumYearlySavingsHint,
+                            style: TextStyle(
+                                fontSize: 13, color: CgColors.gray700)),
+                        const Text(kPremiumYearlyEffectiveMonthlyHint,
+                            style: TextStyle(
+                                fontSize: 12, color: CgColors.gray500)),
+                      ],
                       const SizedBox(height: 12),
                       CgPrimaryButton(
                         label: 'Renew Annual',
@@ -1541,8 +1655,11 @@ class SubscriptionExpiredScreen extends StatelessWidget {
                           style: TextStyle(
                               fontWeight: FontWeight.w800, fontSize: 16)),
                       const SizedBox(height: 6),
-                      const Text('$kRenewMonthlyDisplay / month',
-                          style: TextStyle(
+                      Text(
+                          Platform.isIOS
+                              ? '1 month · App Store price on the next screen'
+                              : '$kRenewMonthlyDisplay / month',
+                          style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w700)),
                       const Text('Cancel anytime',
                           style:
