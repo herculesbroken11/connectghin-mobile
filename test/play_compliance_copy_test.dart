@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:connectghin_flutter/features/ghinder/report_feed_post_sheet.dart';
@@ -139,5 +140,18 @@ void main() {
     expect(content.contains('app store'), isTrue);
     expect(content.contains('30 day'), isFalse);
     expect(content.contains('anonymiz'), isTrue);
+  });
+
+  test('Apple verification uses a numeric transaction id, not the JWS', () {
+    expect(appleStoreTransactionId(purchaseId: '2000000123456789'), '2000000123456789');
+    final payload = base64Url.encode(utf8.encode('{"transactionId":"2000000999"}'));
+    expect(
+      appleStoreTransactionId(serverVerificationData: 'eyJhbGciOiJFUzI1NiJ9.$payload.sig'),
+      '2000000999',
+    );
+    expect(
+      appleStoreTransactionId(serverVerificationData: 'not-a-receipt'),
+      isNull,
+    );
   });
 }

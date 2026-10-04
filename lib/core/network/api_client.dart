@@ -126,6 +126,15 @@ class ApiClient {
         b.contains('unauthorized');
   }
 
+  /// Apple IAP verification failures are not a ConnectGHIN login failure.
+  /// Nest still labels `UnauthorizedException` bodies with `"error":"Unauthorized"`.
+  bool _isAppleBillingFailure(String body) {
+    final b = body.toLowerCase();
+    return b.contains('apple verification') ||
+        b.contains('missing apple iap') ||
+        b.contains('not allowed for apple');
+  }
+
   Future<http.Response> _handleUnauthorizedRetry({
     required String path,
     required Future<http.Response> Function() send,
@@ -134,13 +143,20 @@ class ApiClient {
     if (first.statusCode != 401 || !_shouldTryRefresh(path)) {
       return first;
     }
+    // StoreKit verification can return 401 while the ConnectGHIN session is valid.
+    // Refreshing or clearing tokens here signs the user out after a purchase.
+    if (_isAppleBillingFailure(first.body)) {
+      return first;
+    }
     final ok = await _tryRefreshTokens();
     if (!ok) {
       await _notifyAuthFailure('refresh_failed');
       return first;
     }
     final second = await send();
-    if (second.statusCode == 401 && _looksLikeInvalidSession(second.body)) {
+    if (second.statusCode == 401 &&
+        _looksLikeInvalidSession(second.body) &&
+        !_isAppleBillingFailure(second.body)) {
       await _notifyAuthFailure('session_invalidated');
     }
     return second;

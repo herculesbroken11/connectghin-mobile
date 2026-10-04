@@ -130,6 +130,11 @@ String messageFromApiError(
 
   final e = error;
   final bl = e.body.toLowerCase();
+  if (bl.contains('apple verification') ||
+      bl.contains('missing apple iap') ||
+      bl.contains('not allowed for apple')) {
+    return 'The App Store subscription could not be verified. You are still signed in. Please try Restore Purchases.';
+  }
   if (e.statusCode == 401) {
     if (bl.contains('unavailable') || bl.contains('suspended') || bl.contains('inactive')) {
       return 'This account is suspended or unavailable. You cannot sign in. Contact support if you believe this is a mistake.';

@@ -71,4 +71,20 @@ void main() {
     expect(msg.toLowerCase(), contains('connection'));
     expect(msg.toLowerCase(), isNot(contains('invalid credentials')));
   });
+
+  test('Apple IAP verification 401 is not reported as Apple sign-in failure', () {
+    const body =
+        '{"statusCode":401,"message":"Apple verification failed (404)","error":"Unauthorized"}';
+    final msg = messageFromApiError(ApiHttpException(401, body));
+    expect(msg.toLowerCase(), contains('still signed in'));
+    expect(msg.toLowerCase(), isNot(contains('sign-in failed')));
+  });
+
+  test('Apple IAP verification 400 is not reported as Apple sign-in failure', () {
+    const body =
+        '{"statusCode":400,"message":"Apple verification failed (404)","error":"Bad Request"}';
+    final msg = messageFromApiError(ApiHttpException(400, body));
+    expect(msg.toLowerCase(), contains('still signed in'));
+    expect(msg.toLowerCase(), isNot(contains('sign-in failed')));
+  });
 }

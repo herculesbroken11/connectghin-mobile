@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 
@@ -13,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/design_tokens.dart';
 import '../../app/router/app_paths.dart';
 import '../../app/session/auth_session.dart';
+import '../../core/network/api_client.dart';
 import '../../core/network/api_user_message.dart';
 import '../../core/premium/effective_premium.dart';
 import '../../core/widgets/cg_outline_button.dart';
@@ -32,6 +34,43 @@ const String kRenewMonthlyDisplay = '\$2.99';
 /// Factual annual-vs-monthly savings note (12 × $2.99 = $35.88 − $29.99 ≈ 16%).
 const String kPremiumYearlySavingsHint = 'Save about 16% vs paying monthly';
 const String kPremiumYearlyEffectiveMonthlyHint = 'About \$2.50/month';
+
+const String kAppleVerifyStillSignedInMessage =
+    'The App Store subscription could not be verified. You are still signed in. Please try Restore Purchases.';
+
+/// Numeric App Store transaction id for `GET /inApps/v1/subscriptions/{id}`.
+/// StoreKit 2 puts that id in [purchaseId]. The JWS is never sent as the id.
+String? appleStoreTransactionId({
+  String? purchaseId,
+  String serverVerificationData = '',
+}) {
+  final id = purchaseId?.trim() ?? '';
+  if (RegExp(r'^\d+$').hasMatch(id)) return id;
+  return appleTransactionIdFromStoreKitJws(serverVerificationData);
+}
+
+/// Reads `transactionId` from a StoreKit JWS payload. Returns null for receipts
+/// that are not a compact JWS with a numeric transaction id.
+String? appleTransactionIdFromStoreKitJws(String jws) {
+  final parts = jws.split('.');
+  if (parts.length < 2 || parts[1].isEmpty) return null;
+  try {
+    final decoded = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+    final json = jsonDecode(decoded);
+    if (json is! Map) return null;
+    final raw = json['transactionId'] ?? json['originalTransactionId'];
+    final value = raw?.toString().trim() ?? '';
+    if (RegExp(r'^\d+$').hasMatch(value)) return value;
+  } catch (_) {
+    return null;
+  }
+  return null;
+}
+
+String _appleTxSuffix(String transactionId) {
+  if (transactionId.length <= 4) return '****';
+  return transactionId.substring(transactionId.length - 4);
+}
 
 /// StoreKit display name, renewal length, and localized full price.
 /// Returns null until StoreKit provides both a name and a price.
@@ -156,6 +195,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
   bool _purchaseBusy = false;
   bool _restoreBusy = false;
   bool _cancelBusy = false;
+  int _iosVerifyInFlight = 0;
+  int _iosRestoreVerified = 0;
+  bool _iosRestoreSawTransaction = false;
+  bool _iosRestoreVerifyFailed = false;
 
   StoreBillingCopy get _billingCopy => StoreBillingCopy(
         Platform.isIOS
@@ -291,11 +334,52 @@ class _MembershipScreenState extends State<MembershipScreen> {
     var verified = false;
 
     if (Platform.isIOS) {
-      final tx = purchase.purchaseID ??
-          purchase.verificationData.serverVerificationData;
-      if (tx.isNotEmpty) {
-        await api.verifyAppleEntitlement(token, transactionId: tx);
-        verified = true;
+      final tx = appleStoreTransactionId(
+        purchaseId: purchase.purchaseID,
+        serverVerificationData: purchase.verificationData.serverVerificationData,
+      );
+      developer.log(
+        'IAP apple ${purchase.status.name} productId=${purchase.productID} '
+        'txSuffix=${tx == null ? 'none' : _appleTxSuffix(tx)} signedIn=${session.isLoggedIn}',
+        name: 'IAP',
+      );
+      if (tx == null) {
+        developer.log(
+          'IAP apple missing numeric transaction id productId=${purchase.productID}',
+          name: 'IAP',
+        );
+      } else {
+        for (var attempt = 1; attempt <= 3; attempt++) {
+          final current = session.accessToken;
+          if (current == null) {
+            developer.log(
+              'IAP apple verify aborted signedIn=false attempt=$attempt',
+              name: 'IAP',
+            );
+            return false;
+          }
+          try {
+            await api.verifyAppleEntitlement(current, transactionId: tx);
+            developer.log(
+              'IAP apple verify ok attempt=$attempt productId=${purchase.productID} '
+              'signedIn=${session.isLoggedIn}',
+              name: 'IAP',
+            );
+            verified = true;
+            break;
+          } catch (e) {
+            final http = e is ApiHttpException ? e.statusCode : null;
+            developer.log(
+              'IAP apple verify failed attempt=$attempt http=$http '
+              'signedIn=${session.isLoggedIn}',
+              name: 'IAP',
+            );
+            final retryable = e is ApiHttpException &&
+                (e.statusCode == 400 || e.statusCode == 401 || e.statusCode >= 500);
+            if (!retryable || attempt == 3) rethrow;
+            await Future<void>.delayed(Duration(seconds: attempt));
+          }
+        }
       }
     } else if (Platform.isAndroid) {
       final tokenStr = purchase.verificationData.serverVerificationData;
@@ -412,6 +496,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
     if (token == null) return;
     setState(() => _restoreBusy = true);
     try {
+      if (Platform.isIOS) {
+        await _restoreIosPurchases(session);
+        return;
+      }
       var synced = 0;
       if (Platform.isAndroid) {
         synced = await _syncAndroidOwnedPurchases();
@@ -452,6 +540,86 @@ class _MembershipScreenState extends State<MembershipScreen> {
     } finally {
       if (mounted) setState(() => _restoreBusy = false);
     }
+  }
+
+  /// StoreKit 2 sync, then current entitlements. Verification failures stay on
+  /// this screen and never clear the ConnectGHIN session.
+  Future<void> _restoreIosPurchases(AuthSession session) async {
+    _iosRestoreVerified = 0;
+    _iosRestoreSawTransaction = false;
+    _iosRestoreVerifyFailed = false;
+    developer.log('IAP restore start signedIn=${session.isLoggedIn}', name: 'IAP');
+    final addition = _iap.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+    try {
+      developer.log('IAP AppStore.sync start', name: 'IAP');
+      await addition.sync();
+      developer.log('IAP AppStore.sync ok signedIn=${session.isLoggedIn}', name: 'IAP');
+    } catch (e) {
+      developer.log(
+        'IAP AppStore.sync failed type=${e.runtimeType} signedIn=${session.isLoggedIn}',
+        name: 'IAP',
+      );
+    }
+    try {
+      await _iap.restorePurchases();
+      developer.log(
+        'IAP restorePurchases returned signedIn=${session.isLoggedIn}',
+        name: 'IAP',
+      );
+    } catch (e) {
+      developer.log(
+        'IAP restorePurchases failed type=${e.runtimeType} signedIn=${session.isLoggedIn}',
+        name: 'IAP',
+      );
+    }
+    await _waitUntilIosVerifyIdle();
+    if (!mounted || !session.isLoggedIn) {
+      developer.log(
+        'IAP restore finished signedIn=${session.isLoggedIn}',
+        name: 'IAP',
+      );
+      return;
+    }
+    session.bumpProfileRefresh();
+    await _load();
+    if (!mounted) return;
+    final unlocked = _isPremiumActive;
+    developer.log(
+      'IAP restore done premium=$unlocked verified=$_iosRestoreVerified '
+      'sawTx=$_iosRestoreSawTransaction verifyFailed=$_iosRestoreVerifyFailed '
+      'signedIn=${session.isLoggedIn}',
+      name: 'IAP',
+    );
+    final String message;
+    if (unlocked) {
+      message = _billingCopy.restoreResult(
+        unlocked: true,
+        syncedFromStore: _iosRestoreVerified,
+      );
+    } else if (_iosRestoreVerifyFailed) {
+      message = kAppleVerifyStillSignedInMessage;
+    } else {
+      message = _billingCopy.restoreResult(
+        unlocked: false,
+        syncedFromStore: _iosRestoreSawTransaction ? 1 : 0,
+      );
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _waitUntilIosVerifyIdle() async {
+    final sw = Stopwatch()..start();
+    var sawWork = false;
+    while (sw.elapsed < const Duration(seconds: 30)) {
+      if (_iosVerifyInFlight > 0) sawWork = true;
+      if (sawWork && _iosVerifyInFlight == 0) return;
+      if (!sawWork && sw.elapsed >= const Duration(seconds: 2)) return;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    developer.log(
+      'IAP restore verify wait timed out inFlight=$_iosVerifyInFlight',
+      name: 'IAP',
+    );
   }
 
   Future<void> _onPurchaseUpdates(
@@ -513,18 +681,35 @@ class _MembershipScreenState extends State<MembershipScreen> {
         }
       } else if (purchase.status == PurchaseStatus.purchased ||
           purchase.status == PurchaseStatus.restored) {
+        final trackIos = Platform.isIOS;
+        if (trackIos) {
+          _iosVerifyInFlight++;
+          if (purchase.status == PurchaseStatus.restored) {
+            _iosRestoreSawTransaction = true;
+          }
+        }
         try {
           final verified = await _verifyAndFinishPurchase(purchase);
+          if (trackIos &&
+              verified &&
+              purchase.status == PurchaseStatus.restored) {
+            _iosRestoreVerified++;
+          }
           if (verified) {
             session.bumpProfileRefresh();
             await _load();
-            if (mounted) {
+            developer.log(
+              'IAP entitlement refreshed productId=${purchase.productID} '
+              'premium=$_isPremiumEffective signedIn=${session.isLoggedIn}',
+              name: 'IAP',
+            );
+            if (mounted && !_restoreBusy) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                     content: Text('Subscription updated successfully.')),
               );
             }
-          } else if (mounted) {
+          } else if (mounted && !_restoreBusy) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                   content: Text(
@@ -532,7 +717,21 @@ class _MembershipScreenState extends State<MembershipScreen> {
             );
           }
         } catch (e) {
-          if (mounted) showApiErrorSnackBar(context, e);
+          if (trackIos) _iosRestoreVerifyFailed = true;
+          final http = e is ApiHttpException ? e.statusCode : null;
+          developer.log(
+            'IAP purchase handler failed http=$http signedIn=${session.isLoggedIn}',
+            name: 'IAP',
+          );
+          if (mounted && !_restoreBusy) {
+            if (Platform.isIOS) {
+              showUserMessageSnackBar(context, kAppleVerifyStillSignedInMessage);
+            } else {
+              showApiErrorSnackBar(context, e);
+            }
+          }
+        } finally {
+          if (trackIos && _iosVerifyInFlight > 0) _iosVerifyInFlight--;
         }
       }
     }
