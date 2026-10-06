@@ -6,6 +6,7 @@ import 'package:connectghin_flutter/features/membership/membership_screens.dart'
 import 'package:connectghin_flutter/features/membership/premium_benefits.dart';
 import 'package:connectghin_flutter/features/shell/app_bottom_nav_bar.dart';
 import 'package:connectghin_flutter/features/subscriptions/iap_product_config.dart';
+import 'package:connectghin_flutter/features/subscriptions/data/subscriptions_api.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -152,6 +153,27 @@ void main() {
     expect(
       appleStoreTransactionId(serverVerificationData: 'not-a-receipt'),
       isNull,
+    );
+  });
+
+  test('Apple verify body includes a StoreKit JWS and omits a raw receipt', () {
+    expect(
+      appleEntitlementVerifyBody(transactionId: '2000000123456789'),
+      {'transactionId': '2000000123456789'},
+    );
+    expect(
+      appleEntitlementVerifyBody(
+        transactionId: '2000000123456789',
+        signedTransactionInfo: 'header.payload.sig',
+      )['signedTransactionInfo'],
+      'header.payload.sig',
+    );
+    expect(
+      appleEntitlementVerifyBody(
+        transactionId: '2000000123456789',
+        signedTransactionInfo: 'legacy-app-receipt',
+      ).containsKey('signedTransactionInfo'),
+      isFalse,
     );
   });
 }

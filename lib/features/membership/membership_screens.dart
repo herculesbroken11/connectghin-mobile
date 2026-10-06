@@ -359,7 +359,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
             return false;
           }
           try {
-            await api.verifyAppleEntitlement(current, transactionId: tx);
+            await api.verifyAppleEntitlement(
+              current,
+              transactionId: tx,
+              signedTransactionInfo: purchase.verificationData.serverVerificationData,
+            );
             developer.log(
               'IAP apple verify ok attempt=$attempt productId=${purchase.productID} '
               'signedIn=${session.isLoggedIn}',

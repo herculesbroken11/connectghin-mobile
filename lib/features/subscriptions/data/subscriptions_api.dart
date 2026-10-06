@@ -1,5 +1,20 @@
 import '../../../core/network/api_client.dart';
 
+/// Body for Apple verification. The signed transaction is included only when it
+/// is a compact JWS. Receipt contents are not logged by the caller.
+Map<String, dynamic> appleEntitlementVerifyBody({
+  required String transactionId,
+  String? signedTransactionInfo,
+}) {
+  final body = <String, dynamic>{'transactionId': transactionId};
+  final jws = signedTransactionInfo?.trim() ?? '';
+  final parts = jws.split('.');
+  if (parts.length == 3 && parts.every((part) => part.isNotEmpty)) {
+    body['signedTransactionInfo'] = jws;
+  }
+  return body;
+}
+
 class SubscriptionsApi {
   SubscriptionsApi(this._apiClient);
 
@@ -44,11 +59,15 @@ class SubscriptionsApi {
   Future<Map<String, dynamic>> verifyAppleEntitlement(
     String accessToken, {
     required String transactionId,
+    String? signedTransactionInfo,
   }) {
     return _apiClient.postJson(
       '/subscriptions/entitlements/verify/apple',
       bearerToken: accessToken,
-      body: <String, dynamic>{'transactionId': transactionId},
+      body: appleEntitlementVerifyBody(
+        transactionId: transactionId,
+        signedTransactionInfo: signedTransactionInfo,
+      ),
     );
   }
 
