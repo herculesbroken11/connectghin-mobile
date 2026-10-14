@@ -269,6 +269,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
         return;
       }
       final ids = IapProductConfig.allIds;
+      developer.log(
+        'IAP query requested=${ids.join(',')}',
+        name: 'IAP',
+      );
       final response = await _iap.queryProductDetails(ids);
       if (!mounted) return;
       ProductDetails? byId(String id) {
@@ -280,18 +284,14 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
       final monthly = byId(IapProductConfig.monthlyProductId);
       final yearly = byId(IapProductConfig.yearlyProductId);
-      if (response.notFoundIDs.isNotEmpty ||
-          response.error != null ||
-          monthly == null ||
-          yearly == null) {
-        developer.log(
-          'IAP product query platform=${Platform.operatingSystem} '
-          'notFoundIDs=${response.notFoundIDs.join(',')} '
-          'storeError=${response.error?.code}:${response.error?.message} '
-          'returned=${response.productDetails.map((p) => p.id).join(',')}',
-          name: 'IAP',
-        );
-      }
+      developer.log(
+        'IAP query returned=${response.productDetails.map((p) => p.id).join(',')} '
+        'notFound=${response.notFoundIDs.join(',')} '
+        'monthly=${monthly?.id ?? 'null'} '
+        'yearly=${yearly?.id ?? 'null'} '
+        'storeError=${response.error?.code ?? 'none'}',
+        name: 'IAP',
+      );
       setState(() {
         _monthlyProduct = monthly;
         _yearlyProduct = yearly;
@@ -443,6 +443,11 @@ class _MembershipScreenState extends State<MembershipScreen> {
       yearlySelected: _yearlyIapSelected,
       monthly: _monthlyProduct,
       yearly: _yearlyProduct,
+    );
+    developer.log(
+      'IAP purchase selected productId=${product?.id ?? 'none'} '
+      'yearlySelected=$_yearlyIapSelected',
+      name: 'IAP',
     );
     if (product == null) {
       developer.log(
