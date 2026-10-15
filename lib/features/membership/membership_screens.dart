@@ -748,6 +748,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
 
   String _activeMembershipPriceLine(String? billingCycle) {
     final yearly = billingCycle == 'YEARLY';
+    final monthly = billingCycle == 'MONTHLY';
+    if (!yearly && !monthly) {
+      return Platform.isIOS ? 'Billed through the App Store' : 'Billed through Google Play';
+    }
     if (Platform.isIOS) {
       final plan = storeKitPlanPresentation(yearly ? _yearlyProduct : _monthlyProduct);
       if (plan == null) return 'Billed through the App Store';
@@ -1557,25 +1561,27 @@ class _MembershipScreenState extends State<MembershipScreen> {
                             color: CgColors.gray900)),
                   ),
                   const SizedBox(height: 10),
-                  if (hasManagedSubscription) ...[
+                  CgResponsiveContainer(
+                      child: _billingTile(
+                          Icons.storefront,
+                          'Manage Subscription',
+                          copy.manageSubscriptionSubtitle,
+                          _openStoreManagementHelp)),
+                  CgResponsiveContainer(
+                      child: _billingTile(
+                          Icons.receipt_long,
+                          'Purchase History',
+                          copy.purchaseHistorySubtitle,
+                          _openStoreManagementHelp)),
+                  if (!hasManagedSubscription)
                     CgResponsiveContainer(
-                        child: _billingTile(
-                            Icons.storefront,
-                            'Manage Subscription',
-                            copy.manageSubscriptionSubtitle,
-                            _openStoreManagementHelp)),
-                    CgResponsiveContainer(
-                        child: _billingTile(
-                            Icons.receipt_long,
-                            'Purchase History',
-                            copy.purchaseHistorySubtitle,
-                            _openStoreManagementHelp)),
-                  ] else
-                    CgResponsiveContainer(
-                      child: Text(
-                          copy.unmanagedSubscriptionHint,
-                          style: const TextStyle(
-                              color: CgColors.gray600, fontSize: 13)),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                            copy.unmanagedSubscriptionHint,
+                            style: const TextStyle(
+                                color: CgColors.gray600, fontSize: 13, height: 1.35)),
+                      ),
                     ),
                   const SizedBox(height: 22),
                   const CgResponsiveContainer(

@@ -70,8 +70,8 @@ class StoreBillingCopy {
       : 'View purchases in your Google Play account';
 
   String get unmanagedSubscriptionHint => isApple
-      ? 'Complete an in-app subscription to manage billing in your Apple ID account.'
-      : 'Complete an in-app subscription to manage billing in your Google Play account.';
+      ? 'Renewal dates appear after the App Store subscription is verified. You can still manage billing in your Apple ID account.'
+      : 'Renewal dates appear after the Google Play subscription is verified. You can still manage billing in your Google Play account.';
 
   String get storeManagementLaunchFailure => isApple
       ? 'Open the App Store to manage your subscription.'
