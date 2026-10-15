@@ -252,6 +252,43 @@ class _MembershipScreenState extends State<MembershipScreen> {
     return t == 'PREMIUM' && (s == 'ACTIVE' || s == 'TRIALING' || s == 'PAST_DUE');
   }
 
+  /// Store product id of the saved subscription, when it is one of the two plans.
+  String? get _activeStoreProductId {
+    final stored = _subscription?['storeProductId']?.toString().trim();
+    final plan = _subscription?['planCode']?.toString().trim();
+    for (final id in [stored, plan]) {
+      if (id == IapProductConfig.monthlyProductId || id == IapProductConfig.yearlyProductId) {
+        return id;
+      }
+    }
+    final cycle = _subscription?['billingCycle']?.toString();
+    if (cycle == 'MONTHLY') return IapProductConfig.monthlyProductId;
+    if (cycle == 'YEARLY') return IapProductConfig.yearlyProductId;
+    return null;
+  }
+
+  ProductDetails? get _otherStoreProduct {
+    final active = _activeStoreProductId;
+    if (active == IapProductConfig.monthlyProductId) return _yearlyProduct;
+    if (active == IapProductConfig.yearlyProductId) return _monthlyProduct;
+    return null;
+  }
+
+  /// Next product from the backend, which only sets it from verified Apple renewal info.
+  String? get _pendingStoreProductId {
+    final id = _subscription?['pendingStoreProductId']?.toString().trim();
+    if (id == IapProductConfig.monthlyProductId || id == IapProductConfig.yearlyProductId) {
+      return id;
+    }
+    return null;
+  }
+
+  ProductDetails? productForStoreId(String? id) {
+    if (id == IapProductConfig.monthlyProductId) return _monthlyProduct;
+    if (id == IapProductConfig.yearlyProductId) return _yearlyProduct;
+    return null;
+  }
+
   String get _monthlyPriceLabel =>
       _monthlyProduct?.price ?? kPremiumMonthlyDisplay;
 
@@ -456,6 +493,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
       );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(kSubscriptionsUnavailableMessage)),
+      );
+      return;
+    }
+    if (_isPremiumActive && product.id == _activeStoreProductId) {
+      developer.log(
+        'IAP purchase blocked; productId=${product.id} is the current plan',
+        name: 'IAP',
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This is already your current plan.')),
       );
       return;
     }
@@ -746,6 +793,119 @@ class _MembershipScreenState extends State<MembershipScreen> {
     }
   }
 
+  Future<void> _switchToOtherPlan() async {
+    final product = _otherStoreProduct;
+    final activeId = _activeStoreProductId;
+    if (product == null || product.id == activeId) return;
+    _yearlyIapSelected = product.id == IapProductConfig.yearlyProductId;
+    await _startInAppPurchase();
+  }
+
+  List<Widget> _iosScheduledPlanWidgets(StoreBillingCopy copy) {
+    if (!Platform.isIOS) return const [];
+    final pendingId = _pendingStoreProductId;
+    final activeId = _activeStoreProductId;
+    if (pendingId == null || pendingId == activeId) return const [];
+    final starts = _parseIso(_subscription?['pendingEffectiveAt']);
+    return [
+      const SizedBox(height: 22),
+      const CgResponsiveContainer(
+        child: Text('Scheduled plan change',
+            style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w700, color: CgColors.gray900)),
+      ),
+      const SizedBox(height: 10),
+      CgResponsiveContainer(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: CgColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: CgColors.gray200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ..._freePlanCopy(
+                product: productForStoreId(pendingId),
+                yearly: pendingId == IapProductConfig.yearlyProductId,
+                titleColor: CgColors.gray900,
+                bodyColor: CgColors.gray600,
+                copy: copy,
+              ),
+              if (starts != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Starts on ${_formatUiDate(starts)}',
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: CgColors.gray700),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _iosOtherPlanWidgets(StoreBillingCopy copy) {
+    if (!Platform.isIOS) return const [];
+    if (_pendingStoreProductId != null) return const [];
+    final activeId = _activeStoreProductId;
+    final switchingToYearly = activeId == IapProductConfig.monthlyProductId;
+    final switchingToMonthly = activeId == IapProductConfig.yearlyProductId;
+    if (!switchingToYearly && !switchingToMonthly) return const [];
+    final product = _otherStoreProduct;
+    final canSwitch = product != null &&
+        product.id != activeId &&
+        !_purchaseBusy &&
+        !_storeLoading;
+    return [
+      const SizedBox(height: 22),
+      const CgResponsiveContainer(
+        child: Text('Other plans',
+            style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: CgColors.gray900)),
+      ),
+      const SizedBox(height: 10),
+      CgResponsiveContainer(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: CgColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: CgColors.gray200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ..._freePlanCopy(
+                product: product,
+                yearly: switchingToYearly,
+                titleColor: CgColors.gray900,
+                bodyColor: CgColors.gray600,
+                copy: copy,
+              ),
+              const SizedBox(height: 14),
+              CgPrimaryButton(
+                label: _purchaseBusy
+                    ? 'Opening store…'
+                    : switchingToYearly
+                        ? 'Switch to Yearly'
+                        : 'Switch to Monthly',
+                onPressed: canSwitch ? _switchToOtherPlan : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+
   String _activeMembershipPriceLine(String? billingCycle) {
     final yearly = billingCycle == 'YEARLY';
     final monthly = billingCycle == 'MONTHLY';
@@ -959,6 +1119,13 @@ class _MembershipScreenState extends State<MembershipScreen> {
     final memberSince = _parseIso(_subscription?['createdAt']);
     final billingCycle = _subscription?['billingCycle']?.toString();
     final activePriceLine = _activeMembershipPriceLine(billingCycle);
+    final activeProduct = _activeStoreProductId == IapProductConfig.yearlyProductId
+        ? _yearlyProduct
+        : _activeStoreProductId == IapProductConfig.monthlyProductId
+            ? _monthlyProduct
+            : null;
+    final activePresentation =
+        Platform.isIOS ? storeKitPlanPresentation(activeProduct) : null;
 
     return Scaffold(
       backgroundColor: CgColors.gray50,
@@ -1465,7 +1632,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                 decoration: BoxDecoration(
                                     color: CgColors.green100,
                                     borderRadius: BorderRadius.circular(20)),
-                                child: const Text('Active',
+                                child: const Text('Current plan',
                                     style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
@@ -1484,8 +1651,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Text('Premium',
-                              style: TextStyle(
+                          Text(activePresentation?.title ?? 'Premium',
+                              style: const TextStyle(
                                   color: CgColors.white,
                                   fontSize: 26,
                                   fontWeight: FontWeight.w800)),
@@ -1494,6 +1661,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
                                   color: CgColors.white.withValues(alpha: 0.95),
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600)),
+                          if (Platform.isIOS &&
+                              _pendingStoreProductId != null &&
+                              periodEnd != null) ...[
+                            const SizedBox(height: 6),
+                            Text('Active until ${_formatUiDate(periodEnd)}',
+                                style: TextStyle(
+                                    color: CgColors.white.withValues(alpha: 0.9),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600)),
+                          ],
                           const SizedBox(height: 20),
                           Container(
                               height: 1,
@@ -1546,6 +1723,8 @@ class _MembershipScreenState extends State<MembershipScreen> {
                       ),
                     ),
                   ),
+                  ..._iosScheduledPlanWidgets(copy),
+                  ..._iosOtherPlanWidgets(copy),
                   const SizedBox(height: 8),
                   const CgResponsiveContainer(
                     child: Text('Manage your premium subscription',
