@@ -67,7 +67,9 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>ConnectGHIN uses your location to show nearby golfers and courses for discovery.</string>
+	<string>ConnectGHIN uses your location while you use the app to help you find golfers and golf opportunities near you.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>ConnectGHIN uses your location to support nearby golfer and golf opportunity features when location access is enabled.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>ConnectGHIN needs camera access to take profile photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
