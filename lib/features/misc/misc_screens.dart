@@ -12,6 +12,7 @@ import '../../core/push/push_token_registry.dart';
 import '../../core/widgets/cg_primary_button.dart';
 import '../../core/widgets/cg_responsive_container.dart';
 import '../../core/widgets/cg_text_field.dart';
+import '../settings/legal_rich_text.dart';
 import '../location/location_device.dart';
 import '../misc/data/account_api.dart';
 import '../profile/profile_screens.dart';
@@ -212,76 +213,100 @@ class _BlockUserScreenState extends State<BlockUserScreen> {
 class TermsOfServiceScreen extends StatelessWidget {
   const TermsOfServiceScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const _LegalScaffold(title: 'Terms of service', body: _termsBody);
-  }
-}
-
-const _termsBody =
-    'Last updated: September 15, 2026\n\n'
-    '1. Acceptance\n'
-    'By creating an account or using Connectghin, you agree to these Terms of Service and our Privacy Policy. '
-    'If you do not agree, do not use the app.\n\n'
-    '2. Eligibility\n'
-    'You must be at least 18 years old to use Connectghin. The app is intended for golfers seeking playing partners '
-    'and related social features.\n\n'
-    '3. Accounts\n'
-    'You are responsible for accurate account information and for activity under your account. '
-    'You may request account deletion from Settings or at https://connectghin.com/delete-account. '
-    'Verified requests are processed using our standard deletion workflow (data deleted or anonymized). '
-    'Google Play or App Store subscriptions must be managed separately in the store. '
-    'Paid subscriptions billed through Google Play or the App Store must be managed in those stores.\n\n'
-    '4. Acceptable use\n'
-    'You agree not to harass, abuse, impersonate, spam, scrape, or otherwise misuse the service. '
-    'Do not post unlawful, hateful, or sexually explicit content. We may remove content and suspend or terminate '
-    'accounts that violate these rules.\n\n'
-    '5. User content & safety\n'
-    'You retain rights to content you submit (profiles, photos, Feed posts, messages, and ratings). '
-    'You grant Connectghin a license to host and display that content to operate the service. '
-    'You can report and block other users. Reports may lead to moderation actions including content removal or suspension.\n\n'
-    '5A. Child safety\n'
-    'Connectghin is for users 18 years of age or older. We do not knowingly allow minors to create accounts. '
-    'We prohibit child sexual abuse and exploitation (CSAE), child sexual abuse material (CSAM), grooming, '
-    'sexualization of minors, and any attempt to exploit or endanger children. '
-    'Report safety concerns through in-app reporting tools where available, or email support@connectghin.com. '
-    'We review reports and may remove content, suspend or terminate accounts, and escalate matters when required by applicable law.\n\n'
-    '6. Handicap information\n'
-    'Handicap details you submit may be reviewed for a Handicap Verified badge. '
-    'Connectghin is not affiliated with, endorsed by, or operated by any third-party handicap authority. '
-    'Verification in the app is based on information you provide and our review process—not an official external certification.\n\n'
-    '7. Premium subscriptions\n'
-    'Optional Premium membership is sold through Google Play or the App Store. '
-    'Benefits shown in the Membership screen apply while your Premium entitlement is active. '
-    'Billing, renewals, and cancellations follow the store’s terms.\n\n'
-    '8. Disclaimers\n'
-    'Connectghin is provided “as is.” We do not guarantee matches, playing partners, or uninterrupted service. '
-    'You are responsible for real-world interactions arranged through the app.\n\n'
-    '9. Limitation of liability\n'
-    'To the fullest extent permitted by law, Connectghin and its operators are not liable for indirect, incidental, '
-    'or consequential damages arising from use of the app.\n\n'
-    '10. Contact\n'
-    'Questions about these Terms: support@connectghin.com';
-
-class _LegalScaffold extends StatelessWidget {
-  const _LegalScaffold({required this.title, required this.body});
-
-  final String title;
-  final String body;
+  static const _sections = <(String, String)>[
+    (
+      '1. Acceptance of Terms',
+      'By accessing or using Connectghin, you agree to these Terms of Service and our Privacy Policy (https://connectghin.com/privacy). If you do not agree, do not use the service.',
+    ),
+    (
+      '2. Eligibility',
+      'Connectghin is intended only for users who are 18 years of age or older. By creating or using an account, you represent that you are at least 18.',
+    ),
+    (
+      '3. Description of Service',
+      'Connectghin is a social golf platform. Features may allow you to create and manage a golfer profile, find nearby golfers, send Connect requests or likes, form Matches through mutual connections, message matched users, browse The Feed, post or respond to open golf spots where permitted, provide golf and handicap information, and use Premium features when subscribed.\n\n'
+          'Where applicable, a “Handicap Verified” badge reflects Connectghin’s internal or manual review. Connectghin is not affiliated with, endorsed by, or sponsored by the United States Golf Association (USGA) or the GHIN service unless expressly stated otherwise. Third-party names and trademarks remain the property of their respective owners. A Connectghin “Handicap Verified” badge is not an official USGA or GHIN certification.',
+    ),
+    (
+      '4. User Accounts',
+      'Provide accurate information and keep it current. You are responsible for protecting your credentials, maintaining account security, and activity under your account. Notify us if you suspect unauthorized access. We may suspend or terminate accounts that violate these Terms.',
+    ),
+    (
+      '5. User-Generated Content and Content Rights',
+      'You retain ownership of content you submit. You grant Connectghin a non-exclusive license to host, store, reproduce, display, transmit and make your submitted content available solely as necessary to operate, improve, moderate and provide the service. This includes profile information, photos, Feed and open-spot posts, reviews, ratings and other submissions where applicable.\n\n'
+          'You represent that you own or have the necessary rights and permissions for what you submit. Do not submit material that infringes another person’s copyright, trademark, privacy, publicity or other rights, or illegal, abusive, threatening, fraudulent, exploitative or harmful content. We may remove or restrict content when reasonably necessary for safety, Terms enforcement, legal compliance or operation of the service.',
+    ),
+    (
+      '6. Community Conduct and Safety',
+      'Do not harass, threaten or abuse others; impersonate others; mislead or defraud; spam; engage in unlawful activity; post inappropriate or sexually exploitative content, including child sexual abuse or exploitation material; bypass moderation; attempt unauthorized access; or use another person’s information without authorization. See our Child Safety Standards (https://connectghin.com/child-safety).',
+    ),
+    (
+      '7. Reporting, Blocking and Moderation',
+      'Safety tools may include reporting users or Feed content, blocking users, review of reports, content removal or restriction, and account suspension or termination. Reports may be submitted through available tools or to support@connectghin.com. Review is not instantaneous, and no platform can guarantee complete safety at all times.',
+    ),
+    (
+      '8. Subscriptions and Billing',
+      'Free access and Connectghin Premium may be available. Premium may be offered as monthly or yearly auto-renewable subscriptions. For mobile purchases, iOS subscriptions are processed by the Apple App Store and Android subscriptions by Google Play. The price and renewal terms shown before purchase govern; subscriptions renew automatically unless canceled under the applicable store’s rules. Manage or cancel through your Apple Account/App Store or Google Play subscription settings. Refunds are governed by the applicable store’s policies. Deleting your account does not automatically cancel a store subscription.',
+    ),
+    (
+      '9. Third-Party Services',
+      'The service may rely on third parties for operational services such as authentication, app-store billing, push notifications, email delivery, hosting and location features, where applicable.',
+    ),
+    (
+      '10. Account Deletion',
+      'You may initiate deletion in the mobile app under Settings → Delete Account or at https://connectghin.com/delete-account. Personal account information may be deleted or anonymized. Some records may be retained where reasonably necessary for legal compliance, fraud or security, moderation or safety, transaction and accounting records, or disputes. Deleting a Connectghin account does not automatically cancel an Apple App Store or Google Play subscription.',
+    ),
+    (
+      '11. Intellectual Property',
+      'Connectghin retains rights to its original software, branding and content. User submissions remain governed by Section 5. Third-party trademarks belong to their respective owners.',
+    ),
+    (
+      '12. Disclaimers and Limitation of Liability',
+      'To the extent permitted by applicable law, the service is provided without a guarantee of uninterrupted availability. Connectghin is not liable for indirect, incidental, special or consequential damages arising from use of the service. Nothing here limits rights or remedies that cannot lawfully be excluded.',
+    ),
+    (
+      '13. Changes',
+      'We may update these Terms. Updated Terms will be posted here with a revised “Last updated” date.',
+    ),
+    (
+      '14. Contact',
+      'Questions? Contact support@connectghin.com.',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-            onPressed: () => context.pop()),
-        title: Text(title),
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Terms of service'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Text(body,
-            style: const TextStyle(height: 1.6, color: CgColors.gray700)),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        children: [
+          const Text(
+            'Last updated: September 30, 2026',
+            style: TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.35),
+          ),
+          const SizedBox(height: 20),
+          for (final section in _sections) ...[
+            Text(
+              section.$1,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: CgColors.gray900,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            LegalRichText(section.$2),
+            const SizedBox(height: 18),
+          ],
+        ],
       ),
     );
   }

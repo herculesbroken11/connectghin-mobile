@@ -1,98 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/design_tokens.dart';
-import '../../app/session/auth_session.dart';
+import 'legal_rich_text.dart';
 
-/// In-app Privacy Policy (GHINder / Connectghin design).
-class PrivacyPolicyScreen extends StatefulWidget {
+/// In-app Privacy Policy. Wording matches https://connectghin.com/privacy.
+class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
-  @override
-  State<PrivacyPolicyScreen> createState() => _PrivacyPolicyScreenState();
-}
-
-class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   static const _headingBlue = Color(0xFF001F3F);
-  String _privacyEmail = 'privacy@connectghin.com';
-  String _supportEmail = 'support@connectghin.com';
-  String _companyDisplayName = 'Connectghin';
-  String _businessMailingAddress = '';
-  String _privacyUrl = 'https://connectghin.com/privacy';
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadLegalSettings());
-  }
-
-  Future<void> _loadLegalSettings() async {
-    try {
-      final response = await context
-          .read<AuthSession>()
-          .apiClient
-          .getJson('/settings/public-legal');
-      final data = response['data'] is Map<String, dynamic>
-          ? response['data'] as Map<String, dynamic>
-          : response;
-      if (!mounted) return;
-      setState(() {
-        _privacyEmail = _nonEmpty(data['privacyEmail']) ?? _privacyEmail;
-        _supportEmail = _nonEmpty(data['supportEmail']) ?? _supportEmail;
-        _companyDisplayName =
-            _nonEmpty(data['companyDisplayName']) ?? _companyDisplayName;
-        _businessMailingAddress =
-            _nonEmpty(data['businessMailingAddress']) ?? '';
-        _privacyUrl =
-            _nonEmpty(data['privacyUrl']) ?? 'https://connectghin.com/privacy';
-        _nonEmpty(data['termsUrl']);
-      });
-    } catch (_) {
-      // Keep safe defaults when legal configuration is unavailable.
-    }
-  }
-
-  static String? _nonEmpty(dynamic value) {
-    final text = value?.toString().trim() ?? '';
-    return text.isEmpty ? null : text;
-  }
-
-  Future<void> _openPrivacyUrl() async {
-    final uri = Uri.tryParse(_privacyUrl);
-    if (uri == null) return;
-    var launched = false;
-    try {
-      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      launched = false;
-    }
-    if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open $_privacyUrl')),
-      );
-    }
-  }
-
-  Future<void> _emailPrivacyTeam() async {
-    final uri = Uri(scheme: 'mailto', path: _privacyEmail);
-    var launched = false;
-    try {
-      launched = await launchUrl(uri);
-    } catch (_) {
-      launched = false;
-    }
-    if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Could not open your email app. Contact $_privacyEmail directly.',
-          ),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,8 +19,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 20, color: CgColors.gray900),
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: CgColors.gray900),
           onPressed: () => context.pop(),
         ),
         title: const SizedBox.shrink(),
@@ -114,29 +29,12 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
         children: [
           const Text(
             'Privacy Policy',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              color: _headingBlue,
-            ),
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: _headingBlue),
           ),
           const SizedBox(height: 8),
           const Text(
-            'Last updated: April 8, 2026',
-            style:
-                TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.35),
-          ),
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: _openPrivacyUrl,
-            child: Text(
-              _privacyUrl,
-              style: const TextStyle(
-                fontSize: 14,
-                color: CgColors.blue600,
-                decoration: TextDecoration.underline,
-              ),
-            ),
+            'Last updated: September 30, 2026',
+            style: TextStyle(fontSize: 15, color: CgColors.gray600, height: 1.35),
           ),
           const SizedBox(height: 20),
           Container(
@@ -153,276 +51,120 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 ),
               ],
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _numberedSection(
-                  '1',
-                  'Information We Collect',
-                  const Text(
-                    'We collect information you provide directly to us when you create an account, '
-                    'including your name, email address, photos, golf handicap, and handicap number for verification purposes.',
-                    style: TextStyle(
-                        fontSize: 15, height: 1.5, color: CgColors.gray700),
-                  ),
+                _Section(
+                  '1. Introduction',
+                  'This policy describes how Connectghin handles information when you use its mobile applications, website and related services. Availability of features and the information involved may vary by platform.',
                 ),
-                _numberedSection(
-                  '2',
-                  'How We Use Your Information',
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'We use the information we collect to:',
-                        style: TextStyle(
-                            fontSize: 15, height: 1.5, color: CgColors.gray700),
-                      ),
-                      const SizedBox(height: 10),
-                      _bullets(const [
-                        'Provide, maintain, and improve our services',
-                        'Connect you with other golfers',
-                        'Verify your handicap information',
-                        'Send you updates and promotional communications',
-                        'Monitor and analyze trends and usage',
-                      ]),
-                    ],
-                  ),
-                ),
-                _numberedSection(
-                  '3',
-                  'Information Sharing',
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'We do not sell your personal information. We may share your information with:',
-                        style: TextStyle(
-                            fontSize: 15, height: 1.5, color: CgColors.gray700),
-                      ),
-                      const SizedBox(height: 10),
-                      _bullets(const [
-                        'Other Connectghin users (profile information only)',
-                        'Service providers who assist in our operations',
-                        'Law enforcement when required by law',
-                      ]),
-                    ],
-                  ),
-                ),
-                _numberedSection(
-                  '4',
-                  'Handicap Verification',
-                  const Text(
-                    'When you submit a handicap number for verification, we review the information as part of our handicap verification process. '
-                    'Your handicap index may be displayed on your profile as part of your public profile information.',
-                    style: TextStyle(
-                        fontSize: 15, height: 1.5, color: CgColors.gray700),
-                  ),
-                ),
-                _numberedSection(
-                  '5',
-                  'Data Security',
-                  const Text(
-                    'We use industry-standard security measures to protect your information. '
-                    'However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.',
-                    style: TextStyle(
-                        fontSize: 15, height: 1.5, color: CgColors.gray700),
-                  ),
-                ),
-                _numberedSection(
-                  '6',
-                  'Your Rights',
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Depending on where you live, you may have the right to:',
-                        style: TextStyle(
-                            fontSize: 15, height: 1.5, color: CgColors.gray700),
-                      ),
-                      const SizedBox(height: 10),
-                      _bullets(const [
-                        'Access your personal information',
-                        'Update or correct your information',
-                        'Request deletion of your account and personal data from Settings (processed by ConnectGHIN; store subscriptions are managed separately in Google Play or the App Store)',
-                        'Opt-out of marketing communications',
-                      ]),
-                    ],
-                  ),
-                ),
-                _numberedSection(
-                  '7',
-                  "Children's Privacy",
-                  const Text(
-                    'Connectghin is not intended for users under 18. We do not knowingly collect personal information from children under 18.',
-                    style: TextStyle(
-                        fontSize: 15, height: 1.5, color: CgColors.gray700),
-                  ),
-                ),
-                _numberedSection(
-                  '8',
-                  'Location Data',
-                  const Text(
-                    'We collect location data to show you golfers near you and improve discovery features. '
-                    'You can control location permissions in your device settings at any time.',
-                    style: TextStyle(
-                        fontSize: 15, height: 1.5, color: CgColors.gray700),
-                  ),
-                ),
-                _numberedSection(
-                  '9',
-                  'Cookies and Tracking',
-                  const Text(
-                    'We may use cookies and similar technologies to improve your experience, analyze usage, '
-                    'and deliver personalized content where appropriate.',
-                    style: TextStyle(
-                        fontSize: 15, height: 1.5, color: CgColors.gray700),
-                  ),
-                ),
-                _numberedSection(
-                  '10',
-                  'Changes to This Policy',
-                  const Text(
-                    'We may update this policy from time to time. We will notify you by posting the new policy on this page '
-                    'and updating the "Last updated" date.',
-                    style: TextStyle(
-                        fontSize: 15, height: 1.5, color: CgColors.gray700),
-                  ),
-                ),
-                _numberedSection(
-                  '11',
-                  'Contact Us',
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'If you have questions about this Privacy Policy, please contact us:',
-                        style: TextStyle(
-                            fontSize: 15, height: 1.5, color: CgColors.gray700),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _companyDisplayName,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: CgColors.gray900,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      SelectableText(
-                        _privacyEmail,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: CgColors.blue700,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      SelectableText(
-                        _supportEmail,
-                        style: const TextStyle(
-                            fontSize: 14, color: CgColors.blue700),
-                      ),
-                      if (_businessMailingAddress.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          _businessMailingAddress,
-                          style: const TextStyle(
-                              fontSize: 15,
-                              height: 1.5,
-                              color: CgColors.gray700),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Material(
-            color: CgColors.blue50,
-            borderRadius: BorderRadius.circular(CgRadii.xl),
-            child: InkWell(
-              onTap: _emailPrivacyTeam,
-              borderRadius: BorderRadius.circular(CgRadii.xl),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Questions about your privacy?',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: CgColors.gray900,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Contact our privacy team at $_privacyEmail',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 14, height: 1.4, color: CgColors.gray600),
-                    ),
+                _Section(
+                  '2. Information Collected',
+                  null,
+                  bullets: [
+                    'Accounts and profiles: Name, email, account and authentication identifiers, profile details, golf preferences, city/state or other location information you submit, handicap number and handicap index, and profile or gallery photos.',
+                    'Social activity: Where available in the mobile app, Connect and Match activity, matched-user messages, Feed or open-spot posts, ratings or reviews, reports, blocks and related moderation information.',
+                    'Subscriptions: Where mobile subscriptions are used, subscription status, product and transaction or receipt identifiers, entitlements and the applicable store. Apple and Google process mobile payments; Connectghin does not receive full card details for App Store or Google Play purchases.',
+                    'Technical and support information: Session and security information, request logs, and information sent to support. Where applicable, mobile device or push-notification tokens and device location if you grant permission for location features.',
                   ],
                 ),
-              ),
+                _Section(
+                  '3. How Information Is Used',
+                  'We use information to create and authenticate accounts; provide profiles, nearby-golfer features, Connect, Matches, messaging and The Feed where available; verify subscription entitlements; send service notifications; respond to support requests; review safety reports; prevent fraud and abuse; comply with law; and maintain and improve service reliability. We do not describe advertising uses here.',
+                ),
+                _Section(
+                  '4. Information Visible to Other Users',
+                  'Depending on features and settings, other users may see your name or display name, profile photo, golf profile, handicap information, preferences, approximate or submitted profile location, Feed posts and other social contributions such as ratings or reviews. Private email addresses and matched-user messages are not described as public profile information.',
+                ),
+                _Section(
+                  '5. Service Providers and Disclosure',
+                  'Information may be processed by providers needed for hosting, authentication, email, notifications and, where applicable, Apple App Store and Google Play subscriptions. Information may also be disclosed to appropriate authorities when required by law or for safety.',
+                ),
+                _Section(
+                  '6. Tracking and Cookies',
+                  'The website uses an essential session cookie to keep signed-in users authenticated. Some features may not work without it. The website does not use personal information to track users across unrelated third-party apps or websites for targeted advertising.',
+                ),
+                _Section(
+                  '7. Data Retention',
+                  'Information is kept as needed to provide the service. Following account deletion, personal account information may be removed or anonymized. Limited records may remain where necessary for legal compliance, security, moderation, disputes or transaction and accounting purposes. We do not promise a fixed retention period.',
+                ),
+                _Section(
+                  '8. Account Deletion',
+                  'Request deletion in the Connectghin app under Settings → Delete Account or online at https://connectghin.com/delete-account. The process removes or anonymizes personal account data as described above. Deleting a Connectghin account does not automatically cancel an Apple App Store or Google Play subscription; manage active subscriptions with the applicable store.',
+                ),
+                _Section(
+                  '9. Your Privacy Rights',
+                  'Depending on applicable law, you may request access to, correction of or deletion of your personal information. Contact privacy@connectghin.com for privacy requests.',
+                ),
+                _Section(
+                  '10. Data Security',
+                  'We use reasonable administrative, technical and organizational safeguards to protect personal information. No system can guarantee absolute security.',
+                ),
+                _Section(
+                  '11. Children and Age',
+                  'Connectghin is intended for users 18 years of age or older. We do not knowingly permit individuals under 18 to create or maintain Connectghin accounts.',
+                ),
+                _Section(
+                  '12. Policy Changes',
+                  'We may update this policy by posting the revised version here and changing the “Last updated” date.',
+                ),
+                _Section(
+                  '13. Contact',
+                  'Contact support@connectghin.com.\n\nSee also:\nTerms of Service: https://connectghin.com/terms\nChild Safety Standards: https://connectghin.com/child-safety\nDelete Account: https://connectghin.com/delete-account',
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  static Widget _numberedSection(String num, String title, Widget body) {
+class _Section extends StatelessWidget {
+  const _Section(this.title, this.body, {this.bullets = const []});
+
+  final String title;
+  final String? body;
+  final List<String> bullets;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$num. $title',
+            title,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: _headingBlue,
+              color: PrivacyPolicyScreen._headingBlue,
               height: 1.3,
             ),
           ),
-          const SizedBox(height: 10),
-          body,
-        ],
-      ),
-    );
-  }
-
-  static Widget _bullets(List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((line) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('•  ',
-                  style: TextStyle(
-                      fontSize: 15, color: CgColors.gray700, height: 1.5)),
-              Expanded(
-                child: Text(
-                  line,
-                  style: const TextStyle(
-                      fontSize: 15, height: 1.5, color: CgColors.gray700),
+          if (body != null) ...[
+            const SizedBox(height: 10),
+            LegalRichText(body!),
+          ],
+          if (bullets.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...bullets.map(
+              (line) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('•  ', style: legalBodyStyle),
+                    Expanded(child: LegalRichText(line)),
+                  ],
                 ),
               ),
-            ],
-          ),
-        );
-      }).toList(),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
